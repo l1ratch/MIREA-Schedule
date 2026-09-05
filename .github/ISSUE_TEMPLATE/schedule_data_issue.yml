@@ -1,0 +1,63 @@
+﻿name: "📅 Нестыковка в расписании (Schedule Data Issue)"
+description: "Сообщите о неверной паре, ошибочном преподавателе, пустой сетке или сбое загрузки iCal."
+title: "[Расписание]: "
+labels: ["schedule-data", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Заметили расхождение с официальным расписанием?
+        Приложение получает данные через открытый iCal API портала [schedule-of.mirea.ru](https://schedule-of.mirea.ru) и кэширует их на 30 минут.
+        Перед отправкой отчёта нажмите иконку обновления в приложении или смахните экран вниз для принудительного обновления кэша.
+
+  - type: dropdown
+    id: target_type
+    attributes:
+      label: Тип расписания
+      options:
+        - "Учебная группа"
+        - "Преподаватель"
+        - "Аудитория"
+    validations:
+      required: true
+
+  - type: input
+    id: target_name
+    attributes:
+      label: Название группы / ФИО преподавателя / Номер аудитории
+      placeholder: "например: ИКБО-01-23 или Иванов И.И."
+    validations:
+      required: true
+
+  - type: input
+    id: date_bell
+    attributes:
+      label: Дата, день недели и номер пары
+      placeholder: "например: Вторник (08.09), 3 пара"
+    validations:
+      required: true
+
+  - type: textarea
+    id: discrepancy
+    attributes:
+      label: В чём заключается расхождение?
+      description: Что показывает приложение, и как должно быть на самом деле?
+      placeholder: "В приложении отображается лекция по физике в А-11, а на официальном сайте стоит практика по математике в Б-204."
+    validations:
+      required: true
+
+  - type: input
+    id: official_link
+    attributes:
+      label: Ссылка на расписание на schedule-of.mirea.ru (при наличии)
+      placeholder: "https://schedule-of.mirea.ru/schedule/api/ical/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: proof_screenshots
+    attributes:
+      label: Скриншот из приложения и с официального сайта
+      description: Прикрепите сравнительные изображения, подтверждающие расхождение.
+    validations:
+      required: false

@@ -1,0 +1,30 @@
+﻿name: 🧹 Очистка неактивных Issue (Stale Bot)
+
+on:
+  schedule:
+    - cron: '30 3 * * *' # Ежедневно в 03:30 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  stale:
+    name: 🧹 Проверка неактивных тикетов
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          only-issue-labels: 'needs-info'
+          days-before-issue-stale: 14
+          days-before-issue-close: 7
+          stale-issue-label: 'stale'
+          stale-issue-message: |
+            👋 Привет! В этом Issue уже более 14 дней ожидается дополнительная информация от автора (`needs-info`).
+            Если проблема всё ещё актуальна, пожалуйста, оставьте комментарий с запрошенными деталями.
+            В противном случае тикет будет автоматически закрыт через 7 дней для поддержания чистоты в репозитории.
+          close-issue-message: |
+            🔒 Этот тикет был автоматически закрыт из-за отсутствия ответа автора в течение 21 дня.
+            Если вы всё ещё сталкиваетесь с этой проблемой, вы можете создать новый Issue с подробными данными или возобновить этот.
+          exempt-issue-labels: 'in-progress,enhancement'

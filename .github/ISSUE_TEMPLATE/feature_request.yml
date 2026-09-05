@@ -1,0 +1,78 @@
+﻿name: "✨ Предложение идеи или улучшение (Feature Request)"
+description: "Предложите новую функцию, улучшение дизайна, оптимизацию или полезную возможность."
+title: "[Идея]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Есть отличная идея для приложения? Поделитесь ей!
+        Опишите вашу задумку как можно подробнее, чтобы мы могли оценить её полезность и спланировать реализацию.
+
+  - type: input
+    id: feature_title
+    attributes:
+      label: Краткое название предложения
+      placeholder: "Например: Виджет на рабочий стол с расписанием на сегодня"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: К какому разделу приложения относится идея?
+      options:
+        - "Расписание пар (календарь, карточки, звонки)"
+        - "Задачи и предметы (дедлайны, подзадачи)"
+        - "Свободные аудитории"
+        - "Карта кампусов"
+        - "Виджеты на рабочий стол / Уведомления"
+        - "Внешний вид (темы оформления, плавающий док)"
+        - "Другое"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Какую проблему или потребность решает это улучшение?
+      description: С каким неудобством вы сталкиваетесь сейчас, или почему эта функция необходима?
+      placeholder: "Сейчас, чтобы посмотреть номер следующей пары, приходится открывать приложение и ждать..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Предлагаемое решение
+      description: Подробно опишите, как именно функция должна работать с точки зрения пользователя.
+      placeholder: "Добавить компактный виджет 4x2, отображающий текущую и следующую пару..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативные варианты
+      description: Рассматривали ли вы другие способы решения этой задачи?
+      placeholder: "Или добавить push-уведомление за 15 минут до начала пары..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Референсы, макеты или примеры
+      description: Прикрепите скриншоты аналогичных функций из других приложений или наброски интерфейса.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: readiness
+    attributes:
+      label: Готовность к участию
+      options:
+        - label: "Это улучшение будет полезно широкому кругу студентов и преподавателей"
+          required: false
+        - label: "Я готов принять участие в тестировании предрелизной сборки с этой функцией"
+          required: false

@@ -1,0 +1,126 @@
+﻿name: "🐛 Отчёт об ошибке (Bug Report)"
+description: "Сообщите о сбое, вылете, некорректном поведении или графическом баге приложения."
+title: "[Баг]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Спасибо за помощь в улучшении приложения!
+        Пожалуйста, перед созданием убедитесь, что вы используете последнюю версию из раздела [Releases](https://github.com/l1ratch/MIREA-Schedule/releases) и похожая проблема ещё не была описана в [открытых или закрытых Issue](https://github.com/l1ratch/MIREA-Schedule/issues).
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Платформа
+      description: На какой операционной системе возникла ошибка?
+      options:
+        - "Android (APK)"
+        - "iOS (IPA / Sideloadly / TrollStore / AltStore / Scarlet)"
+        - "Обе платформы"
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Версия приложения и сборка
+      description: Укажите версию из экрана «Другое» или раздела «О программе» (например, 26.9.0, сборка 21).
+      placeholder: "26.9.0 (сборка 21)"
+    validations:
+      required: true
+
+  - type: input
+    id: device_os
+    attributes:
+      label: Модель устройства и версия ОС
+      description: Например: Google Pixel 7, Android 14 или iPhone 14 Pro, iOS 18.0
+      placeholder: "Xiaomi Redmi Note 12, Android 13 / HyperOS"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: app_section
+    attributes:
+      label: Раздел приложения, в котором возникла проблема
+      options:
+        - "Расписание пар (главный экран)"
+        - "Свободные аудитории"
+        - "Задачи и предметы"
+        - "Карта кампусов"
+        - "Другое / Настройки / О программе"
+        - "При запуске приложения (краш / вылет)"
+        - "Другое"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Подробное описание проблемы
+      description: Опишите, что именно произошло и в чём заключается неисправность.
+      placeholder: "При переключении на вторую неделю приложение перестаёт обновлять список пар..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги для воспроизведения
+      description: Последовательность действий, приводящая к ошибке.
+      placeholder: |
+        1. Открыть раздел «...»
+        2. Нажать на «...»
+        3. Прокрутить до «...»
+        4. Наблюдать ошибку
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое поведение
+      description: Что должно было произойти при нормальной работе приложения.
+      placeholder: "Должно было открыться окно с подробной информацией о паре без задержек."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактическое поведение
+      description: Что произошло на самом деле (ошибка, вылет, пустой экран, зависание и т.п.).
+      placeholder: "Экран становится черным, и приложение аварийно закрывается."
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Скриншоты или запись экрана
+      description: Перетащите изображения или видео прямо в это поле или прикрепите ссылки.
+      placeholder: "Вставьте скриншот или GIF/видео сюда"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи / Crash log / Текст ошибки
+      description: Если в приложении появилось уведомление с кодом ошибки или у вас есть logcat/crash log.
+      render: shell
+      placeholder: "Вставьте текст ошибки или лог"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Контрольный чеклист
+      options:
+        - label: "Я проверил, что использую последнюю доступную сборку приложения"
+          required: true
+        - label: "Я поискал среди существующих Issue и убедился, что это не дубликат"
+          required: true
+        - label: "Я предоставил достаточно информации для повторения и диагностики ошибки"
+          required: true

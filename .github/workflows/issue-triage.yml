@@ -1,0 +1,184 @@
+﻿name: 🤖 Issue Triage & Assistant Bot
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    name: 🔍 Анализ и разметка Issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🤖 AI & Rule-Based Issue Assistant
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const issueNumber = issue.number;
+            const author = issue.user.login;
+            const title = (issue.title || "").toLowerCase();
+            const body = (issue.body || "").toLowerCase();
+            const fullText = title + " " + body;
+
+            // Do not reply to bots
+            if (issue.user.type === 'Bot') {
+              console.log('Skipping bot issue');
+              return;
+            }
+
+            const labelsToAdd = new Set();
+            const missingInfo = [];
+
+            // 1. Detect Platform
+            const isAndroid = fullText.includes("android") || fullText.includes("apk") || fullText.includes("redmi") || fullText.includes("pixel") || fullText.includes("samsung") || fullText.includes("xiaomi");
+            const isIos = fullText.includes("ios") || fullText.includes("iphone") || fullText.includes("ipa") || fullText.includes("altstore") || fullText.includes("trollstore") || fullText.includes("sideloadly") || fullText.includes("scarlet");
+
+            if (isAndroid && !isIos) {
+              labelsToAdd.add("platform: android");
+            } else if (isIos && !isAndroid) {
+              labelsToAdd.add("platform: ios");
+            } else if (isAndroid && isIos) {
+              labelsToAdd.add("platform: android");
+              labelsToAdd.add("platform: ios");
+            }
+
+            // 2. Detect Functional Area
+            if (fullText.includes("краш") || fullText.includes("вылет") || fullText.includes("crash") || fullText.includes("закрывается") || fullText.includes("падение") || fullText.includes("вылетает")) {
+              labelsToAdd.add("crash");
+              labelsToAdd.add("bug");
+            }
+
+            if (fullText.includes("расписани") || fullText.includes("пар") || fullText.includes("ical") || fullText.includes("неделя") || fullText.includes("звонк")) {
+              labelsToAdd.add("schedule-data");
+            }
+
+            if (fullText.includes("задач") || fullText.includes("предмет") || fullText.includes("дедлайн") || fullText.includes("подзадач") || fullText.includes("баллы")) {
+              labelsToAdd.add("tasks");
+            }
+
+            if (fullText.includes("аудитор") || fullText.includes("свободн") || fullText.includes("этаж") || fullText.includes("корпус") || fullText.includes("кампус")) {
+              labelsToAdd.add("rooms");
+            }
+
+            if (fullText.includes("дизайн") || fullText.includes("верстк") || fullText.includes("анимаци") || fullText.includes("док") || fullText.includes("кнопк") || fullText.includes("шторк") || fullText.includes("тем")) {
+              labelsToAdd.add("ui/ux");
+            }
+
+            if (fullText.includes("интернет") || fullText.includes("сеть") || fullText.includes("соединени") || fullText.includes("таймаут") || fullText.includes("404") || fullText.includes("500") || fullText.includes("офлайн")) {
+              labelsToAdd.add("network");
+            }
+
+            // 3. Detect Bug / Enhancement / Question
+            const isBug = (issue.labels || []).some(l => l.name === 'bug') || title.startsWith("[баг]") || title.includes("ошибк") || title.includes("баг");
+            const isFeature = (issue.labels || []).some(l => l.name === 'enhancement') || title.startsWith("[идея]") || title.includes("предложен") || title.includes("идея");
+            const isQuestion = (issue.labels || []).some(l => l.name === 'question') || title.startsWith("[вопрос]");
+
+            // 4. Validate Quality & Completeness for Bugs
+            if (isBug) {
+              const hasVersion = body.includes("версия") || body.includes("сборка") || /\d+\.\d+\.\d+/.test(body) || body.includes("26.9");
+              const hasDevice = isAndroid || isIos || body.includes("устройств") || body.includes("модель");
+              const hasSteps = body.includes("шаги") || body.includes("1.") || body.includes("воспроизведен");
+
+              if (!hasVersion) missingInfo.push("Номер версии приложения или сборки (например, `26.9.0 (сборка 21)`)");
+              if (!hasDevice) missingInfo.push("Платформа и модель устройства (Android / iOS)");
+              if (!hasSteps && body.length < 150) missingInfo.push("Пошаговое описание действий для воспроизведения проблемы");
+            }
+
+            if (missingInfo.length > 0) {
+              labelsToAdd.add("needs-info");
+            } else {
+              labelsToAdd.add("needs-triage");
+            }
+
+            // Apply Labels
+            const finalLabels = Array.from(labelsToAdd);
+            if (finalLabels.length > 0) {
+              console.log(`Adding labels: ${finalLabels.join(", ")}`);
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: finalLabels
+              });
+            }
+
+            // 5. Optional AI-Assisted Analysis (GitHub Models / Copilot)
+            let aiSummary = "";
+            try {
+              const token = process.env.GITHUB_TOKEN;
+              if (token) {
+                const aiResponse = await fetch("https://models.inference.ai.azure.com/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [
+                      {
+                        role: "system",
+                        content: "Ты — технический ассистент мобильного приложения MIREA-Schedule (Kotlin Multiplatform / Compose для Android и iOS). Сделай краткий анализ тикета на русском языке: 1) Суть в 1 предложении; 2) Вероятный компонент/слой кодовой базы; 3) Краткий совет."
+                      },
+                      {
+                        role: "user",
+                        content: `Заголовок: ${issue.title}\n\nТекст:\n${issue.body || ""}`
+                      }
+                    ],
+                    max_tokens: 250,
+                    temperature: 0.2
+                  })
+                });
+                if (aiResponse.ok) {
+                  const aiData = await aiResponse.json();
+                  const content = aiData.choices?.[0]?.message?.content;
+                  if (content && content.trim().length > 0) {
+                    aiSummary = `\n\n> 🤖 **Предварительный анализ GitHub Copilot / Models:**\n> ` + content.trim().replace(/\n/g, "\n> ");
+                  }
+                }
+              }
+            } catch (err) {
+              console.log("AI triage call skipped/failed:", err.message);
+            }
+
+            // 6. Compose Assistant Response
+            let reply = `👋 Здравствуйте, @${author}! Спасибо за обращение в репозиторий **MIREA-Schedule**.\n\n`;
+
+            if (missingInfo.length > 0) {
+              reply += `> ⚠️ **Для быстрой диагностики нам не хватает некоторых деталей:**\n`;
+              missingInfo.forEach(item => {
+                reply += `> - ${item}\n`;
+              });
+              reply += `\nПожалуйста, отредактируйте исходное сообщение или оставьте уточняющий комментарий, чтобы разработчики смогли воспроизвести и устранить проблему. 🛠️\n\n`;
+            } else if (isBug) {
+              reply += `✅ **Отчёт об ошибке зарегистрирован.** Все ключевые поля заполнены. Мы изучим проблему и вернёмся с обратной связью.\n\n`;
+              if (labelsToAdd.has("crash")) {
+                reply += `> 💡 **Совет:** Если приложение аварийно завершилось, убедитесь, что у вас установлена самая свежая сборка из [Релизов](https://github.com/l1ratch/MIREA-Schedule/releases). В Сборке 21 исправлены основные причины вылетов при запуске.\n\n`;
+              }
+            } else if (isFeature) {
+              reply += `✨ **Спасибо за предложение!** Новые идеи помогают сделать приложение удобнее для всех студентов и преподавателей. Предложение передано на обсуждение в план развития проекта.\n\n`;
+            } else if (labelsToAdd.has("schedule-data")) {
+              reply += `📅 **Проверка данных расписания:** Приложение обновляет и кэширует расписание с портала \`schedule-of.mirea.ru\` на 30 минут. Если расписание на сайте изменилось только что, попробуйте потянуть экран вниз (Pull-to-refresh) для сброса кэша.\n\n`;
+            } else {
+              reply += `💬 **Ваш запрос принят.** Разработчики ответят вам при первой возможности.\n\n`;
+            }
+
+            if (aiSummary) {
+              reply += aiSummary + "\n\n";
+            }
+
+            reply += `---\n`;
+            reply += `*🤖 Это автоматическое сообщение Issue Assistant Bot. Назначенные теги:* \`${finalLabels.join("`, `") || "нет"}\`*.*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: reply
+            });

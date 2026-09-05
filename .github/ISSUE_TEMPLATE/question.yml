@@ -1,0 +1,34 @@
+﻿name: "💬 Вопрос или консультация (Question / Help)"
+description: "Задайте вопрос по установке (APK / IPA / сертификаты), настройке или функционалу приложения."
+title: "[Вопрос]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Возник вопрос или нужна помощь?
+        Пожалуйста, сформулируйте вопрос как можно конкретнее.
+
+  - type: input
+    id: question_topic
+    attributes:
+      label: Тема вопроса
+      placeholder: "например: Как установить приложение на iOS без джейлбрейка?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question_body
+    attributes:
+      label: Подробный текст вопроса
+      placeholder: "Опишите, в чём заключается сложность или что именно вы хотите узнать..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: attempts
+    attributes:
+      label: Что вы уже пробовали сделать?
+      placeholder: "Пробовал подписать через AltStore, но возникает ошибка..."
+    validations:
+      required: false
