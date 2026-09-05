@@ -1,4 +1,4 @@
-﻿name: 🤖 Issue Triage & Assistant Bot
+name: 🤖 Issue Triage & Assistant Bot
 
 on:
   issues:
@@ -32,6 +32,217 @@ jobs:
               return;
             }
 
+            // ==========================================
+            // 1. SMART DUPLICATE DETECTION (AI & Heuristic)
+            // ==========================================
+            let duplicateFound = null; // { targetNumber, targetTitle, confidence, reason, autoClose }
+
+            try {
+              const existingIssuesResp = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                per_page: 60,
+                sort: 'updated',
+                direction: 'desc'
+              });
+
+              const candidates = (existingIssuesResp.data || []).filter(item => 
+                !item.pull_request && item.number !== issueNumber
+              );
+
+              if (candidates.length > 0) {
+                const candidateList = candidates.slice(0, 25).map(c => ({
+                  number: c.number,
+                  title: c.title,
+                  state: c.state,
+                  body_snippet: (c.body || "").replace(/\r?\n+/g, " ").slice(0, 200)
+                }));
+
+                // Step A: Semantic AI check (GitHub Models / gpt-4o-mini)
+                const token = process.env.GITHUB_TOKEN;
+                let aiDuplicateResult = null;
+
+                if (token) {
+                  try {
+                    const aiResp = await fetch("https://models.inference.ai.azure.com/chat/completions", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                          {
+                            role: "system",
+                            content: `Ты — интеллектуальный ассистент issue-трекера MIREA-Schedule.
+Твоя задача — проверить, является ли новый тикет ДУБЛИКАТОМ уже существующего тикета из списка.
+Критерии дубликата:
+- Описывает точно такую же проблему, баг или падение (например, одна и та же ошибка расписания или падение при открытии).
+- Задает точно такой же вопрос или предлагает точно такую же фичу.
+- Разные баги одной страницы или разные идеи НЕ являются дубликатами.
+Ответь ТОЛЬКО валидным JSON без markdown:
+{
+  "is_duplicate": boolean,
+  "duplicate_of": number | null,
+  "confidence": number,
+  "reason": "краткое объяснение на русском в 1 предложение"
+}`
+                          },
+                          {
+                            role: "user",
+                            content: `НОВЫЙ ТИКЕТ #${issueNumber}:
+Заголовок: ${issue.title}
+Текст:
+${issue.body || ""}
+
+СУЩЕСТВУЮЩИЕ ТИКЕТЫ (кандидаты):
+${JSON.stringify(candidateList, null, 2)}`
+                          }
+                        ],
+                        temperature: 0.1,
+                        max_tokens: 250
+                      })
+                    });
+
+                    if (aiResp.ok) {
+                      const aiJson = await aiResp.json();
+                      let rawText = aiJson.choices?.[0]?.message?.content || "";
+                      rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                      aiDuplicateResult = JSON.parse(rawText);
+                    }
+                  } catch (err) {
+                    console.log("AI duplicate check call skipped/failed:", err.message);
+                  }
+                }
+
+                // Evaluate AI result
+                if (aiDuplicateResult && aiDuplicateResult.is_duplicate && aiDuplicateResult.duplicate_of) {
+                  const target = candidates.find(c => c.number === aiDuplicateResult.duplicate_of);
+                  if (target) {
+                    duplicateFound = {
+                      targetNumber: target.number,
+                      targetTitle: target.title,
+                      confidence: aiDuplicateResult.confidence || 0.9,
+                      reason: aiDuplicateResult.reason || "Проблема и формулировка идентичны существующему обращению",
+                      autoClose: (aiDuplicateResult.confidence || 0.9) >= 0.85
+                    };
+                  }
+                }
+
+                // Step B: Heuristic text fallback if AI was unavailable or inconclusive
+                if (!duplicateFound) {
+                  const stopWords = new Set(["в", "на", "и", "с", "по", "для", "не", "при", "как", "что", "это", "у", "к", "из", "за", "от", "до", "или", "the", "a", "an", "is", "in", "on", "to", "for", "with", "app", "приложение", "проблема", "ошибка", "баг", "bug", "issue"]);
+                  const tokenize = (str) => {
+                    return (str || "")
+                      .toLowerCase()
+                      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+                      .split(/\s+/)
+                      .filter(w => w.length > 2 && !stopWords.has(w));
+                  };
+
+                  const newTokens = new Set(tokenize(issue.title + " " + (issue.body || "").slice(0, 300)));
+                  let bestMatch = null;
+                  let maxScore = 0;
+
+                  for (const cand of candidates.slice(0, 20)) {
+                    const candTokens = tokenize(cand.title + " " + (cand.body || "").slice(0, 300));
+                    if (candTokens.length === 0 || newTokens.size === 0) continue;
+
+                    let intersection = 0;
+                    for (const t of candTokens) {
+                      if (newTokens.has(t)) intersection++;
+                    }
+
+                    const score = intersection / Math.max(candTokens.length, newTokens.size);
+                    const titleExact = (cand.title || "").trim().toLowerCase() === (issue.title || "").trim().toLowerCase();
+
+                    if (titleExact) {
+                      bestMatch = { cand, score: 0.95, reason: "Полное совпадение заголовков тикетов" };
+                      break;
+                    } else if (score > maxScore && score >= 0.65) {
+                      maxScore = score;
+                      bestMatch = { cand, score, reason: `Высокое лексическое совпадение текста (${Math.round(score * 100)}%)` };
+                    }
+                  }
+
+                  if (bestMatch) {
+                    duplicateFound = {
+                      targetNumber: bestMatch.cand.number,
+                      targetTitle: bestMatch.cand.title,
+                      confidence: bestMatch.score,
+                      reason: bestMatch.reason,
+                      autoClose: bestMatch.score >= 0.85
+                    };
+                  }
+                }
+              }
+            } catch (e) {
+              console.log("Error querying existing issues for duplicates:", e.message);
+            }
+
+            // If high confidence duplicate -> Auto-label, Auto-close, Reference & Notify
+            if (duplicateFound && duplicateFound.autoClose) {
+              console.log(`Closing issue #${issueNumber} as duplicate of #${duplicateFound.targetNumber}`);
+
+              // 1. Add label 'duplicate'
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: ['duplicate']
+              });
+
+              // 2. Post explanation comment with GitHub native 'Duplicate of #X' syntax
+              const dupComment = `👋 Здравствуйте, @${author}!
+
+🔍 Наш бот проверил существующие обращения и определил, что данный вопрос или ошибка уже рассматривается в тикете **#${duplicateFound.targetNumber}** (*"${duplicateFound.targetTitle}"*).
+
+Duplicate of #${duplicateFound.targetNumber}
+
+> 📌 **Причина объединения:** ${duplicateFound.reason}
+> 📊 **Уверенность бота:** ${Math.round(duplicateFound.confidence * 100)}%
+
+Для того чтобы не распылять обсуждение и помочь разработчикам быстрее найти решение, этот тикет автоматически закрывается в пользу **#${duplicateFound.targetNumber}**. Пожалуйста, перейдите в основное обсуждение!
+
+---
+> 💡 *Если вы считаете, что бот ошибся и ваша ситуация принципиально отличается — просто оставьте комментарий в этом тикете, и разработчики откроют его заново.*`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: dupComment
+              });
+
+              // 3. Close the issue as not_planned (GitHub standard for duplicates)
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+
+              // 4. Cross-reference in original issue
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: duplicateFound.targetNumber,
+                  body: `📌 **Похожее обращение:** Пользователь @${author} создал тикет #${issueNumber} с аналогичным вопросом/проблемой. Он был автоматически объединен и закрыт как дубликат.`
+                });
+              } catch (err) {
+                console.log("Could not cross-reference in target issue:", err.message);
+              }
+
+              return;
+            }
+
+            // ==========================================
+            // 2. STANDARD TRIAGE (Labels, Quality, AI Summary)
+            // ==========================================
             const labelsToAdd = new Set();
             const missingInfo = [];
 
@@ -149,6 +360,10 @@ jobs:
 
             // 6. Compose Assistant Response
             let reply = `👋 Здравствуйте, @${author}! Спасибо за обращение в репозиторий **MIREA-Schedule**.\n\n`;
+
+            if (duplicateFound && !duplicateFound.autoClose) {
+              reply += `> 💡 **Возможно, этот вопрос уже обсуждался:**\n> Мы заметили сходство с тикетом **#${duplicateFound.targetNumber}** (*"${duplicateFound.targetTitle}"*). Ознакомьтесь с ним — возможно, решение или ответ уже есть там!\n\n`;
+            }
 
             if (missingInfo.length > 0) {
               reply += `> ⚠️ **Для быстрой диагностики нам не хватает некоторых деталей:**\n`;
