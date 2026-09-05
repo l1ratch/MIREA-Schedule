@@ -22,7 +22,9 @@ import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
 import com.jetbrains.kmpapp.screens.other.OtherScreen
+import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
+import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -65,6 +67,9 @@ fun App() {
     val repository: ScheduleRepository = koinInject()
     val themeMode by repository.themeMode.collectAsState()
 
+    val scheduleViewModel: ScheduleViewModel = koinViewModel()
+    val otherViewModel: OtherViewModel = koinViewModel()
+
     val systemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
         ThemeMode.SYSTEM -> systemDark
@@ -85,10 +90,10 @@ fun App() {
                 Crossfade(targetState = currentTab) { tab ->
                     when (tab) {
                         AppTab.SCHEDULE -> {
-                            ScheduleScreen(viewModel = koinViewModel())
+                            ScheduleScreen(viewModel = scheduleViewModel)
                         }
                         AppTab.OTHER -> {
-                            OtherScreen(viewModel = koinViewModel())
+                            OtherScreen(viewModel = otherViewModel)
                         }
                     }
                 }
@@ -96,6 +101,16 @@ fun App() {
                 FloatingDock(
                     currentTab = currentTab,
                     onTabSelected = { currentTab = it },
+                    onTabReselected = { tab ->
+                        when (tab) {
+                            AppTab.SCHEDULE -> {
+                                scheduleViewModel.selectLessonForDetail(null)
+                            }
+                            AppTab.OTHER -> {
+                                otherViewModel.resetToRoot()
+                            }
+                        }
+                    },
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }

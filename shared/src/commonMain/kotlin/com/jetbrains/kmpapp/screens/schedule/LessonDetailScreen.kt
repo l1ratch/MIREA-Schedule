@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.DateUtils
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonType
+import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 
 @Composable
 fun LessonDetailScreen(
@@ -49,6 +51,8 @@ fun LessonDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    PlatformBackHandler(onBack = onBack)
+
     val (typeBg, typeTextColor) = when (lesson.lessonType) {
         LessonType.LECTURE -> Color(0xFFE0F2FE) to Color(0xFF0369A1)
         LessonType.PRACTICE -> Color(0xFFDCFCE7) to Color(0xFF15803D)
@@ -82,7 +86,9 @@ fun LessonDetailScreen(
                 )
             }
         },
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .swipeToDismissBack(requireEdge = true, onBack = onBack)
     ) { innerPadding ->
         Column(
             modifier = Modifier

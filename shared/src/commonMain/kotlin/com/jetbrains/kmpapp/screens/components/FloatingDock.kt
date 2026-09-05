@@ -47,13 +47,14 @@ enum class AppTab(
 fun FloatingDock(
     currentTab: AppTab,
     onTabSelected: (AppTab) -> Unit,
+    onTabReselected: ((AppTab) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 2.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
@@ -93,7 +94,13 @@ fun FloatingDock(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) { onTabSelected(tab) }
+                            ) {
+                                if (isSelected) {
+                                    onTabReselected?.invoke(tab)
+                                } else {
+                                    onTabSelected(tab)
+                                }
+                            }
                             .padding(horizontal = 26.dp, vertical = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {

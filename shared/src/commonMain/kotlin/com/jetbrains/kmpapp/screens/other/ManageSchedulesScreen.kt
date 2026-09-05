@@ -58,7 +58,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
+import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 import com.jetbrains.kmpapp.screens.schedule.AddScheduleBottomSheet
 import kotlinx.coroutines.launch
 
@@ -69,6 +74,9 @@ fun ManageSchedulesScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    PlatformBackHandler(onBack = onBack)
+    val focusManager = LocalFocusManager.current
+
     val savedTargets by viewModel.savedTargets.collectAsState()
     val filteredTargets by viewModel.filteredSavedTargets.collectAsState()
     val selectedTarget by viewModel.selectedTarget.collectAsState()
@@ -82,6 +90,12 @@ fun ManageSchedulesScreen(
     val scope = rememberCoroutineScope()
 
     Scaffold(
+        modifier = modifier
+            .fillMaxSize()
+            .swipeToDismissBack(requireEdge = true, onBack = onBack)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            },
         topBar = {
             Row(
                 modifier = Modifier
@@ -113,8 +127,7 @@ fun ManageSchedulesScreen(
                     Icon(Icons.Default.Add, contentDescription = "Добавить расписание")
                 }
             }
-        },
-        modifier = modifier.fillMaxSize()
+        }
     ) { innerPadding ->
         if (savedTargets.isEmpty()) {
             Box(

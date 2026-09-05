@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -208,7 +209,12 @@ private fun ScheduleMainContent(
                             )
                         }
                 ) {
-                    AnimatedContent(
+                    PullToRefreshBox(
+                        isRefreshing = isLoading,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        AnimatedContent(
                         targetState = selectedDate,
                         transitionSpec = {
                             if (targetState > initialState) {
@@ -297,6 +303,7 @@ private fun ScheduleMainContent(
                 }
             }
         }
+    }
     }
 
     if (showAddSheet) {

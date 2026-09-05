@@ -1,5 +1,6 @@
 package com.jetbrains.kmpapp.data.update
 
+import com.jetbrains.kmpapp.data.model.AppVersion
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -28,21 +29,17 @@ data class GitHubRelease(
 data class UpdateCheckResult(
     val hasUpdate: Boolean,
     val latestVersion: String,
-    val currentVersion: String = CURRENT_VERSION,
+    val currentVersion: String = AppVersion.VERSION_NAME,
     val changelog: String? = null,
     val downloadUrl: String,
     val releaseUrl: String
-) {
-    companion object {
-        const val CURRENT_VERSION = "1.0.0"
-    }
-}
+)
 
 class AppUpdateChecker(
     private val client: HttpClient
 ) {
     companion object {
-        private const val GITHUB_REPO = "l1ratch/MIREA-Schedule"
+        private const val GITHUB_REPO = AppVersion.GITHUB_REPO
     }
 
     suspend fun checkForUpdates(): UpdateCheckResult? {
@@ -52,7 +49,7 @@ class AppUpdateChecker(
             }.body<GitHubRelease>()
 
             val latestTag = release.tagName.trimStart('v', 'V')
-            val current = UpdateCheckResult.CURRENT_VERSION.trimStart('v', 'V')
+            val current = AppVersion.VERSION_NAME.trimStart('v', 'V')
             val isNewer = compareVersions(latestTag, current) > 0
 
             val apkAsset = release.assets.firstOrNull { it.name.endsWith(".apk") }
@@ -61,7 +58,7 @@ class AppUpdateChecker(
             UpdateCheckResult(
                 hasUpdate = isNewer,
                 latestVersion = release.tagName,
-                currentVersion = UpdateCheckResult.CURRENT_VERSION,
+                currentVersion = AppVersion.VERSION_NAME,
                 changelog = release.body,
                 downloadUrl = downloadUrl,
                 releaseUrl = release.htmlUrl

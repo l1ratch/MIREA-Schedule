@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MuseumApp : Application() {
+class ScheduleApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AndroidContextProvider.context = this

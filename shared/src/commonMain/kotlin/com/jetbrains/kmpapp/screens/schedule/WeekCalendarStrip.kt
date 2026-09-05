@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,35 +70,20 @@ fun WeekCalendarStrip(
         }
     }
 
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { page ->
-            val pageMonday = baseMonday.plus(DatePeriod(days = (page - BASE_PAGE) * 7))
-            val currentSelectedMonday = DateUtils.getWeekDates(selectedDate).first()
-            if (pageMonday != currentSelectedMonday) {
-                val newSelectedDate = if (pageMonday == baseMonday) {
-                    today
-                } else {
-                    val dayOffset = selectedDate.dayOfWeek.ordinal
-                    pageMonday.plus(DatePeriod(days = dayOffset))
-                }
-                onDateSelected(newSelectedDate)
-            }
-        }
-    }
-
-
     // Active displayed week Monday
     val currentWeekMonday = baseMonday.plus(DatePeriod(days = (pagerState.currentPage - BASE_PAGE) * 7))
+    val currentWeekEnd = currentWeekMonday.plus(DatePeriod(days = 7))
+    val todayInCurrentWeek = today >= currentWeekMonday && today < currentWeekEnd
     val weekInfo = DateUtils.getWeekInfo(currentWeekMonday)
     val monthTitle = DateUtils.formatMonthTitle(currentWeekMonday.month)
     val year = currentWeekMonday.year
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Month, Year, Week bar with navigation arrows
+        // Month, Year, Week bar with navigation arrows & Сегодня button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp),
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -118,12 +104,36 @@ fun WeekCalendarStrip(
                 )
             }
 
-            Text(
-                text = "$monthTitle $year • ${weekInfo.weekNumber} неделя",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$monthTitle $year • ${weekInfo.weekNumber} неделя",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                if (!todayInCurrentWeek) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    androidx.compose.material3.Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.clickable {
+                            scope.launch {
+                                pagerState.animateScrollToPage(BASE_PAGE)
+                            }
+                            onDateSelected(today)
+                        }
+                    ) {
+                        Text(
+                            text = "Сегодня",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
 
             IconButton(
                 onClick = {
@@ -206,10 +216,10 @@ fun WeekCalendarStrip(
                             color = if (isSelected) textColor.copy(alpha = 0.85f)
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = date.day.toString(),
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = textColor
                         )

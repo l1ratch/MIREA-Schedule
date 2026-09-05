@@ -20,9 +20,15 @@ import kotlinx.coroutines.launch
 enum class TargetSortOrder(val displayName: String) {
     TITLE_ASC("По названию (А → Я / 0 → 9)"),
     TITLE_DESC("По названию (Я → А / 9 → 0)"),
-    BY_TYPE("По типу (Группы → Преп. → Ауд.)"),
     RECENT("Сначала новые"),
     OLDEST("Сначала старые")
+}
+
+enum class OtherSubScreen {
+    ROOT,
+    MANAGE_SCHEDULES,
+    SETTINGS,
+    ABOUT
 }
 
 class OtherViewModel(
@@ -35,6 +41,17 @@ class OtherViewModel(
     val isLoading: StateFlow<Boolean> = repository.isLoading
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
+
+    private val _activeSubScreen = MutableStateFlow(OtherSubScreen.ROOT)
+    val activeSubScreen: StateFlow<OtherSubScreen> = _activeSubScreen.asStateFlow()
+
+    fun navigateToSubScreen(subScreen: OtherSubScreen) {
+        _activeSubScreen.value = subScreen
+    }
+
+    fun resetToRoot() {
+        _activeSubScreen.value = OtherSubScreen.ROOT
+    }
 
     private val _updateResult = MutableStateFlow<UpdateCheckResult?>(null)
     val updateResult: StateFlow<UpdateCheckResult?> = _updateResult.asStateFlow()
@@ -95,7 +112,6 @@ class OtherViewModel(
         when (sort) {
             TargetSortOrder.TITLE_ASC -> result.sortedBy { it.targetTitle.lowercase() }
             TargetSortOrder.TITLE_DESC -> result.sortedByDescending { it.targetTitle.lowercase() }
-            TargetSortOrder.BY_TYPE -> result.sortedWith(compareBy({ it.type.id }, { it.targetTitle.lowercase() }))
             TargetSortOrder.RECENT -> result
             TargetSortOrder.OLDEST -> result.reversed()
         }
@@ -119,7 +135,6 @@ class OtherViewModel(
             TargetSortOrder.TITLE_DESC -> TargetSortOrder.TITLE_ASC
             TargetSortOrder.RECENT -> TargetSortOrder.OLDEST
             TargetSortOrder.OLDEST -> TargetSortOrder.RECENT
-            TargetSortOrder.BY_TYPE -> TargetSortOrder.TITLE_ASC
         }
     }
 
