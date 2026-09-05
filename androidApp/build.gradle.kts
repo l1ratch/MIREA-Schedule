@@ -21,7 +21,9 @@ android {
         applicationId = "ru.l1ratch.mireaschedule"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 21
+        versionCode = (project.findProperty("buildNumber") as? String)?.toIntOrNull()
+            ?: System.getenv("BUILD_NUMBER")?.toIntOrNull()
+            ?: 30
         versionName = "26.9.0"
     }
     signingConfigs {

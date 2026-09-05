@@ -59,7 +59,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextAlign
+import com.jetbrains.kmpapp.data.storage.PlatformStorage
+import org.koin.compose.koinInject
 
 @Composable
 fun MapScreen(
@@ -67,6 +75,12 @@ fun MapScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val controller = remember { CampusMapController() }
+    val uriHandler = LocalUriHandler.current
+    val platformStorage: PlatformStorage = koinInject()
+
+    var showDisclaimerDialog by remember {
+        mutableStateOf(platformStorage.getString("mirea_map_disclaimer_seen") != "true")
+    }
 
     var selectedCampus by remember { mutableStateOf(CAMPUSES.first()) }
     var selectedFloor by remember { mutableStateOf(selectedCampus.defaultFloor) }
@@ -98,7 +112,7 @@ fun MapScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        containerColor = Color(0xFF0D1117),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -359,7 +373,8 @@ fun MapScreen(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 24.dp)
+                    .navigationBarsPadding()
+                    .padding(end = 16.dp, bottom = 84.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(4.dp),
@@ -384,6 +399,89 @@ fun MapScreen(
                         Icon(Icons.Default.CenterFocusStrong, contentDescription = "Центрировать", tint = Color(0xFFC9D1D9), modifier = Modifier.size(20.dp))
                     }
                 }
+            }
+
+            // 6. First-Time Disclaimer Dialog
+            if (showDisclaimerDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        platformStorage.saveString("mirea_map_disclaimer_seen", "true")
+                        showDisclaimerDialog = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = "Схемы корпусов",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = "Планы этажей и расположение аудиторий могут быть неточными из-за перепланировок и ремонтов в корпусах.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 20.sp
+                            )
+                            Text(
+                                text = "Для точной информации сверяйтесь со схемами эвакуации и указателями внутри здания или официальным сервисом «Карта РТУ МИРЭА»:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 20.sp
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        uriHandler.openUri("https://pulse.mirea.ru/services/maps")
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "pulse.mirea.ru/services/maps\n(доступен через ЛКС)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                platformStorage.saveString("mirea_map_disclaimer_seen", "true")
+                                showDisclaimerDialog = false
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Понятно", fontWeight = FontWeight.SemiBold)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(24.dp)
+                )
             }
         }
     }

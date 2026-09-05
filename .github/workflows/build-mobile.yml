@@ -31,6 +31,29 @@ jobs:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 🔢 Sync Build Number with GitHub Actions Run
+        env:
+          BUILD_NUM: ${{ github.run_number }}
+        run: |
+          python3 -c "
+          import re, os
+          num = os.environ.get('BUILD_NUM', '30')
+          p1 = 'shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt'
+          with open(p1, 'r', encoding='utf-8') as f: c = f.read()
+          c = re.sub(r'const val BUILD_NUMBER = \d+', f'const val BUILD_NUMBER = {num}', c)
+          with open(p1, 'w', encoding='utf-8') as f: f.write(c)
+
+          p2 = 'androidApp/build.gradle.kts'
+          with open(p2, 'r', encoding='utf-8') as f: c = f.read()
+          c = re.sub(r'versionCode = .*?\n', f'versionCode = {num}\n', c)
+          with open(p2, 'w', encoding='utf-8') as f: f.write(c)
+
+          p3 = 'iosApp/iosApp/Info.plist'
+          with open(p3, 'r', encoding='utf-8') as f: c = f.read()
+          c = re.sub(r'(<key>CFBundleVersion</key>\s*<string>)\d+(</string>)', rf'\g<1>{num}\g<2>', c)
+          with open(p3, 'w', encoding='utf-8') as f: f.write(c)
+          "
+
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -65,6 +88,29 @@ jobs:
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
+
+      - name: 🔢 Sync Build Number with GitHub Actions Run
+        env:
+          BUILD_NUM: ${{ github.run_number }}
+        run: |
+          python3 -c "
+          import re, os
+          num = os.environ.get('BUILD_NUM', '30')
+          p1 = 'shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt'
+          with open(p1, 'r', encoding='utf-8') as f: c = f.read()
+          c = re.sub(r'const val BUILD_NUMBER = \d+', f'const val BUILD_NUMBER = {num}', c)
+          with open(p1, 'w', encoding='utf-8') as f: f.write(c)
+
+          p2 = 'androidApp/build.gradle.kts'
+          with open(p2, 'r', encoding='utf-8') as f: c = f.read()
+          c = re.sub(r'versionCode = .*?\n', f'versionCode = {num}\n', c)
+          with open(p2, 'w', encoding='utf-8') as f: f.write(c)
+
+          p3 = 'iosApp/iosApp/Info.plist'
+          with open(p3, 'r', encoding='utf-8') as f: c = f.read()
+          c = re.sub(r'(<key>CFBundleVersion</key>\s*<string>)\d+(</string>)', rf'\g<1>{num}\g<2>', c)
+          with open(p3, 'w', encoding='utf-8') as f: f.write(c)
+          "
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5

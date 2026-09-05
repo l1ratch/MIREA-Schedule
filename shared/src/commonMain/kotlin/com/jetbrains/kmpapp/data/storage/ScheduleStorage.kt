@@ -80,7 +80,12 @@ class ScheduleStorage(
                     val loaded = dockTabsStr.split(",").mapNotNull { name ->
                         try { AppTab.valueOf(name.trim()) } catch (_: Throwable) { null }
                     }
-                    _dockTabs.value = sanitizeDockTabs(loaded)
+                    val legacyDefault = listOf(AppTab.SCHEDULE, AppTab.FREE_ROOMS, AppTab.TASKS, AppTab.OTHER)
+                    if (loaded == legacyDefault) {
+                        _dockTabs.value = DEFAULT_DOCK_TABS
+                    } else {
+                        _dockTabs.value = sanitizeDockTabs(loaded)
+                    }
                 } else {
                     _dockTabs.value = DEFAULT_DOCK_TABS
                 }
@@ -337,7 +342,7 @@ class ScheduleStorage(
         private const val KEY_APP_THEME = "mirea_app_theme"
         private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"
         private const val KEY_SAKURA_THEME = "mirea_sakura_theme_secret"
-        val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.FREE_ROOMS, AppTab.TASKS, AppTab.OTHER)
+        val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.MAP, AppTab.OTHER)
     }
 }
 

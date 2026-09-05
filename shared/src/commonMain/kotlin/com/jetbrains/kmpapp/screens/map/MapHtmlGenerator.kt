@@ -21,7 +21,7 @@ object MapHtmlGenerator {
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    background-color: #0b0f17; user-select: none; -webkit-user-select: none;
+    background-color: transparent; user-select: none; -webkit-user-select: none;
     touch-action: none;
   }
   #viewport {
@@ -77,6 +77,7 @@ object MapHtmlGenerator {
   
   let pointers = new Map();
   let prevDiff = -1;
+  let prevMidX = 0, prevMidY = 0;
   let isPanning = false;
   let startX = 0, startY = 0;
   let originX = 0, originY = 0;
@@ -110,26 +111,27 @@ object MapHtmlGenerator {
   }
 
   window.zoomIn = function() {
-    zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, 1.4);
+    zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, 1.4, true);
   };
   window.zoomOut = function() {
-    zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, 1 / 1.4);
+    zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, 1 / 1.4, true);
   };
   window.resetView = function() {
     fitToScreen();
   };
 
-  function zoomAt(clientX, clientY, factor) {
+  function zoomAt(clientX, clientY, factor, smooth) {
     const newScale = Math.max(0.08, Math.min(12, scale * factor));
     const factorApplied = newScale / scale;
     translateX = clientX - (clientX - translateX) * factorApplied;
     translateY = clientY - (clientY - translateY) * factorApplied;
     scale = newScale;
-    updateTransform(true);
+    updateTransform(Boolean(smooth));
   }
 
   // Pointer events
   viewport.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     pointers.set(e.pointerId, e);
     if (pointers.size === 1) {
       isPanning = true;
@@ -137,11 +139,18 @@ object MapHtmlGenerator {
       startY = e.clientY;
       originX = translateX;
       originY = translateY;
+    } else if (pointers.size === 2) {
+      isPanning = false;
+      const pts = Array.from(pointers.values());
+      prevDiff = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+      prevMidX = (pts[0].clientX + pts[1].clientX) / 2;
+      prevMidY = (pts[0].clientY + pts[1].clientY) / 2;
     }
   });
 
   viewport.addEventListener('pointermove', (e) => {
     if (!pointers.has(e.pointerId)) return;
+    e.preventDefault();
     pointers.set(e.pointerId, e);
 
     if (pointers.size === 1 && isPanning) {
@@ -157,18 +166,37 @@ object MapHtmlGenerator {
       const midX = (pts[0].clientX + pts[1].clientX) / 2;
       const midY = (pts[0].clientY + pts[1].clientY) / 2;
 
-      if (prevDiff > 0) {
+      if (prevDiff > 0 && curDiff > 0) {
         const factor = curDiff / prevDiff;
-        zoomAt(midX, midY, factor);
+        // Clamp factor per movement to avoid abrupt jumps
+        const clampedFactor = Math.max(0.6, Math.min(1.8, factor));
+        const newScale = Math.max(0.08, Math.min(12, scale * clampedFactor));
+        const factorApplied = newScale / scale;
+        
+        // Scale around the midpoint
+        translateX = midX - (midX - translateX) * factorApplied;
+        translateY = midY - (midY - translateY) * factorApplied;
+        scale = newScale;
+
+        // Pan with the midpoint movement
+        translateX += (midX - prevMidX);
+        translateY += (midY - prevMidY);
+
+        updateTransform(false);
       }
       prevDiff = curDiff;
+      prevMidX = midX;
+      prevMidY = midY;
     }
   });
 
   function endPointer(e) {
     pointers.delete(e.pointerId);
-    if (pointers.size < 2) prevDiff = -1;
+    if (pointers.size < 2) {
+      prevDiff = -1;
+    }
     if (pointers.size === 1) {
+      // Seamless handover to 1-finger pan without jumping
       const remaining = Array.from(pointers.values())[0];
       startX = remaining.clientX;
       startY = remaining.clientY;
@@ -186,7 +214,7 @@ object MapHtmlGenerator {
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 0.85;
-    zoomAt(e.clientX, e.clientY, factor);
+    zoomAt(e.clientX, e.clientY, factor, false);
   }, { passive: false });
 
   // Double tap
@@ -199,11 +227,18 @@ object MapHtmlGenerator {
         fitToScreen();
       } else {
         const touch = e.changedTouches[0];
-        zoomAt(touch.clientX, touch.clientY, 2.2);
+        zoomAt(touch.clientX, touch.clientY, 2.2, true);
       }
     }
     lastTap = now;
   });
+
+  // Touch move passive prevention
+  document.addEventListener('touchmove', (e) => {
+    if (pointers.size > 0) {
+      e.preventDefault();
+    }
+  }, { passive: false });
 
   window.addEventListener('DOMContentLoaded', () => {
     setTimeout(fitToScreen, 60);

@@ -22,7 +22,7 @@ actual fun CampusMapView(
                 settings.domStorageEnabled = true
                 settings.useWideViewPort = true
                 settings.loadWithOverviewMode = true
-                settings.setSupportZoom(true)
+                settings.setSupportZoom(false)
                 settings.builtInZoomControls = false
                 settings.displayZoomControls = false
                 setBackgroundColor(0x00000000)
@@ -41,7 +41,10 @@ actual fun CampusMapView(
                 ctrl.onZoomOut = { webView.evaluateJavascript("window.zoomOut && window.zoomOut();", null) }
                 ctrl.onResetView = { webView.evaluateJavascript("window.resetView && window.resetView();", null) }
             }
-            webView.loadDataWithBaseURL("https://local.map", htmlContent, "text/html", "UTF-8", null)
+            if (webView.tag != htmlContent) {
+                webView.tag = htmlContent
+                webView.loadDataWithBaseURL("https://local.map", htmlContent, "text/html", "UTF-8", null)
+            }
         },
         modifier = modifier
     )
