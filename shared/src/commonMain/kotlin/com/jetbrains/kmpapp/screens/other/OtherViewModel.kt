@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.stateIn
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
 import com.jetbrains.kmpapp.data.update.UpdateCheckResult
 import com.jetbrains.kmpapp.screens.components.AppTab
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 
 enum class TargetSortOrder(val displayName: String) {
@@ -57,10 +59,6 @@ class OtherViewModel(
         repository.setDockTabs(tabs)
     }
 
-    init {
-        checkForUpdates()
-    }
-
     private val _activeSubScreen = MutableStateFlow(OtherSubScreen.ROOT)
     val activeSubScreen: StateFlow<OtherSubScreen> = _activeSubScreen.asStateFlow()
 
@@ -96,22 +94,27 @@ class OtherViewModel(
     val isLoadingContributors: StateFlow<Boolean> = _isLoadingContributors.asStateFlow()
 
     fun loadContributors() {
-        viewModelScope.launch {
-            _isLoadingContributors.value = true
-            val fetched = updateChecker.fetchContributors()
-            if (fetched.isNotEmpty()) {
-                val l1ratchFromApi = fetched.find { it.login.equals("l1ratch", ignoreCase = true) }
-                val staticLead = com.jetbrains.kmpapp.data.model.GitHubContributor(
-                    login = "l1ratch",
-                    htmlUrl = "https://github.com/l1ratch",
-                    avatarUrl = l1ratchFromApi?.avatarUrl ?: "https://avatars.githubusercontent.com/u/103525164?v=4",
-                    contributions = l1ratchFromApi?.contributions ?: 14,
-                    role = "Создатель и ведущий разработчик"
-                )
-                val otherContributors = fetched.filterNot { it.login.equals("l1ratch", ignoreCase = true) }
-                _contributors.value = listOf(staticLead) + otherContributors
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                _isLoadingContributors.value = true
+                val fetched = updateChecker.fetchContributors()
+                if (fetched.isNotEmpty()) {
+                    val l1ratchFromApi = fetched.find { it.login.equals("l1ratch", ignoreCase = true) }
+                    val staticLead = com.jetbrains.kmpapp.data.model.GitHubContributor(
+                        login = "l1ratch",
+                        htmlUrl = "https://github.com/l1ratch",
+                        avatarUrl = l1ratchFromApi?.avatarUrl ?: "https://avatars.githubusercontent.com/u/103525164?v=4",
+                        contributions = l1ratchFromApi?.contributions ?: 14,
+                        role = "Создатель и ведущий разработчик"
+                    )
+                    val otherContributors = fetched.filterNot { it.login.equals("l1ratch", ignoreCase = true) }
+                    _contributors.value = listOf(staticLead) + otherContributors
+                }
+            } catch (t: Throwable) {
+                println("Failed to load contributors: ${t.message}")
+            } finally {
+                _isLoadingContributors.value = false
             }
-            _isLoadingContributors.value = false
         }
     }
 
@@ -125,16 +128,22 @@ class OtherViewModel(
     val updateStatusMessage: StateFlow<String?> = _updateStatusMessage.asStateFlow()
 
     fun checkForUpdates() {
-        viewModelScope.launch {
-            _isCheckingUpdate.value = true
-            _updateStatusMessage.value = null
-            val result = updateChecker.checkForUpdates()
-            _updateResult.value = result
-            _isCheckingUpdate.value = false
-            if (result != null && !result.hasUpdate) {
-                _updateStatusMessage.value = "У вас установлена последняя версия (${result.currentVersion})"
-            } else if (result == null) {
-                _updateStatusMessage.value = "Не удалось проверить обновления"
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                _isCheckingUpdate.value = true
+                _updateStatusMessage.value = null
+                val result = updateChecker.checkForUpdates()
+                _updateResult.value = result
+                _isCheckingUpdate.value = false
+                if (result != null && !result.hasUpdate) {
+                    _updateStatusMessage.value = "У вас установлена последняя версия (${result.currentVersion})"
+                } else if (result == null) {
+                    _updateStatusMessage.value = "Не удалось проверить обновления"
+                }
+            } catch (t: Throwable) {
+                println("checkForUpdates caught throwable: ${t.message}")
+                _isCheckingUpdate.value = false
+                _updateStatusMessage.value = null
             }
         }
     }

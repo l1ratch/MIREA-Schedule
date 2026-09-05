@@ -8,21 +8,25 @@ import io.ktor.client.request.header
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
+
 @Serializable
 data class GitHubAsset(
-    val name: String,
+    val name: String = "",
     @SerialName("browser_download_url")
-    val browserDownloadUrl: String
+    val browserDownloadUrl: String = ""
 )
 
 @Serializable
 data class GitHubRelease(
     @SerialName("tag_name")
-    val tagName: String,
+    val tagName: String = "",
     val name: String? = null,
     val body: String? = null,
     @SerialName("html_url")
-    val htmlUrl: String,
+    val htmlUrl: String = "",
     val assets: List<GitHubAsset> = emptyList()
 )
 
@@ -43,11 +47,18 @@ class AppUpdateChecker(
         private const val GITHUB_REPO = AppVersion.GITHUB_REPO
     }
 
-    suspend fun checkForUpdates(): UpdateCheckResult? {
-        return try {
-            val release = client.get("https://api.github.com/repos/$GITHUB_REPO/releases/latest") {
+    suspend fun checkForUpdates(): UpdateCheckResult? = withContext(Dispatchers.IO) {
+        try {
+            val response = client.get("https://api.github.com/repos/$GITHUB_REPO/releases/latest") {
                 header("User-Agent", "MIREA-Schedule-App")
-            }.body<GitHubRelease>()
+            }
+            if (response.status.value !in 200..299) {
+                return@withContext null
+            }
+            val release = response.body<GitHubRelease>()
+            if (release.tagName.isBlank()) {
+                return@withContext null
+            }
 
             val latestTag = release.tagName.trimStart('v', 'V')
             val current = AppVersion.VERSION_NAME.trimStart('v', 'V')
@@ -64,8 +75,8 @@ class AppUpdateChecker(
                 downloadUrl = downloadUrl,
                 releaseUrl = release.htmlUrl
             )
-        } catch (e: Exception) {
-            println("Update check error: ${e.message}")
+        } catch (t: Throwable) {
+            println("Update check error: ${t.message}")
             null
         }
     }
@@ -82,22 +93,27 @@ class AppUpdateChecker(
         return 0
     }
 
-    suspend fun fetchContributors(forceRefresh: Boolean = false): List<com.jetbrains.kmpapp.data.model.GitHubContributor> {
-        val strategy = if (forceRefresh) com.jetbrains.kmpapp.data.sync.CacheStrategy.NETWORK_FIRST else com.jetbrains.kmpapp.data.sync.CacheStrategy.CACHE_FIRST
-        val result = syncManager.execute(
-            cacheKey = "cached_github_contributors_json",
-            serializer = kotlinx.serialization.builtins.ListSerializer(com.jetbrains.kmpapp.data.model.GitHubContributor.serializer()),
-            strategy = strategy,
-            ttl = kotlin.time.Duration.parse("7d"),
-            forceRefresh = forceRefresh
-        ) {
-            client.get("https://api.github.com/repos/$GITHUB_REPO/contributors") {
-                header("User-Agent", "MIREA-Schedule-App")
-            }.body<String>()
-        }
-        return when (result) {
-            is com.jetbrains.kmpapp.data.sync.SyncResult.Success -> result.data
-            is com.jetbrains.kmpapp.data.sync.SyncResult.Error -> result.cachedData ?: emptyList()
+    suspend fun fetchContributors(forceRefresh: Boolean = false): List<com.jetbrains.kmpapp.data.model.GitHubContributor> = withContext(Dispatchers.IO) {
+        try {
+            val strategy = if (forceRefresh) com.jetbrains.kmpapp.data.sync.CacheStrategy.NETWORK_FIRST else com.jetbrains.kmpapp.data.sync.CacheStrategy.CACHE_FIRST
+            val result = syncManager.execute(
+                cacheKey = "cached_github_contributors_json",
+                serializer = kotlinx.serialization.builtins.ListSerializer(com.jetbrains.kmpapp.data.model.GitHubContributor.serializer()),
+                strategy = strategy,
+                ttl = kotlin.time.Duration.parse("7d"),
+                forceRefresh = forceRefresh
+            ) {
+                client.get("https://api.github.com/repos/$GITHUB_REPO/contributors") {
+                    header("User-Agent", "MIREA-Schedule-App")
+                }.body<String>()
+            }
+            when (result) {
+                is com.jetbrains.kmpapp.data.sync.SyncResult.Success -> result.data
+                is com.jetbrains.kmpapp.data.sync.SyncResult.Error -> result.cachedData ?: emptyList()
+            }
+        } catch (t: Throwable) {
+            println("Fetch contributors error: ${t.message}")
+            emptyList()
         }
     }
 }

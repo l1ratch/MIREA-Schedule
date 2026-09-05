@@ -102,6 +102,13 @@ fun App() {
         ) {
             var currentTab by remember { mutableStateOf(AppTab.SCHEDULE) }
 
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(2000)
+                try {
+                    otherViewModel.checkForUpdates()
+                } catch (_: Throwable) {}
+            }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 Crossfade(targetState = currentTab) { tab ->
                     when (tab) {

@@ -54,43 +54,57 @@ class ScheduleStorage(
     private fun loadPersistedState() {
         try {
             // Restore theme mode setting
-            val themeStr = platformStorage.getString(KEY_APP_THEME)
-            if (!themeStr.isNullOrBlank()) {
-                _themeMode.value = try {
-                    ThemeMode.valueOf(themeStr)
-                } catch (_: Exception) {
-                    ThemeMode.SYSTEM
+            try {
+                val themeStr = platformStorage.getString(KEY_APP_THEME)
+                if (!themeStr.isNullOrBlank()) {
+                    _themeMode.value = try {
+                        ThemeMode.valueOf(themeStr)
+                    } catch (_: Throwable) {
+                        ThemeMode.SYSTEM
+                    }
                 }
-            }
+            } catch (_: Throwable) {}
 
             // Restore show empty lessons setting
-            val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
-            if (!showEmptyStr.isNullOrBlank()) {
-                _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: true
-            }
+            try {
+                val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
+                if (!showEmptyStr.isNullOrBlank()) {
+                    _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: true
+                }
+            } catch (_: Throwable) {}
 
             // Restore dock tabs setting
-            val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
-            if (!dockTabsStr.isNullOrBlank()) {
-                val loaded = dockTabsStr.split(",").mapNotNull { name ->
-                    try { AppTab.valueOf(name.trim()) } catch (_: Exception) { null }
+            try {
+                val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
+                if (!dockTabsStr.isNullOrBlank()) {
+                    val loaded = dockTabsStr.split(",").mapNotNull { name ->
+                        try { AppTab.valueOf(name.trim()) } catch (_: Throwable) { null }
+                    }
+                    _dockTabs.value = sanitizeDockTabs(loaded)
+                } else {
+                    _dockTabs.value = DEFAULT_DOCK_TABS
                 }
-                _dockTabs.value = sanitizeDockTabs(loaded)
-            } else {
+            } catch (_: Throwable) {
                 _dockTabs.value = DEFAULT_DOCK_TABS
             }
 
             // Restore sakura theme
-            val sakuraStr = platformStorage.getString(KEY_SAKURA_THEME)
-            if (!sakuraStr.isNullOrBlank()) {
-                _isSakuraTheme.value = sakuraStr.toBooleanStrictOrNull() ?: false
-            }
+            try {
+                val sakuraStr = platformStorage.getString(KEY_SAKURA_THEME)
+                if (!sakuraStr.isNullOrBlank()) {
+                    _isSakuraTheme.value = sakuraStr.toBooleanStrictOrNull() ?: false
+                }
+            } catch (_: Throwable) {}
 
             // Restore saved targets
-            val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
-            val targets: List<ScheduleTarget> = if (!targetsJson.isNullOrBlank()) {
-                try { json.decodeFromString(targetsJson) } catch (_: Exception) { emptyList() }
-            } else {
+            val targets: List<ScheduleTarget> = try {
+                val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
+                if (!targetsJson.isNullOrBlank()) {
+                    try { json.decodeFromString(targetsJson) } catch (_: Throwable) { emptyList() }
+                } else {
+                    emptyList()
+                }
+            } catch (_: Throwable) {
                 emptyList()
             }
             _savedTargets.value = targets
@@ -98,25 +112,29 @@ class ScheduleStorage(
             // IMPORTANT: Restore cached lessons for all targets BEFORE setting selected target!
             val loadedCache = mutableMapOf<Int, List<Lesson>>()
             for (target in targets) {
-                val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
-                if (!lessonsJson.isNullOrBlank()) {
-                    try {
-                        val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
-                        loadedCache[target.id] = lessons
-                    } catch (_: Exception) {}
-                }
-                val syncTimeStr = platformStorage.getString(KEY_LAST_SYNC_PREFIX + target.id)
-                syncTimeStr?.toLongOrNull()?.let { lastSyncTimes[target.id] = it }
+                try {
+                    val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
+                    if (!lessonsJson.isNullOrBlank()) {
+                        try {
+                            val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
+                            loadedCache[target.id] = lessons
+                        } catch (_: Throwable) {}
+                    }
+                    val syncTimeStr = platformStorage.getString(KEY_LAST_SYNC_PREFIX + target.id)
+                    syncTimeStr?.toLongOrNull()?.let { lastSyncTimes[target.id] = it }
+                } catch (_: Throwable) {}
             }
             _cachedLessons.value = loadedCache
 
             // Now that cached lessons and timestamps are ready, restore selected target!
-            val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
-            val activeId = activeIdStr?.toIntOrNull()
-            val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
-            _selectedTarget.value = selected
-        } catch (e: Exception) {
-            println("ScheduleStorage: failed to load persisted state: ${e.message}")
+            try {
+                val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
+                val activeId = activeIdStr?.toIntOrNull()
+                val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
+                _selectedTarget.value = selected
+            } catch (_: Throwable) {}
+        } catch (t: Throwable) {
+            println("ScheduleStorage: failed to load persisted state: ${t.message}")
         }
     }
 
@@ -155,8 +173,12 @@ class ScheduleStorage(
     }
 
     private fun sanitizeDockTabs(tabs: List<AppTab>): List<AppTab> {
-        val middle = tabs.filter { !it.isFixed }.distinct().take(3)
-        return listOf(AppTab.SCHEDULE) + middle + listOf(AppTab.OTHER)
+        return try {
+            val middle = tabs.filter { !it.isFixed }.distinct().take(3)
+            listOf(AppTab.SCHEDULE) + middle + listOf(AppTab.OTHER)
+        } catch (_: Throwable) {
+            DEFAULT_DOCK_TABS
+        }
     }
 
 
@@ -242,37 +264,41 @@ class ScheduleStorage(
     }
 
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats {
-        var schedulesBytes = 0L
-        var totalLessons = 0
-        for ((_, lessons) in _cachedLessons.value) {
-            totalLessons += lessons.size
-        }
-        for (target in _savedTargets.value) {
-            val str = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
-            if (str != null) {
-                schedulesBytes += str.encodeToByteArray().size
+        return try {
+            var schedulesBytes = 0L
+            var totalLessons = 0
+            for ((_, lessons) in _cachedLessons.value) {
+                totalLessons += lessons.size
             }
+            for (target in _savedTargets.value) {
+                val str = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
+                if (str != null) {
+                    schedulesBytes += str.encodeToByteArray().size
+                }
+            }
+
+            val targetsStr = platformStorage.getString(KEY_SAVED_TARGETS)
+            val targetsBytes = targetsStr?.encodeToByteArray()?.size?.toLong() ?: 0L
+
+            var settingsBytes = 0L
+            platformStorage.getString(KEY_SELECTED_TARGET_ID)?.let { settingsBytes += it.encodeToByteArray().size }
+            platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)?.let { settingsBytes += it.encodeToByteArray().size }
+            platformStorage.getString(KEY_APP_THEME)?.let { settingsBytes += it.encodeToByteArray().size }
+
+            val total = schedulesBytes + targetsBytes + settingsBytes
+
+            com.jetbrains.kmpapp.data.model.StorageStats(
+                schedulesSizeBytes = schedulesBytes,
+                schedulesCount = _cachedLessons.value.size,
+                lessonsCount = totalLessons,
+                targetsSizeBytes = targetsBytes,
+                targetsCount = _savedTargets.value.size,
+                settingsSizeBytes = settingsBytes,
+                totalSizeBytes = total
+            )
+        } catch (_: Throwable) {
+            com.jetbrains.kmpapp.data.model.StorageStats()
         }
-
-        val targetsStr = platformStorage.getString(KEY_SAVED_TARGETS)
-        val targetsBytes = targetsStr?.encodeToByteArray()?.size?.toLong() ?: 0L
-
-        var settingsBytes = 0L
-        platformStorage.getString(KEY_SELECTED_TARGET_ID)?.let { settingsBytes += it.encodeToByteArray().size }
-        platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)?.let { settingsBytes += it.encodeToByteArray().size }
-        platformStorage.getString(KEY_APP_THEME)?.let { settingsBytes += it.encodeToByteArray().size }
-
-        val total = schedulesBytes + targetsBytes + settingsBytes
-
-        return com.jetbrains.kmpapp.data.model.StorageStats(
-            schedulesSizeBytes = schedulesBytes,
-            schedulesCount = _cachedLessons.value.size,
-            lessonsCount = totalLessons,
-            targetsSizeBytes = targetsBytes,
-            targetsCount = _savedTargets.value.size,
-            settingsSizeBytes = settingsBytes,
-            totalSizeBytes = total
-        )
     }
 
     private fun persistTargets() {
