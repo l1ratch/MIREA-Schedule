@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,11 +52,13 @@ fun FloatingDock(
     onTabReselected: ((AppTab) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottomOffset = if (navBottom > 36.dp) (navBottom - 16.dp) else 10.dp
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 2.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = bottomOffset),
         contentAlignment = Alignment.Center
     ) {
         Surface(

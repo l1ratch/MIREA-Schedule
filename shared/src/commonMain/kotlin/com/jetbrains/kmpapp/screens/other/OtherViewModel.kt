@@ -28,7 +28,9 @@ enum class OtherSubScreen {
     ROOT,
     MANAGE_SCHEDULES,
     SETTINGS,
-    ABOUT
+    DATA_AND_CACHE,
+    ABOUT,
+    DEBUG_SETTINGS
 }
 
 class OtherViewModel(
@@ -51,6 +53,48 @@ class OtherViewModel(
 
     fun resetToRoot() {
         _activeSubScreen.value = OtherSubScreen.ROOT
+    }
+
+    private val _storageStats = MutableStateFlow(repository.getStorageStats())
+    val storageStats: StateFlow<com.jetbrains.kmpapp.data.model.StorageStats> = _storageStats.asStateFlow()
+
+    fun refreshStorageStats() {
+        _storageStats.value = repository.getStorageStats()
+    }
+
+    private val _contributors = MutableStateFlow<List<com.jetbrains.kmpapp.data.model.GitHubContributor>>(
+        listOf(
+            com.jetbrains.kmpapp.data.model.GitHubContributor(
+                login = "l1ratch",
+                htmlUrl = "https://github.com/l1ratch",
+                avatarUrl = "https://avatars.githubusercontent.com/u/103525164?v=4",
+                contributions = 14,
+                role = "Создатель и ведущий разработчик"
+            )
+        )
+    )
+    val contributors: StateFlow<List<com.jetbrains.kmpapp.data.model.GitHubContributor>> = _contributors.asStateFlow()
+
+    private val _isLoadingContributors = MutableStateFlow(false)
+    val isLoadingContributors: StateFlow<Boolean> = _isLoadingContributors.asStateFlow()
+
+    fun loadContributors() {
+        viewModelScope.launch {
+            _isLoadingContributors.value = true
+            val fetched = updateChecker.fetchContributors()
+            if (fetched.isNotEmpty()) {
+                val staticLead = com.jetbrains.kmpapp.data.model.GitHubContributor(
+                    login = "l1ratch",
+                    htmlUrl = "https://github.com/l1ratch",
+                    avatarUrl = "https://avatars.githubusercontent.com/u/103525164?v=4",
+                    contributions = 14,
+                    role = "Создатель и ведущий разработчик"
+                )
+                val otherContributors = fetched.filterNot { it.login.equals("l1ratch", ignoreCase = true) }
+                _contributors.value = listOf(staticLead) + otherContributors
+            }
+            _isLoadingContributors.value = false
+        }
     }
 
     private val _updateResult = MutableStateFlow<UpdateCheckResult?>(null)
@@ -160,6 +204,7 @@ class OtherViewModel(
 
     fun clearCache() {
         repository.clearCache()
+        _storageStats.value = repository.getStorageStats()
     }
 
     suspend fun search(query: String): List<ScheduleTarget> {

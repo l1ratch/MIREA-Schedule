@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +30,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Surface
+import com.jetbrains.kmpapp.data.model.RefreshStatus
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -98,6 +107,7 @@ private fun ScheduleMainContent(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeDiff by viewModel.activeDiff.collectAsState()
+    val refreshStatus by viewModel.refreshStatus.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -110,6 +120,7 @@ private fun ScheduleMainContent(
     var totalDrag by remember { mutableStateOf(0f) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             Column {
                 ScheduleTopBar(
@@ -122,10 +133,57 @@ private fun ScheduleMainContent(
                     onAddClick = { showAddSheet = true }
                 )
 
-                if (isLoading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = refreshStatus != null,
+                    enter = slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+                    exit = slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val status = refreshStatus
+                    if (status != null) {
+                        val isSuccess = status is RefreshStatus.Success
+                        val bgColor = if (isSuccess) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                        val textColor = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                        val text = when (status) {
+                            is RefreshStatus.Success -> status.message
+                            is RefreshStatus.Error -> "Ошибка (${status.code.code}): ${status.code.shortTitle}"
+                        }
+                        val icon = if (isSuccess) Icons.Default.Check else Icons.Default.Warning
 
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = bgColor,
+                                shadowElevation = 4.dp,
+                                modifier = Modifier.clickable { viewModel.dismissStatusBadge() }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = textColor,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = text,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = textColor
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         modifier = modifier.fillMaxSize()

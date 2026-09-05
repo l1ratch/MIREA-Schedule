@@ -174,6 +174,40 @@ class ScheduleStorage(
         }
     }
 
+    fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats {
+        var schedulesBytes = 0L
+        var totalLessons = 0
+        for ((_, lessons) in _cachedLessons.value) {
+            totalLessons += lessons.size
+        }
+        for (target in _savedTargets.value) {
+            val str = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
+            if (str != null) {
+                schedulesBytes += str.encodeToByteArray().size
+            }
+        }
+
+        val targetsStr = platformStorage.getString(KEY_SAVED_TARGETS)
+        val targetsBytes = targetsStr?.encodeToByteArray()?.size?.toLong() ?: 0L
+
+        var settingsBytes = 0L
+        platformStorage.getString(KEY_SELECTED_TARGET_ID)?.let { settingsBytes += it.encodeToByteArray().size }
+        platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)?.let { settingsBytes += it.encodeToByteArray().size }
+        platformStorage.getString(KEY_APP_THEME)?.let { settingsBytes += it.encodeToByteArray().size }
+
+        val total = schedulesBytes + targetsBytes + settingsBytes
+
+        return com.jetbrains.kmpapp.data.model.StorageStats(
+            schedulesSizeBytes = schedulesBytes,
+            schedulesCount = _cachedLessons.value.size,
+            lessonsCount = totalLessons,
+            targetsSizeBytes = targetsBytes,
+            targetsCount = _savedTargets.value.size,
+            settingsSizeBytes = settingsBytes,
+            totalSizeBytes = total
+        )
+    }
+
     private fun persistTargets() {
         scope.launch {
             try {

@@ -77,13 +77,27 @@ fun OtherScreen(
             OtherSubScreen.SETTINGS -> {
                 SettingsScreen(
                     viewModel = viewModel,
-                    onBack = { viewModel.resetToRoot() }
+                    onBack = { viewModel.resetToRoot() },
+                    onOpenDataAndCache = { viewModel.navigateToSubScreen(OtherSubScreen.DATA_AND_CACHE) }
+                )
+            }
+            OtherSubScreen.DATA_AND_CACHE -> {
+                DataAndCacheScreen(
+                    viewModel = viewModel,
+                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.SETTINGS) }
                 )
             }
             OtherSubScreen.ABOUT -> {
                 AboutScreen(
                     viewModel = viewModel,
-                    onBack = { viewModel.resetToRoot() }
+                    onBack = { viewModel.resetToRoot() },
+                    onOpenDebugMenu = { viewModel.navigateToSubScreen(OtherSubScreen.DEBUG_SETTINGS) }
+                )
+            }
+            OtherSubScreen.DEBUG_SETTINGS -> {
+                DebugSettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.ABOUT) }
                 )
             }
         }
@@ -99,6 +113,7 @@ private fun OtherMainContent(
     val savedTargets by viewModel.savedTargets.collectAsState()
 
     Scaffold(
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             Column(
                 modifier = Modifier

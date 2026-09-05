@@ -80,4 +80,15 @@ class AppUpdateChecker(
         }
         return 0
     }
+
+    suspend fun fetchContributors(): List<com.jetbrains.kmpapp.data.model.GitHubContributor> {
+        return try {
+            client.get("https://api.github.com/repos/$GITHUB_REPO/contributors") {
+                header("User-Agent", "MIREA-Schedule-App")
+            }.body<List<com.jetbrains.kmpapp.data.model.GitHubContributor>>()
+        } catch (e: Exception) {
+            println("Fetch contributors error: ${e.message}")
+            emptyList()
+        }
+    }
 }

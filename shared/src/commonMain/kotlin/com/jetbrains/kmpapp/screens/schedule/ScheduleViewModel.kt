@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.DatePeriod
@@ -29,6 +30,23 @@ class ScheduleViewModel(
     val isLoading: StateFlow<Boolean> = repository.isLoading
     val errorMessage: StateFlow<String?> = repository.errorMessage
     val activeDiff: StateFlow<com.jetbrains.kmpapp.data.model.ScheduleDiff?> = repository.activeDiff
+    val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = repository.refreshStatus
+
+    init {
+        viewModelScope.launch {
+            repository.refreshStatus.collect { status ->
+                if (status != null) {
+                    val delayMs = if (status is com.jetbrains.kmpapp.data.model.RefreshStatus.Error) 3500L else 2500L
+                    kotlinx.coroutines.delay(delayMs)
+                    repository.clearRefreshStatus()
+                }
+            }
+        }
+    }
+
+    fun dismissStatusBadge() {
+        repository.clearRefreshStatus()
+    }
 
     fun dismissDiff() {
         repository.dismissDiff()

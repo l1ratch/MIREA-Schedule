@@ -44,6 +44,15 @@ class ScheduleRepository(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _refreshStatus = MutableStateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?>(null)
+    val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = _refreshStatus.asStateFlow()
+
+    fun clearRefreshStatus() {
+        _refreshStatus.value = null
+    }
+
+    fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats = storage.getStorageStats()
+
     fun setShowEmptyLessons(enabled: Boolean) {
         storage.setShowEmptyLessons(enabled)
     }
@@ -114,6 +123,9 @@ class ScheduleRepository(
             val oldLessons = storage.getLessons(target.id)
             storage.saveLessons(target.id, parsedLessons)
             _errorMessage.value = null
+            if (!silent) {
+                _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Success()
+            }
 
             if (oldLessons != null && oldLessons.isNotEmpty()) {
                 val diff = computeDiff(oldLessons, parsedLessons, target)
@@ -123,10 +135,14 @@ class ScheduleRepository(
             }
         } catch (e: Exception) {
             println("refreshSchedule error for ${target.targetTitle}: ${e.message}")
+            val code = com.jetbrains.kmpapp.data.model.AppErrorCode.fromException(e)
+            if (!silent) {
+                _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Error(code)
+            }
             // Only show user-facing error if we don't have cached lessons
             val hasCached = storage.getLessons(target.id) != null
             if (!hasCached && !silent) {
-                _errorMessage.value = e.message ?: "Ошибка загрузки расписания"
+                _errorMessage.value = "Ошибка (${code.code}): ${code.shortTitle}"
             }
         } finally {
             if (!silent) {

@@ -437,15 +437,15 @@ fun LessonBreakIndicator(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 1.dp),
+            .padding(vertical = 0.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "••• перемена $breakMinutes мин •••",
-            fontSize = 9.5.sp,
-            fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-            letterSpacing = 0.3.sp
+            fontSize = 12.5.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            letterSpacing = 0.2.sp
         )
     }
 }
