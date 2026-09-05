@@ -36,7 +36,8 @@ data class UpdateCheckResult(
 )
 
 class AppUpdateChecker(
-    private val client: HttpClient
+    private val client: HttpClient,
+    private val syncManager: com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
 ) {
     companion object {
         private const val GITHUB_REPO = AppVersion.GITHUB_REPO
@@ -81,14 +82,22 @@ class AppUpdateChecker(
         return 0
     }
 
-    suspend fun fetchContributors(): List<com.jetbrains.kmpapp.data.model.GitHubContributor> {
-        return try {
+    suspend fun fetchContributors(forceRefresh: Boolean = false): List<com.jetbrains.kmpapp.data.model.GitHubContributor> {
+        val strategy = if (forceRefresh) com.jetbrains.kmpapp.data.sync.CacheStrategy.NETWORK_FIRST else com.jetbrains.kmpapp.data.sync.CacheStrategy.CACHE_FIRST
+        val result = syncManager.execute(
+            cacheKey = "cached_github_contributors_json",
+            serializer = kotlinx.serialization.builtins.ListSerializer(com.jetbrains.kmpapp.data.model.GitHubContributor.serializer()),
+            strategy = strategy,
+            ttl = kotlin.time.Duration.parse("7d"),
+            forceRefresh = forceRefresh
+        ) {
             client.get("https://api.github.com/repos/$GITHUB_REPO/contributors") {
                 header("User-Agent", "MIREA-Schedule-App")
-            }.body<List<com.jetbrains.kmpapp.data.model.GitHubContributor>>()
-        } catch (e: Exception) {
-            println("Fetch contributors error: ${e.message}")
-            emptyList()
+            }.body<String>()
+        }
+        return when (result) {
+            is com.jetbrains.kmpapp.data.sync.SyncResult.Success -> result.data
+            is com.jetbrains.kmpapp.data.sync.SyncResult.Error -> result.cachedData ?: emptyList()
         }
     }
 }

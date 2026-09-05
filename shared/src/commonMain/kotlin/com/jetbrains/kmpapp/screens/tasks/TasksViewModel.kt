@@ -1,10 +1,12 @@
-﻿package com.jetbrains.kmpapp.screens.tasks
+package com.jetbrains.kmpapp.screens.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.TaskRepository
+import com.jetbrains.kmpapp.data.model.AssessmentType
 import com.jetbrains.kmpapp.data.model.StudyTask
+import com.jetbrains.kmpapp.data.model.Subject
+import com.jetbrains.kmpapp.data.model.SubjectImportance
 import com.jetbrains.kmpapp.data.model.Subtask
 import com.jetbrains.kmpapp.data.model.TaskCategory
 import com.jetbrains.kmpapp.data.model.TaskPriority
@@ -18,43 +20,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlin.random.Random
 
 class TasksViewModel(
-    private val taskRepository: TaskRepository,
-    private val scheduleRepository: ScheduleRepository
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
+    val subjects: StateFlow<List<Subject>> = taskRepository.subjects
     val tasks: StateFlow<List<StudyTask>> = taskRepository.tasks
-
-    private val _selectedSubjectFilter = MutableStateFlow<String?>(null)
-    val selectedSubjectFilter: StateFlow<String?> = _selectedSubjectFilter.asStateFlow()
-
-    private val _selectedStatusFilter = MutableStateFlow<TaskStatus?>(null)
-    val selectedStatusFilter: StateFlow<TaskStatus?> = _selectedStatusFilter.asStateFlow()
-
-    // Subjects list automatically populated from current schedule + existing tasks
-    val availableSubjects: StateFlow<List<String>> = combine(
-        scheduleRepository.currentLessons,
-        taskRepository.tasks
-    ) { lessons, currentTasks ->
-        val fromSchedule = lessons.map { it.subject.trim() }.filter { it.isNotEmpty() }
-        val fromTasks = currentTasks.map { it.subjectTitle.trim() }.filter { it.isNotEmpty() }
-        (fromSchedule + fromTasks).distinct().sorted()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    val filteredTasks: StateFlow<List<StudyTask>> = combine(
-        taskRepository.tasks,
-        _selectedSubjectFilter,
-        _selectedStatusFilter
-    ) { allTasks, subject, status ->
-        allTasks.filter { task ->
-            val matchSubject = subject == null || task.subjectTitle.equals(subject, ignoreCase = true)
-            val matchStatus = status == null || task.status == status
-            matchSubject && matchStatus
-        }.sortedWith(
-            compareBy<StudyTask> { it.status == TaskStatus.COMPLETED }
-                .thenBy { it.priority.order }
-                .thenBy { it.dueDateIso ?: "9999" }
-        )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val activeCount: StateFlow<Int> = taskRepository.tasks.combine(MutableStateFlow(Unit)) { list, _ ->
         list.count { it.status != TaskStatus.COMPLETED }
@@ -71,28 +41,40 @@ class TasksViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
-    fun selectSubjectFilter(subject: String?) {
-        _selectedSubjectFilter.value = subject
+    fun createSubject(
+        name: String,
+        shortCode: String,
+        colorHex: String,
+        importance: SubjectImportance,
+        assessmentType: AssessmentType,
+        teacherName: String = "",
+        roomOrLink: String = "",
+        notes: String = ""
+    ) {
+        val subject = Subject(
+            id = "subj_${Random.nextInt(100000, 999999)}",
+            name = name.trim(),
+            shortCode = if (shortCode.isNotBlank()) shortCode.trim().uppercase() else name.take(3).uppercase(),
+            colorHex = colorHex,
+            importance = importance,
+            assessmentType = assessmentType,
+            teacherName = teacherName.trim(),
+            roomOrLink = roomOrLink.trim(),
+            notes = notes.trim()
+        )
+        taskRepository.addSubject(subject)
     }
 
-    fun selectStatusFilter(status: TaskStatus?) {
-        _selectedStatusFilter.value = status
+    fun updateSubject(subject: Subject) {
+        taskRepository.updateSubject(subject)
     }
 
-    fun toggleSubtask(taskId: String, subtaskId: String) {
-        taskRepository.toggleSubtask(taskId, subtaskId)
-    }
-
-    fun setTaskStatus(taskId: String, status: TaskStatus) {
-        taskRepository.setTaskStatus(taskId, status)
-    }
-
-    fun deleteTask(taskId: String) {
-        taskRepository.deleteTask(taskId)
+    fun deleteSubject(subjectId: String) {
+        taskRepository.deleteSubject(subjectId)
     }
 
     fun createTask(
-        subjectTitle: String,
+        subjectId: String,
         title: String,
         description: String,
         category: TaskCategory,
@@ -104,9 +86,11 @@ class TasksViewModel(
         val subtasks = subtaskTitles.filter { it.isNotBlank() }.map {
             Subtask(id = "sub_${Random.nextInt(100000, 999999)}", title = it.trim(), isCompleted = false)
         }
+        val subj = taskRepository.subjects.value.find { it.id == subjectId }
         val task = StudyTask(
             id = id,
-            subjectTitle = subjectTitle.trim(),
+            subjectId = subjectId,
+            subjectTitle = subj?.name ?: "",
             title = title.trim(),
             taskDescription = description.trim(),
             category = category,
@@ -123,11 +107,23 @@ class TasksViewModel(
         taskRepository.updateTask(task)
     }
 
-    fun createBatchLabs(subject: String, count: Int, priority: TaskPriority) {
-        taskRepository.createBatchLabs(subject, count, priority)
+    fun deleteTask(taskId: String) {
+        taskRepository.deleteTask(taskId)
     }
 
-    fun clearAllTasks() {
-        taskRepository.clearAllTasks()
+    fun toggleSubtask(taskId: String, subtaskId: String) {
+        taskRepository.toggleSubtask(taskId, subtaskId)
+    }
+
+    fun toggleTaskCompletion(taskId: String) {
+        taskRepository.toggleTaskCompletion(taskId)
+    }
+
+    fun setTaskStatus(taskId: String, status: TaskStatus) {
+        taskRepository.setTaskStatus(taskId, status)
+    }
+
+    fun clearAllData() {
+        taskRepository.clearAllData()
     }
 }

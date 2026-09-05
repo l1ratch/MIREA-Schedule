@@ -61,8 +61,13 @@ fun FloatingDock(
     modifier: Modifier = Modifier
 ) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    // Elevated above bottom: ~16dp default; if home indicator / gesture bar is present (>20dp), offset by navBottom + 8dp
-    val bottomOffset = if (navBottom > 20.dp) navBottom + 8.dp else 16.dp
+    // Elevated comfortably above bottom: iOS home indicator (34dp) sits at ~20dp offset; Android button bar sits safely above buttons
+    val bottomOffset = when {
+        navBottom in 30.dp..38.dp -> (navBottom - 14.dp).coerceAtLeast(8.dp)
+        navBottom > 38.dp -> navBottom + 4.dp
+        navBottom > 0.dp -> navBottom + 4.dp
+        else -> 12.dp
+    }
 
     // Responsive horizontal padding based on tab count
     val itemHorizontalPadding = when {

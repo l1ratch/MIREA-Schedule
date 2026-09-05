@@ -306,11 +306,11 @@ fun SettingsScreen(
     if (showSakuraDialog) {
         AlertDialog(
             onDismissRequest = { showSakuraDialog = false },
-            title = { Text("Секретная тема 🌸", fontWeight = FontWeight.Bold) },
+            title = { Text("Сакура 🌸", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
-                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Сакура / Аниме» в нежных пастельно-розовых тонах!",
+                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Сакура» в нежных пастельно-розовых тонах!",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -320,7 +320,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Тема «Сакура»",
+                            text = "Сакура",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )

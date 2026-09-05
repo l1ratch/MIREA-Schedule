@@ -2,72 +2,34 @@ package com.jetbrains.kmpapp.data
 
 import com.jetbrains.kmpapp.data.model.FreeRoomItem
 import com.jetbrains.kmpapp.data.model.FreeRoomsData
-import com.jetbrains.kmpapp.data.storage.PlatformStorage
+import com.jetbrains.kmpapp.data.sync.CacheStrategy
+import com.jetbrains.kmpapp.data.sync.SyncResult
+import com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
-import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.hours
 
 class FreeRoomsRepository(
     private val client: HttpClient,
-    private val storage: PlatformStorage
+    private val syncManager: UnifiedSyncManager
 ) {
     private val cdnUrl = "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/free_rooms.json"
     private val cacheKey = "cached_free_rooms_json"
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
 
     /**
-     * Loads free rooms data: from disk cache first, or fetches fresh copy from GitHub Pages CDN.
+     * Loads free rooms data: from cache or fetches fresh copy via UnifiedSyncManager.
      */
-    suspend fun getFreeRooms(forceRefresh: Boolean = false): FreeRoomsData {
-        if (DebugConfig.isOfflineSimulated.value) {
-            val cached = storage.getString(cacheKey)
-            return if (!cached.isNullOrEmpty()) {
-                try {
-                    json.decodeFromString<FreeRoomsData>(cached)
-                } catch (_: Exception) {
-                    FreeRoomsData()
-                }
-            } else {
-                FreeRoomsData()
-            }
-        }
-
-        if (!forceRefresh) {
-            val cached = storage.getString(cacheKey)
-            if (!cached.isNullOrEmpty()) {
-                try {
-                    return json.decodeFromString<FreeRoomsData>(cached)
-                } catch (e: Exception) {
-                    println("FreeRoomsRepository: cache decode failed: ${e.message}")
-                }
-            }
-        }
-
-        val delayMs = DebugConfig.networkDelayMs.value
-        if (delayMs > 0) {
-            kotlinx.coroutines.delay(delayMs)
-        }
-
-        return try {
-            val responseText: String = client.get(cdnUrl).body()
-            storage.saveString(cacheKey, responseText)
-            json.decodeFromString<FreeRoomsData>(responseText)
-        } catch (e: Exception) {
-            println("FreeRoomsRepository: remote fetch failed: ${e.message}")
-            val fallback = storage.getString(cacheKey)
-            if (!fallback.isNullOrEmpty()) {
-                try {
-                    json.decodeFromString<FreeRoomsData>(fallback)
-                } catch (_: Exception) {
-                    FreeRoomsData()
-                }
-            } else {
-                FreeRoomsData()
-            }
+    suspend fun getFreeRooms(forceRefresh: Boolean = false): SyncResult<FreeRoomsData> {
+        val strategy = if (forceRefresh) CacheStrategy.NETWORK_FIRST else CacheStrategy.CACHE_FIRST
+        return syncManager.execute(
+            cacheKey = cacheKey,
+            serializer = FreeRoomsData.serializer(),
+            strategy = strategy,
+            ttl = 4.hours,
+            forceRefresh = forceRefresh
+        ) {
+            client.get(cdnUrl).body()
         }
     }
 

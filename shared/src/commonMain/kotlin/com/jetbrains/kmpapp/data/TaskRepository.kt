@@ -1,6 +1,7 @@
-﻿package com.jetbrains.kmpapp.data
+package com.jetbrains.kmpapp.data
 
 import com.jetbrains.kmpapp.data.model.StudyTask
+import com.jetbrains.kmpapp.data.model.Subject
 import com.jetbrains.kmpapp.data.model.Subtask
 import com.jetbrains.kmpapp.data.model.TaskCategory
 import com.jetbrains.kmpapp.data.model.TaskPriority
@@ -11,11 +12,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlin.random.Random
 
 class TaskRepository(
     private val storage: PlatformStorage
 ) {
+    private val keySubjects = "saved_study_subjects_list"
     private val keyStudyTasks = "saved_study_tasks_list"
 
     private val json = Json {
@@ -23,11 +24,55 @@ class TaskRepository(
         isLenient = true
     }
 
+    private val _subjects = MutableStateFlow<List<Subject>>(emptyList())
+    val subjects: StateFlow<List<Subject>> = _subjects.asStateFlow()
+
     private val _tasks = MutableStateFlow<List<StudyTask>>(emptyList())
     val tasks: StateFlow<List<StudyTask>> = _tasks.asStateFlow()
 
     init {
+        loadSubjects()
         loadTasks()
+    }
+
+    private fun loadSubjects() {
+        val raw = storage.getString(keySubjects)
+        if (!raw.isNullOrEmpty()) {
+            try {
+                _subjects.value = json.decodeFromString<List<Subject>>(raw)
+            } catch (e: Exception) {
+                println("TaskRepository: failed to decode subjects: ${e.message}")
+            }
+        }
+    }
+
+    private fun persistSubjects(list: List<Subject>) {
+        _subjects.value = list
+        try {
+            val encoded = json.encodeToString(list)
+            storage.saveString(keySubjects, encoded)
+        } catch (e: Exception) {
+            println("TaskRepository: failed to save subjects: ${e.message}")
+        }
+    }
+
+    fun addSubject(subject: Subject) {
+        val current = _subjects.value.toMutableList()
+        current.add(0, subject)
+        persistSubjects(current)
+    }
+
+    fun updateSubject(updated: Subject) {
+        val current = _subjects.value.map { if (it.id == updated.id) updated else it }
+        persistSubjects(current)
+    }
+
+    fun deleteSubject(subjectId: String) {
+        val current = _subjects.value.filterNot { it.id == subjectId }
+        persistSubjects(current)
+        // Also remove tasks belonging to this subject
+        val updatedTasks = _tasks.value.filterNot { it.subjectId == subjectId }
+        persistTasks(updatedTasks)
     }
 
     private fun loadTasks() {
@@ -99,36 +144,26 @@ class TaskRepository(
         persistTasks(current)
     }
 
-    fun createBatchLabs(subjectTitle: String, count: Int, defaultPriority: TaskPriority = TaskPriority.MEDIUM) {
-        val newTasks = (1..count).map { num ->
-            StudyTask(
-                id = generateId(),
-                subjectTitle = subjectTitle.trim(),
-                title = "Лабораторная работа №$num",
-                taskDescription = "Выполнение и защита лабораторной работы №$num по дисциплине $subjectTitle",
-                category = TaskCategory.LAB,
-                priority = defaultPriority,
-                status = TaskStatus.PENDING,
-                subtasks = listOf(
-                    Subtask(id = generateId(), title = "Изучение теории и методички", isCompleted = false),
-                    Subtask(id = generateId(), title = "Выполнение практической части", isCompleted = false),
-                    Subtask(id = generateId(), title = "Оформление отчёта", isCompleted = false),
-                    Subtask(id = generateId(), title = "Защита у преподавателя", isCompleted = false)
-                ),
-                createdAtIso = ""
-            )
+    fun toggleTaskCompletion(taskId: String) {
+        val current = _tasks.value.map { task ->
+            if (task.id == taskId) {
+                val isCompleted = task.status == TaskStatus.COMPLETED
+                val nextStatus = if (isCompleted) TaskStatus.PENDING else TaskStatus.COMPLETED
+                val updatedSubtasks = if (nextStatus == TaskStatus.COMPLETED) {
+                    task.subtasks.map { it.copy(isCompleted = true) }
+                } else {
+                    task.subtasks.map { it.copy(isCompleted = false) }
+                }
+                task.copy(status = nextStatus, subtasks = updatedSubtasks)
+            } else {
+                task
+            }
         }
-        val combined = newTasks + _tasks.value
-        persistTasks(combined)
+        persistTasks(current)
     }
 
-    fun clearAllTasks() {
+    fun clearAllData() {
         persistTasks(emptyList())
-    }
-
-    private fun generateId(): String {
-        val randomPart = Random.nextInt(100000, 999999)
-        val timePart = kotlin.time.TimeSource.Monotonic.markNow().elapsedNow().inWholeMilliseconds
-        return "task_${timePart}_$randomPart"
+        persistSubjects(emptyList())
     }
 }

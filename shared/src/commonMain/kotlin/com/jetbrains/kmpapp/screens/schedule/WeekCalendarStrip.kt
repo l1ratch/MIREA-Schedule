@@ -233,39 +233,29 @@ fun WeekCalendarStrip(
                         )
                         Spacer(modifier = Modifier.height(3.dp))
 
-                        // Colored indicator dots for lecture, practice, lab
+                        // Colored indicator dots matching lesson cards (1 dot per lesson)
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(2.5.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.height(5.dp)
+                            modifier = Modifier.height(6.dp)
                         ) {
-                            if (summary != null && (summary.hasLecture || summary.hasPractice || summary.hasLab)) {
-                                if (summary.hasLecture) {
+                            if (summary != null && summary.lessonTypes.isNotEmpty()) {
+                                summary.lessonTypes.take(7).forEach { lessonType ->
+                                    val dotColor = when (lessonType) {
+                                        com.jetbrains.kmpapp.data.model.LessonType.LECTURE -> Color(0xFF38BDF8) // Небесно-голубой
+                                        com.jetbrains.kmpapp.data.model.LessonType.PRACTICE -> Color(0xFF4ADE80) // Зеленый
+                                        com.jetbrains.kmpapp.data.model.LessonType.LAB -> Color(0xFFFB923C) // Оранжевый
+                                        com.jetbrains.kmpapp.data.model.LessonType.OTHER -> Color(0xFFC084FC) // Фиолетовый
+                                    }
                                     Box(
                                         modifier = Modifier
-                                            .size(4.5.dp)
+                                            .size(5.dp)
                                             .clip(CircleShape)
-                                            .background(if (isSelected) Color.White else Color(0xFF3B82F6))
-                                    )
-                                }
-                                if (summary.hasPractice) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(4.5.dp)
-                                            .clip(CircleShape)
-                                            .background(if (isSelected) Color.White.copy(alpha = 0.85f) else Color(0xFFF59E0B))
-                                    )
-                                }
-                                if (summary.hasLab) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(4.5.dp)
-                                            .clip(CircleShape)
-                                            .background(if (isSelected) Color.White.copy(alpha = 0.85f) else Color(0xFF10B981))
+                                            .background(dotColor)
                                     )
                                 }
                             } else {
-                                Spacer(modifier = Modifier.size(4.5.dp))
+                                Spacer(modifier = Modifier.size(5.dp))
                             }
                         }
                     }

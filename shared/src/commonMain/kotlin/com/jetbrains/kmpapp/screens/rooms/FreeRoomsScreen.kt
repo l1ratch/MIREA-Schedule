@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.FreeRoomBellSlot
 import com.jetbrains.kmpapp.data.model.FreeRoomItem
+import com.jetbrains.kmpapp.screens.components.SyncStatusBadge
 
 private val DEFAULT_BELL_SLOTS = listOf(
     FreeRoomBellSlot(1, "09:00", "10:30"),
@@ -103,12 +104,14 @@ fun FreeRoomsScreen(
     val availableCampuses by viewModel.availableCampuses.collectAsState()
     val availableFloors by viewModel.availableFloors.collectAsState()
     val selectedRoomForDetail by viewModel.selectedRoomForDetail.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
 
     val bellSlots = if (freeRoomsData.bellSlots.isNotEmpty()) freeRoomsData.bellSlots else DEFAULT_BELL_SLOTS
     val focusManager = LocalFocusManager.current
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             Column(
                 modifier = Modifier
@@ -457,6 +460,12 @@ fun FreeRoomsScreen(
             onDismiss = { viewModel.selectRoomForDetail(null) }
         )
     }
+
+    SyncStatusBadge(
+        status = syncStatus,
+        onDismiss = { viewModel.dismissStatusBadge() }
+    )
+}
 }
 
 @Composable

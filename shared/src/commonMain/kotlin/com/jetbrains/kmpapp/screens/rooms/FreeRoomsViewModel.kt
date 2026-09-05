@@ -76,8 +76,15 @@ class FreeRoomsViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _syncStatus = MutableStateFlow<com.jetbrains.kmpapp.screens.components.SyncStatusState?>(null)
+    val syncStatus: StateFlow<com.jetbrains.kmpapp.screens.components.SyncStatusState?> = _syncStatus.asStateFlow()
+
     init {
         loadFreeRooms(forceRefresh = false)
+    }
+
+    fun dismissStatusBadge() {
+        _syncStatus.value = null
     }
 
     fun loadFreeRooms(forceRefresh: Boolean = false) {
@@ -88,8 +95,20 @@ class FreeRoomsViewModel(
                 _isLoading.value = true
             }
 
-            val data = repository.getFreeRooms(forceRefresh = forceRefresh)
-            _freeRoomsData.value = data
+            when (val result = repository.getFreeRooms(forceRefresh = forceRefresh)) {
+                is com.jetbrains.kmpapp.data.sync.SyncResult.Success -> {
+                    _freeRoomsData.value = result.data
+                    if (forceRefresh) {
+                        _syncStatus.value = com.jetbrains.kmpapp.screens.components.SyncStatusState.Success("Список аудиторий обновлен")
+                    }
+                }
+                is com.jetbrains.kmpapp.data.sync.SyncResult.Error -> {
+                    if (result.cachedData != null) {
+                        _freeRoomsData.value = result.cachedData
+                    }
+                    _syncStatus.value = com.jetbrains.kmpapp.screens.components.SyncStatusState.Error(result.code, result.message)
+                }
+            }
 
             _isLoading.value = false
             _isRefreshing.value = false

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -100,26 +100,42 @@ fun AddScheduleBottomSheet(
     }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            focusManager.clearFocus()
+            onDismiss()
+        },
         sheetState = sheetState,
+        dragHandle = { androidx.compose.material3.BottomSheetDefaults.DragHandle() },
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = modifier
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.88f)
-                .padding(horizontal = 20.dp, vertical = 6.dp)
+                .navigationBarsPadding()
+                .imePadding()
+                .heightIn(min = 320.dp, max = 640.dp)
+                .padding(horizontal = 20.dp, vertical = 4.dp)
         ) {
-            // Header (without close button since swipe-to-dismiss handles it cleanly)
-            Text(
-                text = "Добавить расписание",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Добавить расписание",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = {
+                    focusManager.clearFocus()
+                    onDismiss()
+                }) {
+                    Icon(Icons.Default.Close, contentDescription = "Закрыть")
+                }
+            }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Search input with auto-focus and compact placeholder
             OutlinedTextField(
@@ -223,6 +239,7 @@ fun AddScheduleBottomSheet(
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(MaterialTheme.colorScheme.surfaceContainer)
                                 .clickable {
+                                    focusManager.clearFocus()
                                     onSelectTarget(item)
                                     onDismiss()
                                 }

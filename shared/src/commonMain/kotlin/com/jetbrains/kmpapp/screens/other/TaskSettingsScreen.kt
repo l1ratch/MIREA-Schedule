@@ -1,7 +1,5 @@
-﻿package com.jetbrains.kmpapp.screens.other
+package com.jetbrains.kmpapp.screens.other
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,19 +16,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -39,20 +34,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jetbrains.kmpapp.data.model.TaskPriority
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
@@ -66,13 +57,11 @@ fun TaskSettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
 
-    val availableSubjects by tasksViewModel.availableSubjects.collectAsState()
+    val subjects by tasksViewModel.subjects.collectAsState()
+    val tasks by tasksViewModel.tasks.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var selectedSubject by remember { mutableStateOf(availableSubjects.firstOrNull() ?: "") }
-    var labCount by remember { mutableIntStateOf(8) }
-    var selectedPriority by remember { mutableStateOf(TaskPriority.MEDIUM) }
     var showClearDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -111,127 +100,61 @@ fun TaskSettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Section 1: Batch Generator
+            // Section 1: Overview stats
             TaskSettingsCard(
-                title = "Генератор лабораторных работ",
-                subtitle = "Автоматическое создание серии лабораторных по предмету с готовыми этапами выполнения",
-                icon = Icons.Default.Science
+                title = "Статистика трекера",
+                subtitle = "Информация о сохраненных предметах и задачах",
+                icon = Icons.Default.Info
             ) {
-                Text("Дисциплина", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = selectedSubject,
-                    onValueChange = { selectedSubject = it },
-                    placeholder = { Text("Название предмета") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (availableSubjects.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        availableSubjects.forEach { subj ->
-                            FilterChip(
-                                selected = selectedSubject.equals(subj, ignoreCase = true),
-                                onClick = { selectedSubject = subj },
-                                label = { Text(subj, fontSize = 11.sp) },
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Создано предметов:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${subjects.size}", fontWeight = FontWeight.Bold)
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text("Количество работ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    listOf(4, 6, 8, 10, 12).forEach { count ->
-                        FilterChip(
-                            selected = labCount == count,
-                            onClick = { labCount = count },
-                            label = {
-                                Text(
-                                    text = "$count",
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Text("Всего задач:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${tasks.size}", fontWeight = FontWeight.Bold)
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text("Приоритет по умолчанию", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    TaskPriority.entries.forEach { prio ->
-                        FilterChip(
-                            selected = selectedPriority == prio,
-                            onClick = { selectedPriority = prio },
-                            label = {
-                                Text(
-                                    text = prio.displayName,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = {
-                        val subj = selectedSubject.trim().ifBlank { "Лабораторные работы" }
-                        tasksViewModel.createBatchLabs(subj, labCount, selectedPriority)
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Создано $labCount лабораторных по «$subj»")
-                        }
-                    },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Создать $labCount лабораторных работ", fontWeight = FontWeight.Bold)
+                    Text("Зачтено:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${tasks.count { it.status.isFinished }}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             }
 
-            // Section 2: Data Management
+            // Section 2: Clear Data
             TaskSettingsCard(
-                title = "Управление данными",
-                subtitle = "Очистка базы задач и сброс прогресса",
+                title = "Очистка данных",
+                subtitle = "Удаление всех сохраненных предметов, задач и чеклистов",
                 icon = Icons.Default.DeleteSweep
             ) {
+                Text(
+                    text = "Действие необратимо. Будут удалены все добавленные вами предметы и задания.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Button(
                     onClick = { showClearDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Очистить все задачи",
+                        text = "Очистить все задачи и предметы",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -245,15 +168,15 @@ fun TaskSettingsScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Очистить все задачи?") },
-            text = { Text("Все сохраненные задачи, подзадачи и чеклисты будут безвозвратно удалены.") },
+            title = { Text("Очистить все задачи и предметы?") },
+            text = { Text("Все сохраненные предметы, задачи, подзадачи и чеклисты будут безвозвратно удалены.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        tasksViewModel.clearAllTasks()
+                        tasksViewModel.clearAllData()
                         showClearDialog = false
                         scope.launch {
-                            snackbarHostState.showSnackbar("Все задачи удалены")
+                            snackbarHostState.showSnackbar("Все данные задач очищены")
                         }
                     }
                 ) {

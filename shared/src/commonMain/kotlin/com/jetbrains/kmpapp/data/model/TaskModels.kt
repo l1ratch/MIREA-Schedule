@@ -1,6 +1,52 @@
-﻿package com.jetbrains.kmpapp.data.model
+package com.jetbrains.kmpapp.data.model
 
 import kotlinx.serialization.Serializable
+
+@Serializable
+enum class SubjectImportance(
+    val displayName: String,
+    val order: Int
+) {
+    CRITICAL("Критичный", 0),
+    HIGH("Высокий", 1),
+    MEDIUM("Средний", 2),
+    LOW("Обычный", 3);
+}
+
+@Serializable
+enum class AssessmentType(
+    val displayName: String
+) {
+    EXAM("Экзамен"),
+    TEST("Зачет"),
+    DIFF_TEST("Диф. зачет"),
+    COURSE_WORK("Курсовая"),
+    CREDIT("Практика");
+}
+
+val DefaultSubjectColors = listOf(
+    "#00E5FF", // Cyan
+    "#BF5AF2", // Purple
+    "#30D158", // Emerald
+    "#FF9F0A", // Sunset Orange
+    "#0A84FF", // Electric Blue
+    "#FF375F", // Neon Pink
+    "#5E5CE6", // Royal Indigo
+    "#FFD60A"  // Amber Yellow
+)
+
+@Serializable
+data class Subject(
+    val id: String,
+    val name: String,
+    val shortCode: String,
+    val colorHex: String = "#00E5FF",
+    val importance: SubjectImportance = SubjectImportance.MEDIUM,
+    val assessmentType: AssessmentType = AssessmentType.EXAM,
+    val teacherName: String = "",
+    val roomOrLink: String = "",
+    val notes: String = ""
+)
 
 @Serializable
 enum class TaskPriority(
@@ -50,7 +96,8 @@ data class Subtask(
 @Serializable
 data class StudyTask(
     val id: String,
-    val subjectTitle: String,
+    val subjectId: String = "",
+    val subjectTitle: String = "",
     val title: String,
     val taskDescription: String = "",
     val category: TaskCategory = TaskCategory.LAB,
