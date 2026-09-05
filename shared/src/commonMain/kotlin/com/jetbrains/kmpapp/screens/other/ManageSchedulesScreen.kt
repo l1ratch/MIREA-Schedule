@@ -27,7 +27,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -186,7 +189,7 @@ fun ManageSchedulesScreen(
                     Box {
                         IconButton(onClick = { sortMenuExpanded = true }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Sort,
+                                imageVector = SortIcon,
                                 contentDescription = "Сортировка",
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -337,4 +340,35 @@ fun ManageSchedulesScreen(
             }
         )
     }
+}
+
+private val SortIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "Sort",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).path(
+        fill = SolidColor(Color.Black)
+    ) {
+        moveTo(3f, 18f)
+        horizontalLineTo(9f)
+        verticalLineToRelative(-2f)
+        horizontalLineTo(3f)
+        verticalLineToRelative(2f)
+        close()
+        moveTo(3f, 6f)
+        verticalLineToRelative(2f)
+        horizontalLineToRelative(18f)
+        verticalLineTo(6f)
+        horizontalLineTo(3f)
+        close()
+        moveTo(3f, 13f)
+        horizontalLineToRelative(12f)
+        verticalLineToRelative(-2f)
+        horizontalLineTo(3f)
+        verticalLineToRelative(2f)
+        close()
+    }.build()
 }
