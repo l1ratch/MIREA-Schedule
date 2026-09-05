@@ -192,7 +192,7 @@ private fun ScheduleMainContent(
                     selectedDate = selectedDate,
                     onDateSelected = { viewModel.selectDate(it) },
                     lessonSummaries = dayLessonSummaries,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
+                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                 )
 
                 // Pull-to-refresh container on outer level for natural gesture handling

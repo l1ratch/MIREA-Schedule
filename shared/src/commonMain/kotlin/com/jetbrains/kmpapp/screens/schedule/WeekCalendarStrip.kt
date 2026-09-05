@@ -172,46 +172,22 @@ fun WeekCalendarStrip(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+
                 weekDates.forEach { date ->
                     val isSelected = date == selectedDate
                     val isToday = date == today
-
-                    // Selected has full priority. If selected today, uses primary.
-                    // If today but not selected, uses secondary/tertiary container highlight.
-                    val targetBgColor = when {
-                        isSelected -> MaterialTheme.colorScheme.primary
-                        isToday -> MaterialTheme.colorScheme.secondaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceContainer
-                    }
-
-                    val targetTextColor = when {
-                        isSelected -> MaterialTheme.colorScheme.onPrimary
-                        isToday -> MaterialTheme.colorScheme.onSecondaryContainer
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-
-                    val bgColor by animateColorAsState(targetBgColor)
-                    val textColor by animateColorAsState(targetTextColor)
-
                     val summary = lessonSummaries[date]
+                    val lessonTypes = summary?.lessonTypes ?: emptyList()
+                    val row1 = lessonTypes.take(5)
+                    val row2 = lessonTypes.drop(5).take(5)
 
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .height(64.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(bgColor)
-                            .then(
-                                if (isToday && !isSelected) {
-                                    Modifier.border(
-                                        width = 1.5.dp,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                        shape = RoundedCornerShape(14.dp)
-                                    )
-                                } else Modifier
-                            )
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { onDateSelected(date) }
                             .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -219,48 +195,116 @@ fun WeekCalendarStrip(
                     ) {
                         Text(
                             text = DateUtils.formatDayOfWeekShort(date.dayOfWeek),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isSelected) textColor.copy(alpha = 0.85f)
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 11.5.sp,
+                            fontWeight = if (isSelected || isToday) FontWeight.SemiBold else FontWeight.Medium,
+                            color = when {
+                                isSelected -> MaterialTheme.colorScheme.primary
+                                isToday -> MaterialTheme.colorScheme.primary
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
-                        Spacer(modifier = Modifier.height(1.dp))
-                        Text(
-                            text = date.day.toString(),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor
-                        )
+
                         Spacer(modifier = Modifier.height(3.dp))
 
-                        // Colored indicator dots matching lesson cards (1 dot per lesson)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(2.5.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.height(6.dp)
-                        ) {
-                            if (summary != null && summary.lessonTypes.isNotEmpty()) {
-                                summary.lessonTypes.take(7).forEach { lessonType ->
-                                    val dotColor = when (lessonType) {
-                                        com.jetbrains.kmpapp.data.model.LessonType.LECTURE -> Color(0xFF38BDF8) // Небесно-голубой
-                                        com.jetbrains.kmpapp.data.model.LessonType.PRACTICE -> Color(0xFF4ADE80) // Зеленый
-                                        com.jetbrains.kmpapp.data.model.LessonType.LAB -> Color(0xFFFB923C) // Оранжевый
-                                        com.jetbrains.kmpapp.data.model.LessonType.OTHER -> Color(0xFFC084FC) // Фиолетовый
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .then(
+                                    when {
+                                        isSelected -> Modifier.background(MaterialTheme.colorScheme.primary)
+                                        isToday -> Modifier
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                                            .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                        else -> Modifier
                                     }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(5.dp)
-                                            .clip(CircleShape)
-                                            .background(dotColor)
-                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = date.day.toString(),
+                                fontSize = 14.5.sp,
+                                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.SemiBold,
+                                color = when {
+                                    isSelected -> MaterialTheme.colorScheme.onPrimary
+                                    isToday -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface
                                 }
-                            } else {
-                                Spacer(modifier = Modifier.size(5.dp))
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(5.dp))
+
+                        // Colored indicator dots matching lesson cards (1 dot per lesson)
+                        // Centered horizontally, wrap to row 2 if > 5 dots
+                        Column(
+                            modifier = Modifier.height(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (row1.isNotEmpty()) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.5.dp, Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    row1.forEach { lessonType ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(4.5.dp)
+                                                .clip(CircleShape)
+                                                .background(getLessonDotColor(lessonType, isDark))
+                                        )
+                                    }
+                                }
+                            }
+                            if (row2.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(2.5.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.5.dp, Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    row2.forEach { lessonType ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(4.5.dp)
+                                                .clip(CircleShape)
+                                                .background(getLessonDotColor(lessonType, isDark))
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+        androidx.compose.material3.HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            thickness = 0.6.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+    }
+}
+
+private fun getLessonDotColor(type: com.jetbrains.kmpapp.data.model.LessonType, isDark: Boolean): Color {
+    return if (isDark) {
+        when (type) {
+            com.jetbrains.kmpapp.data.model.LessonType.LECTURE -> Color(0xFF38BDF8)
+            com.jetbrains.kmpapp.data.model.LessonType.PRACTICE -> Color(0xFF4ADE80)
+            com.jetbrains.kmpapp.data.model.LessonType.LAB -> Color(0xFFFB923C)
+            com.jetbrains.kmpapp.data.model.LessonType.OTHER -> Color(0xFFC084FC)
+        }
+    } else {
+        when (type) {
+            com.jetbrains.kmpapp.data.model.LessonType.LECTURE -> Color(0xFF0284C7)
+            com.jetbrains.kmpapp.data.model.LessonType.PRACTICE -> Color(0xFF16A34A)
+            com.jetbrains.kmpapp.data.model.LessonType.LAB -> Color(0xFFEA580C)
+            com.jetbrains.kmpapp.data.model.LessonType.OTHER -> Color(0xFF9333EA)
         }
     }
 }

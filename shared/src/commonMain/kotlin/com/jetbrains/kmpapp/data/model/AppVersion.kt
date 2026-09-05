@@ -2,7 +2,7 @@ package com.jetbrains.kmpapp.data.model
 
 object AppVersion {
     const val VERSION_NAME = "26.9.0"
-    const val BUILD_NUMBER = 18
+    const val BUILD_NUMBER = 19
     const val APPLICATION_ID = "ru.l1ratch.mireaschedule"
     const val DISPLAY_VERSION = "Версия $VERSION_NAME (сборка $BUILD_NUMBER)"
     const val GITHUB_REPO = "l1ratch/MIREA-Schedule"

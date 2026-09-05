@@ -176,6 +176,7 @@ class ScheduleStorage(
         }
         _cachedLessons.update { map -> map - targetId }
         platformStorage.remove(KEY_LESSONS_PREFIX + targetId)
+        platformStorage.remove(KEY_LAST_SYNC_PREFIX + targetId)
         persistTargets()
     }
 
@@ -208,10 +209,26 @@ class ScheduleStorage(
         return _cachedLessons.value[targetId]
     }
 
+    fun getLastSyncTime(targetId: Int): Long {
+        val str = platformStorage.getString(KEY_LAST_SYNC_PREFIX + targetId)
+        return str?.toLongOrNull() ?: 0L
+    }
+
+    fun setLastSyncTime(targetId: Int, time: Long) {
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_LAST_SYNC_PREFIX + targetId, time.toString())
+            } catch (e: Exception) {
+                println("Failed to persist lastSyncTime for $targetId: ${e.message}")
+            }
+        }
+    }
+
     fun clearCache() {
         _cachedLessons.value = emptyMap()
         for (target in _savedTargets.value) {
             platformStorage.remove(KEY_LESSONS_PREFIX + target.id)
+            platformStorage.remove(KEY_LAST_SYNC_PREFIX + target.id)
         }
     }
 
@@ -280,6 +297,7 @@ class ScheduleStorage(
         private const val KEY_SAVED_TARGETS = "mirea_saved_targets"
         private const val KEY_SELECTED_TARGET_ID = "mirea_selected_target_id"
         private const val KEY_LESSONS_PREFIX = "mirea_lessons_"
+        private const val KEY_LAST_SYNC_PREFIX = "mirea_last_sync_"
         private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
         private const val KEY_APP_THEME = "mirea_app_theme"
         private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"

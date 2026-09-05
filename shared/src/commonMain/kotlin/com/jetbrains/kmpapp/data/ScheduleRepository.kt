@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 class ScheduleRepository(
     private val api: MireaScheduleApi,
@@ -84,9 +85,20 @@ class ScheduleRepository(
         scope.launch {
             storage.selectedTarget.collect { target ->
                 if (target != null) {
-                    val hasCached = storage.getLessons(target.id) != null
-                    // Silent refresh in background if cache is already present, otherwise show loading
-                    refreshSchedule(target, silent = hasCached)
+                    val cached = storage.getLessons(target.id)
+                    val hasCached = cached != null && cached.isNotEmpty()
+                    val lastSync = storage.getLastSyncTime(target.id)
+                    val now = Clock.System.now().toEpochMilliseconds()
+                    val isFresh = (now - lastSync) < 30 * 60 * 1000L // 30 minutes TTL
+
+                    if (!hasCached) {
+                        // First load for this target: fetch from network with loading indicator
+                        refreshSchedule(target, silent = false)
+                    } else if (!isFresh) {
+                        // Cache present but older than 30 minutes: silent background refresh
+                        refreshSchedule(target, silent = true)
+                    }
+                    // Otherwise: cache is fresh (< 30 min), do not make network call!
                 }
             }
         }
@@ -133,6 +145,8 @@ class ScheduleRepository(
             val parsedLessons = MireaICalParser.parse(ical)
             val oldLessons = storage.getLessons(target.id)
             storage.saveLessons(target.id, parsedLessons)
+            val now = Clock.System.now().toEpochMilliseconds()
+            storage.setLastSyncTime(target.id, now)
             _errorMessage.value = null
             if (!silent) {
                 _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Success()
@@ -147,12 +161,11 @@ class ScheduleRepository(
         } catch (e: Exception) {
             println("refreshSchedule error for ${target.targetTitle}: ${e.message}")
             val code = com.jetbrains.kmpapp.data.model.AppErrorCode.fromException(e)
-            if (!silent) {
-                _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Error(code)
-            }
-            // Only show user-facing error if we don't have cached lessons
-            val hasCached = storage.getLessons(target.id) != null
-            if (!hasCached && !silent) {
+            _refreshStatus.value = com.jetbrains.kmpapp.data.model.RefreshStatus.Error(code)
+            // Only show user-facing full-screen error if there is NO cached data at all
+            val cached = storage.getLessons(target.id)
+            val hasCached = cached != null && cached.isNotEmpty()
+            if (!hasCached) {
                 _errorMessage.value = "Ошибка (${code.code}): ${code.shortTitle}"
             }
         } finally {
