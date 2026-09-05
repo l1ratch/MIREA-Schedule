@@ -23,6 +23,8 @@ jobs:
           python-version: '3.12'
 
       - name: 🔨 Run Free Rooms Builder
+        env:
+          RU_PROXY: ${{ secrets.RU_PROXY }}
         run: |
           python tools/free_rooms_builder/build_free_rooms.py
 

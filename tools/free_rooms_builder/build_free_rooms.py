@@ -41,6 +41,46 @@ BELL_SLOTS = [
     {"bell": 7, "start": "19:40", "end": "21:10"},
 ]
 
+def parse_proxy_url(raw_proxy: str) -> Optional[str]:
+    """
+    Принимает строку прокси любого вида:
+      - 'ip:port:user:pass' -> 'http://user:pass@ip:port'
+      - 'user:pass@ip:port' -> 'http://user:pass@ip:port'
+      - 'ip:port' -> 'http://ip:port'
+      - 'http://user:pass@ip:port'
+    """
+    if not raw_proxy:
+        return None
+    s = raw_proxy.strip()
+    if not s:
+        return None
+    if "://" in s:
+        return s
+    parts = s.split(":")
+    if len(parts) == 4:
+        ip, port, user, pwd = parts
+        return f"http://{user}:{pwd}@{ip}:{port}"
+    elif len(parts) == 2:
+        ip, port = parts
+        return f"http://{ip}:{port}"
+    return f"http://{s}"
+
+def setup_global_opener():
+    """Настраивает urllib opener с поддержкой RU_PROXY при наличии."""
+    raw_proxy = os.environ.get("RU_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+    proxy_url = parse_proxy_url(raw_proxy)
+    if proxy_url:
+        masked = re.sub(r':([^:@]+)@', ':****@', proxy_url)
+        print(f"[Proxy] Использование прокси: {masked}")
+        proxy_handler = urllib.request.ProxyHandler({
+            "http": proxy_url,
+            "https": proxy_url,
+        })
+        opener = urllib.request.build_opener(proxy_handler)
+        urllib.request.install_opener(opener)
+    else:
+        print("[Proxy] Прокси не задан, прямые сетевые запросы.")
+
 def get_bell_number(hhmm: str) -> int:
     """Определение номера пары по времени начала занятия."""
     if hhmm < "10:35":
@@ -102,12 +142,16 @@ def discover_all_classrooms() -> List[Dict]:
     rooms_by_id = {}
     print(f"Поиск аудиторий по {len(search_queries)} шаблонам...")
 
+    last_err = None
     for q in search_queries:
         encoded_q = urllib.parse.quote(q)
         url = f"{BASE_API_URL}/search?match={encoded_q}&limit=100"
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        req = urllib.request.Request(url, headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json"
+        })
         try:
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 for item in data.get("data", []):
                     # scheduleTarget 3 означает Auditorium
@@ -115,8 +159,12 @@ def discover_all_classrooms() -> List[Dict]:
                         rid = item["id"]
                         if rid not in rooms_by_id:
                             rooms_by_id[rid] = item
-        except Exception:
+        except Exception as e:
+            last_err = e
             continue
+
+    if not rooms_by_id and last_err:
+        print(f"[Внимание] Ошибка при поиске аудиторий: {last_err}")
 
     rooms_list = list(rooms_by_id.values())
     print(f"Найдено уникальных аудиторий: {len(rooms_list)}")
@@ -242,11 +290,14 @@ def fetch_room_schedule(room: Dict, start_range: datetime.date, end_range: datet
         return None
 
     url = f"{BASE_API_URL}/ical/3/{rid}"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    req = urllib.request.Request(url, headers={
+        "User-Agent": USER_AGENT,
+        "Accept": "text/calendar, application/json, */*"
+    })
 
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:
                 raw_ical = resp.read().decode("utf-8")
                 busy_schedule = parse_room_ical(raw_ical, start_range, end_range)
                 return {
@@ -283,6 +334,8 @@ def fetch_room_schedule(room: Dict, start_range: datetime.date, end_range: datet
 
 def main():
     print("=== Начало построения базы свободных аудиторий ===")
+    setup_global_opener()
+
     today = datetime.date.today()
     # Расписание на следующие 30 дней вперед
     start_range = today
@@ -290,8 +343,11 @@ def main():
     print(f"Период расчета: с {start_range} по {end_range}")
 
     rooms_meta = discover_all_classrooms()
-    processed_rooms = []
+    if not rooms_meta:
+        print("[Ошибка] Не удалось получить аудитории от сервера МИРЭА (возможна гео-блокировка или недоступность сети).")
+        sys.exit(1)
 
+    processed_rooms = []
     print(f"Загрузка iCal и расчет занятости для {len(rooms_meta)} аудиторий (concurrency=8)...")
     start_time = time.time()
 
