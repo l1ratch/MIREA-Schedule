@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp
+package com.jetbrains.kmpapp
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,10 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private val LightColors = lightColorScheme(
@@ -58,7 +62,16 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun App() {
-    val isDark = isSystemInDarkTheme()
+    val repository: ScheduleRepository = koinInject()
+    val themeMode by repository.themeMode.collectAsState()
+
+    val systemDark = isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        ThemeMode.SYSTEM -> systemDark
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
     val colors = if (isDark) DarkColors else LightColors
 
     MaterialTheme(colorScheme = colors) {

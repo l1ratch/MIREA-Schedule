@@ -64,7 +64,8 @@ class ScheduleViewModel(
                 }
             } else {
                 val result = mutableListOf<ScheduleSlot>()
-                for (b in minBell..maxBell) {
+                val upperBell = maxOf(maxBell, 1)
+                for (b in 1..upperBell) {
                     val items = bellMap[b]
                     if (!items.isNullOrEmpty()) {
                         val first = items.first()
@@ -89,6 +90,7 @@ class ScheduleViewModel(
                 }
                 result
             }
+
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 

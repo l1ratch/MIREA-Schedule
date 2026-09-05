@@ -28,11 +28,13 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -89,6 +91,7 @@ private fun OtherMainContent(
 ) {
     val savedTargets by viewModel.savedTargets.collectAsState()
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
 
     Scaffold(
         topBar = {
@@ -192,6 +195,50 @@ private fun OtherMainContent(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        // Theme selector
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "Тема оформления",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Выберите оформление интерфейса",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                com.jetbrains.kmpapp.data.model.ThemeMode.entries.forEach { mode ->
+                                    FilterChip(
+                                        selected = themeMode == mode,
+                                        onClick = { viewModel.setThemeMode(mode) },
+                                        label = {
+                                            Text(
+                                                text = mode.displayName,
+                                                fontSize = 13.sp,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+
+                        androidx.compose.material3.HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -219,6 +266,7 @@ private fun OtherMainContent(
                     }
                 }
             }
+
 
             // About section
             item {

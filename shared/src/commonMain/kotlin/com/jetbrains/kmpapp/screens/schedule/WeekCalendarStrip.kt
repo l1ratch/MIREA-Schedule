@@ -64,22 +64,27 @@ fun WeekCalendarStrip(
 
     LaunchedEffect(selectedMonday) {
         val currentMonday = baseMonday.plus(DatePeriod(days = (pagerState.currentPage - BASE_PAGE) * 7))
-        if (currentMonday != selectedMonday) {
+        if (currentMonday != selectedMonday && !pagerState.isScrollInProgress) {
             pagerState.animateScrollToPage(targetPage)
         }
     }
 
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
+        snapshotFlow { pagerState.settledPage }.collect { page ->
             val pageMonday = baseMonday.plus(DatePeriod(days = (page - BASE_PAGE) * 7))
             val currentSelectedMonday = DateUtils.getWeekDates(selectedDate).first()
             if (pageMonday != currentSelectedMonday) {
-                val dayOffset = selectedDate.dayOfWeek.ordinal
-                val newSelectedDate = pageMonday.plus(DatePeriod(days = dayOffset))
+                val newSelectedDate = if (pageMonday == baseMonday) {
+                    today
+                } else {
+                    val dayOffset = selectedDate.dayOfWeek.ordinal
+                    pageMonday.plus(DatePeriod(days = dayOffset))
+                }
                 onDateSelected(newSelectedDate)
             }
         }
     }
+
 
     // Active displayed week Monday
     val currentWeekMonday = baseMonday.plus(DatePeriod(days = (pagerState.currentPage - BASE_PAGE) * 7))

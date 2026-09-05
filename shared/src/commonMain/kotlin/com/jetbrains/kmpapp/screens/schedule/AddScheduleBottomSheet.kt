@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -41,7 +43,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
@@ -61,12 +65,13 @@ fun AddScheduleBottomSheet(
     var results by remember { mutableStateOf<List<ScheduleTarget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<ScheduleTargetType?>(null) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(query) {
         val trimmed = query.trim()
         if (trimmed.isNotEmpty()) {
             isLoading = true
-            delay(250) // Debounce
+            delay(200) // Debounce
             results = onSearch(trimmed)
             isLoading = false
         } else {
@@ -86,11 +91,12 @@ fun AddScheduleBottomSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = modifier
     ) {
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 20.dp, vertical = 6.dp)
         ) {
             // Header
             Row(
@@ -108,7 +114,7 @@ fun AddScheduleBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Search input
             OutlinedTextField(
@@ -116,8 +122,22 @@ fun AddScheduleBottomSheet(
                 onValueChange = { query = it },
                 placeholder = { Text("Например: ИКБО-10-23, Иванов...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { query = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = "Очистить")
+                        }
+                    }
+                },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                    autoCorrectEnabled = false
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = { focusManager.clearFocus() }
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -143,19 +163,19 @@ fun AddScheduleBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Results / Loading
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
+                    modifier = Modifier.fillMaxWidth().height(140.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(36.dp))
                 }
             } else if (filteredResults.isEmpty() && query.trim().isNotEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
+                    modifier = Modifier.fillMaxWidth().height(140.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -165,7 +185,7 @@ fun AddScheduleBottomSheet(
                 }
             } else if (query.trim().isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
+                    modifier = Modifier.fillMaxWidth().height(140.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -178,8 +198,7 @@ fun AddScheduleBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 450.dp)
-                        .imePadding(),
+                        .heightIn(max = 380.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(filteredResults, key = { "${it.type}_${it.id}" }) { item ->

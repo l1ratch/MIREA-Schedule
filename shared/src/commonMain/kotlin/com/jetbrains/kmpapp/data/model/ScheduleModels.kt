@@ -94,3 +94,24 @@ sealed class ScheduleSlot {
     ) : ScheduleSlot()
 }
 
+enum class ThemeMode(val displayName: String) {
+    SYSTEM("Авто"),
+    LIGHT("Светлая"),
+    DARK("Тёмная")
+}
+
+fun calculateBreakMinutes(endPrev: String, startNext: String): Int {
+    val endParts = endPrev.split(':')
+    val startParts = startNext.split(':')
+    if (endParts.size != 2 || startParts.size != 2) return 0
+    val endHour = endParts[0].toIntOrNull() ?: return 0
+    val endMin = endParts[1].toIntOrNull() ?: return 0
+    val startHour = startParts[0].toIntOrNull() ?: return 0
+    val startMin = startParts[1].toIntOrNull() ?: return 0
+    val endTotal = endHour * 60 + endMin
+    val startTotal = startHour * 60 + startMin
+    val diff = startTotal - endTotal
+    return if (diff > 0) diff else 0
+}
+
+

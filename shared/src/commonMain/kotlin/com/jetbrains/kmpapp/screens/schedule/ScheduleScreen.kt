@@ -109,13 +109,16 @@ private fun ScheduleMainContent(
                 ScheduleTopBar(
                     selectedTarget = selectedTarget,
                     savedTargets = savedTargets,
+                    isLoading = isLoading,
                     onSelectTarget = { viewModel.selectTarget(it) },
+                    onRefreshClick = { viewModel.refresh() },
                     onAddClick = { showAddSheet = true }
                 )
 
                 if (isLoading) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
+
             }
         },
         modifier = modifier.fillMaxSize()
@@ -258,23 +261,31 @@ private fun ScheduleMainContent(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp)
                             ) {
-                                items(
-                                    items = daySlots,
-                                    key = { slot ->
-                                        when (slot) {
-                                            is ScheduleSlot.Active -> "active_${slot.bellNumber}_${slot.lessons.firstOrNull()?.id}"
-                                            is ScheduleSlot.Empty -> "empty_${slot.bellNumber}"
+                                daySlots.forEachIndexed { index, slot ->
+                                    if (index > 0) {
+                                        val prevSlot = daySlots[index - 1]
+                                        val breakMin = com.jetbrains.kmpapp.data.model.calculateBreakMinutes(prevSlot.endTime, slot.startTime)
+                                        if (breakMin > 0) {
+                                            item(key = "break_${prevSlot.bellNumber}_${slot.bellNumber}") {
+                                                LessonBreakIndicator(breakMinutes = breakMin)
+                                            }
                                         }
                                     }
-                                ) { slot ->
-                                    ScheduleSlotCard(
-                                        slot = slot,
-                                        onLessonClick = { lesson ->
-                                            viewModel.selectLessonForDetail(lesson)
-                                        }
-                                    )
+                                    val slotKey = when (slot) {
+                                        is ScheduleSlot.Active -> "active_${slot.bellNumber}_${slot.lessons.firstOrNull()?.id}"
+                                        is ScheduleSlot.Empty -> "empty_${slot.bellNumber}"
+                                    }
+                                    item(key = slotKey) {
+                                        ScheduleSlotCard(
+                                            slot = slot,
+                                            onLessonClick = { lesson ->
+                                                viewModel.selectLessonForDetail(lesson)
+                                            }
+                                        )
+                                    }
                                 }
                             }
+
                         }
                     }
                 }

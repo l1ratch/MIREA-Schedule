@@ -3,6 +3,7 @@ package com.jetbrains.kmpapp.data
 import com.jetbrains.kmpapp.data.api.MireaScheduleApi
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.data.parser.MireaICalParser
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +26,7 @@ class ScheduleRepository(
     val savedTargets: StateFlow<List<ScheduleTarget>> = storage.savedTargets
     val selectedTarget: StateFlow<ScheduleTarget?> = storage.selectedTarget
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
+    val themeMode: StateFlow<ThemeMode> = storage.themeMode
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -36,6 +38,9 @@ class ScheduleRepository(
         storage.setShowEmptyLessons(enabled)
     }
 
+    fun setThemeMode(mode: ThemeMode) {
+        storage.setThemeMode(mode)
+    }
 
     val currentLessons: StateFlow<List<Lesson>> = combine(
         storage.selectedTarget,
@@ -48,8 +53,10 @@ class ScheduleRepository(
     init {
         scope.launch {
             storage.selectedTarget.collect { target ->
-                if (target != null && storage.getLessons(target.id) == null) {
-                    refreshSchedule(target)
+                if (target != null) {
+                    val hasCached = storage.getLessons(target.id) != null
+                    // Silent refresh in background if cache is already present, otherwise show loading
+                    refreshSchedule(target, silent = hasCached)
                 }
             }
         }
@@ -67,7 +74,7 @@ class ScheduleRepository(
     fun addAndSelectTarget(target: ScheduleTarget) {
         storage.addTarget(target)
         scope.launch {
-            refreshSchedule(target)
+            refreshSchedule(target, silent = false)
         }
     }
 
@@ -82,21 +89,31 @@ class ScheduleRepository(
     fun refreshCurrentSchedule() {
         val current = selectedTarget.value ?: return
         scope.launch {
-            refreshSchedule(current)
+            refreshSchedule(current, silent = false)
         }
     }
 
-    private suspend fun refreshSchedule(target: ScheduleTarget) {
-        _isLoading.value = true
-        _errorMessage.value = null
+    private suspend fun refreshSchedule(target: ScheduleTarget, silent: Boolean = false) {
+        if (!silent) {
+            _isLoading.value = true
+            _errorMessage.value = null
+        }
         try {
             val ical = api.getIcal(target.type, target.id)
             val parsedLessons = MireaICalParser.parse(ical)
             storage.saveLessons(target.id, parsedLessons)
+            _errorMessage.value = null
         } catch (e: Exception) {
-            _errorMessage.value = e.message ?: "Ошибка загрузки расписания"
+            println("refreshSchedule error for ${target.targetTitle}: ${e.message}")
+            // Only show user-facing error if we don't have cached lessons
+            val hasCached = storage.getLessons(target.id) != null
+            if (!hasCached && !silent) {
+                _errorMessage.value = e.message ?: "Ошибка загрузки расписания"
+            }
         } finally {
-            _isLoading.value = false
+            if (!silent) {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -104,7 +121,7 @@ class ScheduleRepository(
         storage.clearCache()
         selectedTarget.value?.let { current ->
             scope.launch {
-                refreshSchedule(current)
+                refreshSchedule(current, silent = false)
             }
         }
     }

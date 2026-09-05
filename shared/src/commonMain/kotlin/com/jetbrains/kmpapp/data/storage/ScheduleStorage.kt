@@ -2,6 +2,7 @@ package com.jetbrains.kmpapp.data.storage
 
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.data.model.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,6 +35,9 @@ class ScheduleStorage(
     private val _showEmptyLessons = MutableStateFlow<Boolean>(false)
     val showEmptyLessons: StateFlow<Boolean> = _showEmptyLessons.asStateFlow()
 
+    private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
     init {
         loadPersistedState()
     }
@@ -41,6 +45,16 @@ class ScheduleStorage(
     private fun loadPersistedState() {
         scope.launch {
             try {
+                // Restore theme mode setting
+                val themeStr = platformStorage.getString(KEY_APP_THEME)
+                if (!themeStr.isNullOrBlank()) {
+                    _themeMode.value = try {
+                        ThemeMode.valueOf(themeStr)
+                    } catch (_: Exception) {
+                        ThemeMode.SYSTEM
+                    }
+                }
+
                 // Restore show empty lessons setting
                 val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
                 if (!showEmptyStr.isNullOrBlank()) {
@@ -80,6 +94,17 @@ class ScheduleStorage(
         }
     }
 
+    fun setThemeMode(mode: ThemeMode) {
+        _themeMode.value = mode
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_APP_THEME, mode.name)
+            } catch (e: Exception) {
+                println("Failed to persist themeMode: ${e.message}")
+            }
+        }
+    }
+
     fun setShowEmptyLessons(enabled: Boolean) {
         _showEmptyLessons.value = enabled
         scope.launch {
@@ -90,6 +115,7 @@ class ScheduleStorage(
             }
         }
     }
+
 
 
     fun addTarget(target: ScheduleTarget) {
@@ -173,6 +199,8 @@ class ScheduleStorage(
         private const val KEY_SELECTED_TARGET_ID = "mirea_selected_target_id"
         private const val KEY_LESSONS_PREFIX = "mirea_lessons_"
         private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
+        private const val KEY_APP_THEME = "mirea_app_theme"
     }
 }
+
 
