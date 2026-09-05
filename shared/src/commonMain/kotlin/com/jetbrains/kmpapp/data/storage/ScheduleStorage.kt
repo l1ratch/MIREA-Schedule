@@ -45,76 +45,78 @@ class ScheduleStorage(
     private val _isSakuraTheme = MutableStateFlow<Boolean>(false)
     val isSakuraTheme: StateFlow<Boolean> = _isSakuraTheme.asStateFlow()
 
+    private val lastSyncTimes = mutableMapOf<Int, Long>()
+
     init {
         loadPersistedState()
     }
 
     private fun loadPersistedState() {
-        scope.launch {
-            try {
-                // Restore theme mode setting
-                val themeStr = platformStorage.getString(KEY_APP_THEME)
-                if (!themeStr.isNullOrBlank()) {
-                    _themeMode.value = try {
-                        ThemeMode.valueOf(themeStr)
-                    } catch (_: Exception) {
-                        ThemeMode.SYSTEM
-                    }
+        try {
+            // Restore theme mode setting
+            val themeStr = platformStorage.getString(KEY_APP_THEME)
+            if (!themeStr.isNullOrBlank()) {
+                _themeMode.value = try {
+                    ThemeMode.valueOf(themeStr)
+                } catch (_: Exception) {
+                    ThemeMode.SYSTEM
                 }
-
-                // Restore show empty lessons setting
-                val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
-                if (!showEmptyStr.isNullOrBlank()) {
-                    _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: false
-                }
-
-                // Restore dock tabs setting
-                val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
-                if (!dockTabsStr.isNullOrBlank()) {
-                    val loaded = dockTabsStr.split(",").mapNotNull { name ->
-                        try { AppTab.valueOf(name.trim()) } catch (_: Exception) { null }
-                    }
-                    _dockTabs.value = sanitizeDockTabs(loaded)
-                } else {
-                    _dockTabs.value = DEFAULT_DOCK_TABS
-                }
-
-                // Restore sakura theme
-                val sakuraStr = platformStorage.getString(KEY_SAKURA_THEME)
-                if (!sakuraStr.isNullOrBlank()) {
-                    _isSakuraTheme.value = sakuraStr.toBooleanStrictOrNull() ?: false
-                }
-
-                // Restore saved targets
-                val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
-                val targets: List<ScheduleTarget> = if (!targetsJson.isNullOrBlank()) {
-                    json.decodeFromString(targetsJson)
-                } else {
-                    emptyList()
-                }
-                _savedTargets.value = targets
-
-                // Restore active target
-                val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
-                val activeId = activeIdStr?.toIntOrNull()
-                val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
-                _selectedTarget.value = selected
-
-                // Restore cached lessons for all saved targets
-                val loadedCache = mutableMapOf<Int, List<Lesson>>()
-                for (target in targets) {
-                    val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
-                    if (!lessonsJson.isNullOrBlank()) {
-                        try {
-                            val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
-                            loadedCache[target.id] = lessons
-                        } catch (_: Exception) {}
-                    }
-                }
-                _cachedLessons.value = loadedCache
-            } catch (e: Exception) {
-                println("ScheduleStorage: failed to load persisted state: ${e.message}")
             }
+
+            // Restore show empty lessons setting
+            val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
+            if (!showEmptyStr.isNullOrBlank()) {
+                _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: false
+            }
+
+            // Restore dock tabs setting
+            val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
+            if (!dockTabsStr.isNullOrBlank()) {
+                val loaded = dockTabsStr.split(",").mapNotNull { name ->
+                    try { AppTab.valueOf(name.trim()) } catch (_: Exception) { null }
+                }
+                _dockTabs.value = sanitizeDockTabs(loaded)
+            } else {
+                _dockTabs.value = DEFAULT_DOCK_TABS
+            }
+
+            // Restore sakura theme
+            val sakuraStr = platformStorage.getString(KEY_SAKURA_THEME)
+            if (!sakuraStr.isNullOrBlank()) {
+                _isSakuraTheme.value = sakuraStr.toBooleanStrictOrNull() ?: false
+            }
+
+            // Restore saved targets
+            val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
+            val targets: List<ScheduleTarget> = if (!targetsJson.isNullOrBlank()) {
+                try { json.decodeFromString(targetsJson) } catch (_: Exception) { emptyList() }
+            } else {
+                emptyList()
+            }
+            _savedTargets.value = targets
+
+            // IMPORTANT: Restore cached lessons for all targets BEFORE setting selected target!
+            val loadedCache = mutableMapOf<Int, List<Lesson>>()
+            for (target in targets) {
+                val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
+                if (!lessonsJson.isNullOrBlank()) {
+                    try {
+                        val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
+                        loadedCache[target.id] = lessons
+                    } catch (_: Exception) {}
+                }
+                val syncTimeStr = platformStorage.getString(KEY_LAST_SYNC_PREFIX + target.id)
+                syncTimeStr?.toLongOrNull()?.let { lastSyncTimes[target.id] = it }
+            }
+            _cachedLessons.value = loadedCache
+
+            // Now that cached lessons and timestamps are ready, restore selected target!
+            val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
+            val activeId = activeIdStr?.toIntOrNull()
+            val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
+            _selectedTarget.value = selected
+        } catch (e: Exception) {
+            println("ScheduleStorage: failed to load persisted state: ${e.message}")
         }
     }
 
@@ -153,7 +155,7 @@ class ScheduleStorage(
     }
 
     private fun sanitizeDockTabs(tabs: List<AppTab>): List<AppTab> {
-        val middle = tabs.filter { !it.isFixed }.distinct()
+        val middle = tabs.filter { !it.isFixed }.distinct().take(3)
         return listOf(AppTab.SCHEDULE) + middle + listOf(AppTab.OTHER)
     }
 
@@ -175,6 +177,7 @@ class ScheduleStorage(
             persistSelectedTargetId(_selectedTarget.value?.id)
         }
         _cachedLessons.update { map -> map - targetId }
+        lastSyncTimes.remove(targetId)
         platformStorage.remove(KEY_LESSONS_PREFIX + targetId)
         platformStorage.remove(KEY_LAST_SYNC_PREFIX + targetId)
         persistTargets()
@@ -210,11 +213,16 @@ class ScheduleStorage(
     }
 
     fun getLastSyncTime(targetId: Int): Long {
+        val cached = lastSyncTimes[targetId]
+        if (cached != null) return cached
         val str = platformStorage.getString(KEY_LAST_SYNC_PREFIX + targetId)
-        return str?.toLongOrNull() ?: 0L
+        val time = str?.toLongOrNull() ?: 0L
+        lastSyncTimes[targetId] = time
+        return time
     }
 
     fun setLastSyncTime(targetId: Int, time: Long) {
+        lastSyncTimes[targetId] = time
         scope.launch {
             try {
                 platformStorage.saveString(KEY_LAST_SYNC_PREFIX + targetId, time.toString())
@@ -226,6 +234,7 @@ class ScheduleStorage(
 
     fun clearCache() {
         _cachedLessons.value = emptyMap()
+        lastSyncTimes.clear()
         for (target in _savedTargets.value) {
             platformStorage.remove(KEY_LESSONS_PREFIX + target.id)
             platformStorage.remove(KEY_LAST_SYNC_PREFIX + target.id)

@@ -33,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -165,6 +166,22 @@ fun DockSettingsScreen(
                     modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
                 )
 
+                val isDockFull = dockTabs.size >= 5
+                if (isDockFull && availableHiddenTabs.isNotEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "В доке может быть максимум 5 разделов. Чтобы добавить раздел, сначала уберите один из текущих.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
                 if (availableHiddenTabs.isEmpty()) {
                     Card(
                         shape = RoundedCornerShape(16.dp),
@@ -188,15 +205,18 @@ fun DockSettingsScreen(
                     availableHiddenTabs.forEach { tab ->
                         HiddenTabItemCard(
                             tab = tab,
+                            canAdd = !isDockFull,
                             onAdd = {
-                                val mutable = dockTabs.toMutableList()
-                                val otherIndex = mutable.indexOf(AppTab.OTHER)
-                                if (otherIndex >= 0) {
-                                    mutable.add(otherIndex, tab)
-                                } else {
-                                    mutable.add(tab)
+                                if (!isDockFull) {
+                                    val mutable = dockTabs.toMutableList()
+                                    val otherIndex = mutable.indexOf(AppTab.OTHER)
+                                    if (otherIndex >= 0) {
+                                        mutable.add(otherIndex, tab)
+                                    } else {
+                                        mutable.add(tab)
+                                    }
+                                    viewModel.setDockTabs(mutable)
                                 }
-                                viewModel.setDockTabs(mutable)
                             }
                         )
                     }
@@ -336,6 +356,7 @@ private fun ActiveTabItemCard(
 @Composable
 private fun HiddenTabItemCard(
     tab: AppTab,
+    canAdd: Boolean = true,
     onAdd: () -> Unit
 ) {
     Card(
@@ -378,18 +399,21 @@ private fun HiddenTabItemCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Нажмите +, чтобы добавить в док",
+                        text = if (canAdd) "Нажмите +, чтобы добавить в док" else "Лимит 5 разделов достигнут",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (canAdd) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
                     )
                 }
             }
 
             FilledIconButton(
                 onClick = onAdd,
+                enabled = canAdd,
                 colors = IconButtonDefaults.filledIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                 ),
                 modifier = Modifier.size(34.dp)
             ) {

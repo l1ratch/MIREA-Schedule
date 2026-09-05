@@ -24,6 +24,10 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -32,6 +36,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,11 +46,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jetbrains.kmpapp.data.TaskRepository
+import com.jetbrains.kmpapp.data.model.AssessmentType
 import com.jetbrains.kmpapp.data.model.DateUtils
+import com.jetbrains.kmpapp.data.model.DefaultSubjectColors
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.LessonType
+import com.jetbrains.kmpapp.data.model.Subject
+import com.jetbrains.kmpapp.data.model.SubjectImportance
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
+import org.koin.compose.koinInject
+import kotlin.time.Clock
 
 @Composable
 fun LessonDetailScreen(
@@ -53,6 +66,9 @@ fun LessonDetailScreen(
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
+    val taskRepository: TaskRepository = koinInject()
+    val subjects by taskRepository.subjects.collectAsState()
+    val isAlreadyAdded = subjects.any { it.name.trim().equals(lesson.subject.trim(), ignoreCase = true) }
 
     val (typeBg, typeTextColor) = when (lesson.lessonType) {
         LessonType.LECTURE -> Color(0xFFE0F2FE) to Color(0xFF0369A1)
@@ -202,6 +218,61 @@ fun LessonDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    if (!isAlreadyAdded) {
+                        val words = lesson.subject.split(" ", "-", "_").filter { it.isNotBlank() }
+                        val shortCode = if (words.size > 1) {
+                            words.mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(4).joinToString("")
+                        } else {
+                            lesson.subject.take(3).uppercase()
+                        }
+                        val colorIdx = (lesson.subject.hashCode().and(0x7fffffff)) % DefaultSubjectColors.size
+                        val newSubject = Subject(
+                            id = Clock.System.now().toEpochMilliseconds().toString(),
+                            name = lesson.subject.trim(),
+                            shortCode = shortCode,
+                            colorHex = DefaultSubjectColors[colorIdx],
+                            importance = SubjectImportance.MEDIUM,
+                            assessmentType = when (lesson.lessonType) {
+                                LessonType.LAB -> AssessmentType.CREDIT
+                                LessonType.PRACTICE -> AssessmentType.TEST
+                                else -> AssessmentType.EXAM
+                            },
+                            teacherName = lesson.teachers.joinToString(", "),
+                            roomOrLink = lesson.classrooms.joinToString(", "),
+                            notes = "Добавлено из расписания"
+                        )
+                        taskRepository.addSubject(newSubject)
+                    }
+                },
+                enabled = !isAlreadyAdded,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Icon(
+                    imageVector = if (isAlreadyAdded) Icons.Default.Check else Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isAlreadyAdded) "Предмет уже в задачах" else "Добавить предмет в задачи",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(40.dp))

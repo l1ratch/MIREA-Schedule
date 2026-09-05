@@ -39,6 +39,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.jetbrains.kmpapp.screens.components.AppTab
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,10 +48,16 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material3.Surface
+
 @Composable
 fun OtherScreen(
     viewModel: OtherViewModel,
     tasksViewModel: com.jetbrains.kmpapp.screens.tasks.TasksViewModel = org.koin.compose.viewmodel.koinViewModel(),
+    onNavigateToTab: (AppTab) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val activeSubScreen by viewModel.activeSubScreen.collectAsState()
@@ -77,7 +85,8 @@ fun OtherScreen(
             OtherSubScreen.ROOT -> {
                 OtherMainContent(
                     viewModel = viewModel,
-                    onNavigate = { viewModel.navigateToSubScreen(it) }
+                    onNavigate = { viewModel.navigateToSubScreen(it) },
+                    onNavigateToTab = onNavigateToTab
                 )
             }
             OtherSubScreen.MANAGE_SCHEDULES -> {
@@ -170,11 +179,16 @@ fun OtherScreen(
 private fun OtherMainContent(
     viewModel: OtherViewModel,
     onNavigate: (OtherSubScreen) -> Unit,
+    onNavigateToTab: (AppTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val savedTargets by viewModel.savedTargets.collectAsState()
     val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
     val updateStatusMessage by viewModel.updateStatusMessage.collectAsState()
+    val dockTabs by viewModel.dockTabs.collectAsState()
+    val hiddenTabs = remember(dockTabs) {
+        AppTab.entries.filter { it != AppTab.OTHER && it !in dockTabs.take(5) }
+    }
 
     Scaffold(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -203,6 +217,78 @@ private fun OtherMainContent(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Adaptive Concentrator Block (only visible if any tabs are hidden from the dock)
+            if (hiddenTabs.isNotEmpty()) {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Apps,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Быстрый доступ",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = "Скрытые разделы",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            for (tab in hiddenTabs) {
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    modifier = Modifier.clickable { onNavigateToTab(tab) }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = tab.selectedIcon,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = tab.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             // 1. My schedules card
             OtherNavCard(
                 title = "Мои расписания",

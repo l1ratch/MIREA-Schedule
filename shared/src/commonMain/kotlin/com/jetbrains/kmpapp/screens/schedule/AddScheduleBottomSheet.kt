@@ -72,14 +72,6 @@ fun AddScheduleBottomSheet(
     var isLoading by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<ScheduleTargetType?>(null) }
     val focusManager = LocalFocusManager.current
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        delay(250)
-        try {
-            focusRequester.requestFocus()
-        } catch (_: Exception) {}
-    }
 
     LaunchedEffect(query) {
         val trimmed = query.trim()
@@ -112,9 +104,9 @@ fun AddScheduleBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight(0.88f)
                 .navigationBarsPadding()
                 .imePadding()
-                .heightIn(min = 320.dp, max = 640.dp)
                 .padding(horizontal = 20.dp, vertical = 4.dp)
         ) {
             Row(
@@ -165,9 +157,7 @@ fun AddScheduleBottomSheet(
                 keyboardActions = KeyboardActions(
                     onSearch = { focusManager.clearFocus() }
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(10.dp))

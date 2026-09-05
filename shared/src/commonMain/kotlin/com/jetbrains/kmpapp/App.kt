@@ -22,6 +22,7 @@ import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
+import com.jetbrains.kmpapp.screens.map.MapScreen
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.rooms.FreeRoomsScreen
@@ -101,12 +102,6 @@ fun App() {
         ) {
             var currentTab by remember { mutableStateOf(AppTab.SCHEDULE) }
 
-            LaunchedEffect(dockTabs) {
-                if (currentTab !in dockTabs) {
-                    currentTab = AppTab.SCHEDULE
-                }
-            }
-
             Box(modifier = Modifier.fillMaxSize()) {
                 Crossfade(targetState = currentTab) { tab ->
                     when (tab) {
@@ -119,8 +114,14 @@ fun App() {
                         AppTab.TASKS -> {
                             TasksScreen(viewModel = tasksViewModel)
                         }
+                        AppTab.MAP -> {
+                            MapScreen()
+                        }
                         AppTab.OTHER -> {
-                            OtherScreen(viewModel = otherViewModel)
+                            OtherScreen(
+                                viewModel = otherViewModel,
+                                onNavigateToTab = { currentTab = it }
+                            )
                         }
                     }
                 }
@@ -137,6 +138,7 @@ fun App() {
                                 freeRoomsViewModel.selectRoomForDetail(null)
                             }
                             AppTab.TASKS -> {}
+                            AppTab.MAP -> {}
                             AppTab.OTHER -> {
                                 otherViewModel.resetToRoot()
                             }

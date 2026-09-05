@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -49,6 +51,7 @@ enum class AppTab(
     SCHEDULE("Расписание", Icons.Filled.DateRange, Icons.Outlined.DateRange, isFixed = true),
     FREE_ROOMS("Аудитории", Icons.Filled.MeetingRoom, Icons.Outlined.MeetingRoom, isFixed = false),
     TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
+    MAP("Карта", Icons.Filled.Map, Icons.Outlined.Map, isFixed = false),
     OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }
 
@@ -60,6 +63,7 @@ fun FloatingDock(
     tabs: List<AppTab> = AppTab.entries,
     modifier: Modifier = Modifier
 ) {
+    val displayedTabs = remember(tabs) { tabs.take(5) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Elevated comfortably above bottom: iOS home indicator (34dp) sits at ~20dp offset; Android button bar sits safely above buttons
     val bottomOffset = when {
@@ -95,7 +99,7 @@ fun FloatingDock(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                tabs.forEach { tab ->
+                displayedTabs.forEach { tab ->
                     val isSelected = tab == currentTab
                     val backgroundColor by animateColorAsState(
                         if (isSelected) MaterialTheme.colorScheme.primaryContainer

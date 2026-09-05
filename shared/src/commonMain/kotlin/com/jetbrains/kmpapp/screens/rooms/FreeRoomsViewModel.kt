@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -35,6 +36,9 @@ class FreeRoomsViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _selectedDate = MutableStateFlow(DateUtils.today())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -44,7 +48,8 @@ class FreeRoomsViewModel(
     private val _selectedRoomForDetail = MutableStateFlow<FreeRoomItem?>(null)
     val selectedRoomForDetail: StateFlow<FreeRoomItem?> = _selectedRoomForDetail.asStateFlow()
 
-    val currentDateIso: String = getCurrentDateIso()
+    val currentDateIso: String
+        get() = _selectedDate.value.toString()
 
     val availableCampuses: StateFlow<List<String>> = combine(_freeRoomsData) { data ->
         val list = data[0].campuses
@@ -64,13 +69,14 @@ class FreeRoomsViewModel(
         _selectedCampus,
         _selectedFloor,
         _selectedBell,
-        _searchQuery
-    ) { data, campus, floor, bell, query ->
+        combine(_searchQuery, _selectedDate) { query, date -> query to date }
+    ) { data, campus, floor, bell, queryDate ->
+        val (query, date) = queryDate
         repository.filterFreeRooms(
             allRooms = data.rooms,
             campus = campus,
             floor = floor,
-            dateIso = currentDateIso,
+            dateIso = date.toString(),
             bellNumber = bell,
             searchQuery = query
         )
@@ -134,6 +140,10 @@ class FreeRoomsViewModel(
 
     fun selectRoomForDetail(room: FreeRoomItem?) {
         _selectedRoomForDetail.value = room
+    }
+
+    fun selectDate(date: LocalDate) {
+        _selectedDate.value = date
     }
 
     private companion object {
