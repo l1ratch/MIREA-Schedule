@@ -33,7 +33,7 @@ class ScheduleStorage(
     private val _cachedLessons = MutableStateFlow<Map<Int, List<Lesson>>>(emptyMap())
     val cachedLessons: StateFlow<Map<Int, List<Lesson>>> = _cachedLessons.asStateFlow()
 
-    private val _showEmptyLessons = MutableStateFlow<Boolean>(false)
+    private val _showEmptyLessons = MutableStateFlow<Boolean>(true)
     val showEmptyLessons: StateFlow<Boolean> = _showEmptyLessons.asStateFlow()
 
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
@@ -66,7 +66,7 @@ class ScheduleStorage(
             // Restore show empty lessons setting
             val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
             if (!showEmptyStr.isNullOrBlank()) {
-                _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: false
+                _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: true
             }
 
             // Restore dock tabs setting

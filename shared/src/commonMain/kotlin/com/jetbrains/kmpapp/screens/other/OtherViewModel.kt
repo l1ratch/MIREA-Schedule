@@ -57,6 +57,10 @@ class OtherViewModel(
         repository.setDockTabs(tabs)
     }
 
+    init {
+        checkForUpdates()
+    }
+
     private val _activeSubScreen = MutableStateFlow(OtherSubScreen.ROOT)
     val activeSubScreen: StateFlow<OtherSubScreen> = _activeSubScreen.asStateFlow()
 
