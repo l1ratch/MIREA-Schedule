@@ -55,7 +55,7 @@ jobs:
 
   build_ipa:
     name: 🍏 Build iOS Unsigned IPA
-    runs-on: macos-14
+    runs-on: macos-15
     if: github.event_name != 'workflow_dispatch' || inputs.build_ipa
     steps:
       - name: 📚 Checkout Repository
@@ -74,7 +74,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: 🛠️ Set Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        run: |
+          if [ -d "/Applications/Xcode_16.4.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          elif [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          fi
+          xcodebuild -version
 
       - name: 🔨 Build iOS App (no codesign)
         run: |
