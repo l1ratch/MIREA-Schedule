@@ -96,9 +96,14 @@ private fun ScheduleMainContent(
     val daySlots by viewModel.daySlots.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val activeDiff by viewModel.activeDiff.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    var showDiffSheet by remember { mutableStateOf(false) }
+    val diffSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     val scope = rememberCoroutineScope()
 
     var totalDrag by remember { mutableStateOf(0f) }
@@ -110,8 +115,9 @@ private fun ScheduleMainContent(
                     selectedTarget = selectedTarget,
                     savedTargets = savedTargets,
                     isLoading = isLoading,
+                    activeDiff = activeDiff,
                     onSelectTarget = { viewModel.selectTarget(it) },
-                    onRefreshClick = { viewModel.refresh() },
+                    onDiffClick = { showDiffSheet = true },
                     onAddClick = { showAddSheet = true }
                 )
 
@@ -304,6 +310,24 @@ private fun ScheduleMainContent(
             onSearch = { viewModel.search(it) },
             onSelectTarget = { target ->
                 viewModel.addAndSelectTarget(target)
+            }
+        )
+    }
+
+    if (showDiffSheet && activeDiff != null) {
+        ScheduleDiffBottomSheet(
+            diff = activeDiff!!,
+            sheetState = diffSheetState,
+            onDismiss = {
+                scope.launch { diffSheetState.hide() }.invokeOnCompletion {
+                    showDiffSheet = false
+                }
+            },
+            onAccept = {
+                viewModel.dismissDiff()
+                scope.launch { diffSheetState.hide() }.invokeOnCompletion {
+                    showDiffSheet = false
+                }
             }
         )
     }

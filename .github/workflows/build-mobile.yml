@@ -46,11 +46,16 @@ jobs:
       - name: 🔨 Build Android APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: 🏷️ Prepare APK Artifact
+        run: |
+          mkdir -p dist
+          cp androidApp/build/outputs/apk/debug/*.apk dist/Schedule-MIREA.apk
+
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mirea-schedule-apk
-          path: androidApp/build/outputs/apk/debug/*.apk
+          name: Schedule-MIREA-APK
+          path: dist/Schedule-MIREA.apk
           if-no-files-found: error
 
   build_ipa:
@@ -69,6 +74,14 @@ jobs:
 
       - name: 🔑 Make gradlew executable
         run: chmod +x gradlew
+
+      - name: 📦 Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: |
+            konan-${{ runner.os }}-
 
       - name: ♻️ Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -91,6 +104,8 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             build
 
       - name: 📦 Package Unsigned IPA
@@ -100,13 +115,13 @@ jobs:
           APP_PATH=$(find build -name "*.app" -type d | head -n 1)
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
-          zip -r ../mirea-schedule-unsigned.ipa Payload
+          zip -r ../Schedule-MIREA.ipa Payload
           rm -rf Payload
           cd ..
 
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mirea-schedule-unsigned-ipa
-          path: mirea-schedule-unsigned.ipa
+          name: Schedule-MIREA-IPA
+          path: Schedule-MIREA.ipa
           if-no-files-found: error

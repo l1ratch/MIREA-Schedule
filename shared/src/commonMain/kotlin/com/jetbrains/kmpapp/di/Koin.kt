@@ -4,6 +4,7 @@ import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.api.MireaScheduleApi
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
+import com.jetbrains.kmpapp.data.update.AppUpdateChecker
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import io.ktor.client.HttpClient
@@ -33,6 +34,7 @@ val dataModule = module {
     singleOf(::MireaScheduleApi)
     singleOf(::ScheduleStorage)
     singleOf(::ScheduleRepository)
+    singleOf(::AppUpdateChecker)
 }
 
 val viewModelModule = module {

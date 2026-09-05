@@ -419,7 +419,7 @@ fun EmptyLessonCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
             )
             Text(
-                text = "Окно",
+                text = "Нет пары",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
@@ -437,15 +437,15 @@ fun LessonBreakIndicator(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 1.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "••• перемена $breakMinutes мин •••",
-            fontSize = 11.sp,
+            fontSize = 9.5.sp,
             fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-            letterSpacing = 0.5.sp
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+            letterSpacing = 0.3.sp
         )
     }
 }

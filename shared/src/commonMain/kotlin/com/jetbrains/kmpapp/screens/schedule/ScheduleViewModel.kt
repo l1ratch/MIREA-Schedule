@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
@@ -27,6 +28,11 @@ class ScheduleViewModel(
     val selectedTarget: StateFlow<ScheduleTarget?> = repository.selectedTarget
     val isLoading: StateFlow<Boolean> = repository.isLoading
     val errorMessage: StateFlow<String?> = repository.errorMessage
+    val activeDiff: StateFlow<com.jetbrains.kmpapp.data.model.ScheduleDiff?> = repository.activeDiff
+
+    fun dismissDiff() {
+        repository.dismissDiff()
+    }
 
     private val _selectedDate = MutableStateFlow(DateUtils.today())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
@@ -46,11 +52,20 @@ class ScheduleViewModel(
     ) { lessons, date, showEmpty ->
         val forDay = lessons.filter { it.date == date }
         if (forDay.isEmpty()) {
-            emptyList()
+            if (showEmpty && date.dayOfWeek != DayOfWeek.SUNDAY) {
+                (1..7).map { b ->
+                    val bellInfo = defaultBells.firstOrNull { it.number == b }
+                    ScheduleSlot.Empty(
+                        bellNumber = b,
+                        startTime = bellInfo?.startTime ?: "—",
+                        endTime = bellInfo?.endTime ?: "—"
+                    )
+                }
+            } else {
+                emptyList()
+            }
         } else {
             val bellMap = forDay.groupBy { it.bellNumber }
-            val minBell = forDay.minOf { it.bellNumber }
-            val maxBell = forDay.maxOf { it.bellNumber }
 
             if (!showEmpty) {
                 bellMap.entries.sortedBy { it.key }.map { (bellNum, items) ->
@@ -64,7 +79,8 @@ class ScheduleViewModel(
                 }
             } else {
                 val result = mutableListOf<ScheduleSlot>()
-                val upperBell = maxOf(maxBell, 1)
+                val maxBell = forDay.maxOfOrNull { it.bellNumber } ?: 7
+                val upperBell = maxOf(maxBell, 7) // Always display all 7 pairs visually
                 for (b in 1..upperBell) {
                     val items = bellMap[b]
                     if (!items.isNullOrEmpty()) {
@@ -90,7 +106,6 @@ class ScheduleViewModel(
                 }
                 result
             }
-
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 

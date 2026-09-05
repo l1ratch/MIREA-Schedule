@@ -26,14 +26,20 @@ import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalUriHandler
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -92,6 +98,11 @@ private fun OtherMainContent(
     val savedTargets by viewModel.savedTargets.collectAsState()
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+
+    val updateResult by viewModel.updateResult.collectAsState()
+    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
+    val updateStatusMessage by viewModel.updateStatusMessage.collectAsState()
+    val uriHandler = LocalUriHandler.current
 
     Scaffold(
         topBar = {
@@ -294,14 +305,78 @@ private fun OtherMainContent(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = "MIREA Schedule (Compose Multiplatform)\nВерсия 1.0.0\nРазработано для студентов и преподавателей РТУ МИРЭА.",
+                            text = "Расписание • MIREA Schedule\nВерсия 1.0.0\nРазработано для студентов и преподавателей РТУ МИРЭА.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 20.sp
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = { viewModel.checkForUpdates() },
+                                enabled = !isCheckingUpdate,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                if (isCheckingUpdate) {
+                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text("Проверить обновления", fontSize = 13.sp)
+                            }
+
+                            if (updateStatusMessage != null) {
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = updateStatusMessage ?: "",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (updateResult != null && updateResult!!.hasUpdate) {
+        val update = updateResult!!
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissUpdateDialog() },
+            title = { Text("Доступно обновление ${update.latestVersion}") },
+            text = {
+                Column {
+                    Text("Текущая версия: ${update.currentVersion}")
+                    if (!update.changelog.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = update.changelog,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        uriHandler.openUri(update.downloadUrl)
+                        viewModel.dismissUpdateDialog()
+                    }
+                ) {
+                    Text("Скачать")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
+                    Text("Позже")
+                }
+            }
+        )
     }
 }

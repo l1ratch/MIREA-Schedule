@@ -2,6 +2,9 @@ package com.jetbrains.kmpapp.data
 
 import com.jetbrains.kmpapp.data.api.MireaScheduleApi
 import com.jetbrains.kmpapp.data.model.Lesson
+import com.jetbrains.kmpapp.data.model.LessonDiffItem
+import com.jetbrains.kmpapp.data.model.LessonDiffType
+import com.jetbrains.kmpapp.data.model.ScheduleDiff
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.data.parser.MireaICalParser
@@ -27,6 +30,13 @@ class ScheduleRepository(
     val selectedTarget: StateFlow<ScheduleTarget?> = storage.selectedTarget
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = storage.themeMode
+
+    private val _activeDiff = MutableStateFlow<ScheduleDiff?>(null)
+    val activeDiff: StateFlow<ScheduleDiff?> = _activeDiff.asStateFlow()
+
+    fun dismissDiff() {
+        _activeDiff.value = null
+    }
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -101,8 +111,16 @@ class ScheduleRepository(
         try {
             val ical = api.getIcal(target.type, target.id)
             val parsedLessons = MireaICalParser.parse(ical)
+            val oldLessons = storage.getLessons(target.id)
             storage.saveLessons(target.id, parsedLessons)
             _errorMessage.value = null
+
+            if (oldLessons != null && oldLessons.isNotEmpty()) {
+                val diff = computeDiff(oldLessons, parsedLessons, target)
+                if (diff != null) {
+                    _activeDiff.value = diff
+                }
+            }
         } catch (e: Exception) {
             println("refreshSchedule error for ${target.targetTitle}: ${e.message}")
             // Only show user-facing error if we don't have cached lessons
@@ -115,6 +133,82 @@ class ScheduleRepository(
                 _isLoading.value = false
             }
         }
+    }
+
+    private fun computeDiff(
+        oldLessons: List<Lesson>,
+        newLessons: List<Lesson>,
+        target: ScheduleTarget
+    ): ScheduleDiff? {
+        val oldMap = oldLessons.groupBy { "${it.date}_${it.bellNumber}_${it.subject.trim().lowercase()}" }
+        val newMap = newLessons.groupBy { "${it.date}_${it.bellNumber}_${it.subject.trim().lowercase()}" }
+
+        val items = mutableListOf<LessonDiffItem>()
+
+        for ((key, newGroup) in newMap) {
+            val oldGroup = oldMap[key]
+            if (oldGroup == null) {
+                for (lesson in newGroup) {
+                    items.add(
+                        LessonDiffItem(
+                            type = LessonDiffType.ADDED,
+                            date = lesson.date,
+                            bellNumber = lesson.bellNumber,
+                            subject = lesson.subject,
+                            description = "Новая пара (${lesson.bellNumber} пара, ауд. ${lesson.classrooms.joinToString().ifEmpty { "—" }})"
+                        )
+                    )
+                }
+            } else {
+                val oldFirst = oldGroup.first()
+                val newFirst = newGroup.first()
+                val changes = mutableListOf<String>()
+                if (oldFirst.classrooms != newFirst.classrooms) {
+                    changes.add("ауд: ${oldFirst.classrooms.joinToString().ifEmpty { "—" }} → ${newFirst.classrooms.joinToString().ifEmpty { "—" }}")
+                }
+                if (oldFirst.teachers != newFirst.teachers) {
+                    changes.add("преп: ${oldFirst.teachers.joinToString().ifEmpty { "—" }} → ${newFirst.teachers.joinToString().ifEmpty { "—" }}")
+                }
+                if (oldFirst.startTime != newFirst.startTime) {
+                    changes.add("время: ${oldFirst.startTime} → ${newFirst.startTime}")
+                }
+                if (changes.isNotEmpty()) {
+                    items.add(
+                        LessonDiffItem(
+                            type = LessonDiffType.MODIFIED,
+                            date = newFirst.date,
+                            bellNumber = newFirst.bellNumber,
+                            subject = newFirst.subject,
+                            description = "${newFirst.bellNumber} пара: ${changes.joinToString(", ")}"
+                        )
+                    )
+                }
+            }
+        }
+
+        for ((key, oldGroup) in oldMap) {
+            if (!newMap.containsKey(key)) {
+                for (lesson in oldGroup) {
+                    items.add(
+                        LessonDiffItem(
+                            type = LessonDiffType.CANCELLED,
+                            date = lesson.date,
+                            bellNumber = lesson.bellNumber,
+                            subject = lesson.subject,
+                            description = "Отменена (${lesson.bellNumber} пара)"
+                        )
+                    )
+                }
+            }
+        }
+
+        return if (items.isNotEmpty()) {
+            ScheduleDiff(
+                targetId = target.id,
+                targetTitle = target.targetTitle,
+                items = items.sortedWith(compareBy({ it.date }, { it.bellNumber }))
+            )
+        } else null
     }
 
     fun clearCache() {
