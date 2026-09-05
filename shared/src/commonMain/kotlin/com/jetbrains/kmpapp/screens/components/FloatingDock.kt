@@ -19,9 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,10 +43,13 @@ import androidx.compose.ui.unit.dp
 enum class AppTab(
     val title: String,
     val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val unselectedIcon: ImageVector,
+    val isFixed: Boolean = false
 ) {
-    SCHEDULE("Расписание", Icons.Filled.DateRange, Icons.Outlined.DateRange),
-    OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings)
+    SCHEDULE("Расписание", Icons.Filled.DateRange, Icons.Outlined.DateRange, isFixed = true),
+    FREE_ROOMS("Аудитории", Icons.Filled.MeetingRoom, Icons.Outlined.MeetingRoom, isFixed = false),
+    TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
+    OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }
 
 @Composable
@@ -50,15 +57,25 @@ fun FloatingDock(
     currentTab: AppTab,
     onTabSelected: (AppTab) -> Unit,
     onTabReselected: ((AppTab) -> Unit)? = null,
+    tabs: List<AppTab> = AppTab.entries,
     modifier: Modifier = Modifier
 ) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottomOffset = if (navBottom > 36.dp) (navBottom - 16.dp) else 10.dp
+    // Elevated above bottom: on iOS ~28dp avoids the swipe home indicator; on Android ~navBottom + 12dp clears the 3-button or gesture bar
+    val bottomOffset = maxOf(navBottom + 12.dp, 28.dp)
+
+    // Responsive horizontal padding based on tab count
+    val itemHorizontalPadding = when {
+        tabs.size <= 2 -> 26.dp
+        tabs.size == 3 -> 18.dp
+        else -> 12.dp
+    }
+    val itemVerticalPadding = if (tabs.size >= 4) 10.dp else 12.dp
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = bottomOffset),
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = bottomOffset),
         contentAlignment = Alignment.Center
     ) {
         Surface(
@@ -70,10 +87,10 @@ fun FloatingDock(
         ) {
             Row(
                 modifier = Modifier.padding(6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AppTab.entries.forEach { tab ->
+                tabs.forEach { tab ->
                     val isSelected = tab == currentTab
                     val backgroundColor by animateColorAsState(
                         if (isSelected) MaterialTheme.colorScheme.primaryContainer
@@ -105,7 +122,7 @@ fun FloatingDock(
                                     onTabSelected(tab)
                                 }
                             }
-                            .padding(horizontal = 26.dp, vertical = 12.dp),
+                            .padding(horizontal = itemHorizontalPadding, vertical = itemVerticalPadding),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

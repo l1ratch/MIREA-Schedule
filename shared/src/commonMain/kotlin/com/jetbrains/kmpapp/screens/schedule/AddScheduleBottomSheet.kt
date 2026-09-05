@@ -52,6 +52,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +72,14 @@ fun AddScheduleBottomSheet(
     var isLoading by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<ScheduleTargetType?>(null) }
     val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        delay(250)
+        try {
+            focusRequester.requestFocus()
+        } catch (_: Exception) {}
+    }
 
     LaunchedEffect(query) {
         val trimmed = query.trim()
@@ -93,39 +105,33 @@ fun AddScheduleBottomSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = modifier
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.97f)
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { focusManager.clearFocus() })
-                }
+                .fillMaxHeight(0.88f)
                 .padding(horizontal = 20.dp, vertical = 6.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Добавить расписание",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Закрыть")
-                }
-            }
+            // Header (without close button since swipe-to-dismiss handles it cleanly)
+            Text(
+                text = "Добавить расписание",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Search input
+            // Search input with auto-focus and compact placeholder
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Например: ИКБО-10-23, Иванов...") },
+                placeholder = {
+                    Text(
+                        text = "Группа, преподаватель, аудитория",
+                        fontSize = 13.5.sp,
+                        maxLines = 1
+                    )
+                },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
@@ -143,14 +149,18 @@ fun AddScheduleBottomSheet(
                 keyboardActions = KeyboardActions(
                     onSearch = { focusManager.clearFocus() }
                 ),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Target type filter chips
+            // Target type filter chips (horizontally scrollable so all chips fit on any screen)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf(

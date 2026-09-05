@@ -305,22 +305,23 @@ fun ManageSchedulesScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Активно",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                        }
-
                                         Column {
-                                            Text(
-                                                text = target.targetTitle,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
-                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = target.targetTitle,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                                                )
+                                                if (isSelected) {
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Активно",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
                                             Text(
                                                 text = target.type.displayName,
                                                 fontSize = 12.sp,

@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,8 +24,11 @@ import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
+import com.jetbrains.kmpapp.screens.rooms.FreeRoomsScreen
+import com.jetbrains.kmpapp.screens.rooms.FreeRoomsViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
+import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -66,9 +70,11 @@ private val DarkColors = darkColorScheme(
 fun App() {
     val repository: ScheduleRepository = koinInject()
     val themeMode by repository.themeMode.collectAsState()
+    val dockTabs by repository.dockTabs.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
+    val freeRoomsViewModel: FreeRoomsViewModel = koinViewModel()
 
     val systemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
@@ -86,11 +92,23 @@ fun App() {
         ) {
             var currentTab by remember { mutableStateOf(AppTab.SCHEDULE) }
 
+            LaunchedEffect(dockTabs) {
+                if (currentTab !in dockTabs) {
+                    currentTab = AppTab.SCHEDULE
+                }
+            }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 Crossfade(targetState = currentTab) { tab ->
                     when (tab) {
                         AppTab.SCHEDULE -> {
                             ScheduleScreen(viewModel = scheduleViewModel)
+                        }
+                        AppTab.FREE_ROOMS -> {
+                            FreeRoomsScreen(viewModel = freeRoomsViewModel)
+                        }
+                        AppTab.TASKS -> {
+                            TasksScreen()
                         }
                         AppTab.OTHER -> {
                             OtherScreen(viewModel = otherViewModel)
@@ -106,11 +124,16 @@ fun App() {
                             AppTab.SCHEDULE -> {
                                 scheduleViewModel.selectLessonForDetail(null)
                             }
+                            AppTab.FREE_ROOMS -> {
+                                freeRoomsViewModel.selectRoomForDetail(null)
+                            }
+                            AppTab.TASKS -> {}
                             AppTab.OTHER -> {
                                 otherViewModel.resetToRoot()
                             }
                         }
                     },
+                    tabs = dockTabs,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }

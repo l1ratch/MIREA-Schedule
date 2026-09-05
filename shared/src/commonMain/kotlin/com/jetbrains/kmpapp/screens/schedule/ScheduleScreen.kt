@@ -122,77 +122,26 @@ private fun ScheduleMainContent(
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            Column {
-                ScheduleTopBar(
-                    selectedTarget = selectedTarget,
-                    savedTargets = savedTargets,
-                    isLoading = isLoading,
-                    activeDiff = activeDiff,
-                    onSelectTarget = { viewModel.selectTarget(it) },
-                    onDiffClick = { showDiffSheet = true },
-                    onAddClick = { showAddSheet = true }
-                )
-
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = refreshStatus != null,
-                    enter = slideInVertically { -it } + androidx.compose.animation.fadeIn(),
-                    exit = slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val status = refreshStatus
-                    if (status != null) {
-                        val isSuccess = status is RefreshStatus.Success
-                        val bgColor = if (isSuccess) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-                        val textColor = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                        val text = when (status) {
-                            is RefreshStatus.Success -> status.message
-                            is RefreshStatus.Error -> "Ошибка (${status.code.code}): ${status.code.shortTitle}"
-                        }
-                        val icon = if (isSuccess) Icons.Default.Check else Icons.Default.Warning
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = bgColor,
-                                shadowElevation = 4.dp,
-                                modifier = Modifier.clickable { viewModel.dismissStatusBadge() }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = textColor,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = text,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = textColor
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            ScheduleTopBar(
+                selectedTarget = selectedTarget,
+                savedTargets = savedTargets,
+                isLoading = isLoading,
+                activeDiff = activeDiff,
+                onSelectTarget = { viewModel.selectTarget(it) },
+                onDiffClick = { showDiffSheet = true },
+                onAddClick = { showAddSheet = true }
+            )
         },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
             if (selectedTarget == null) {
                 // No schedule selected yet
                 Box(
@@ -355,13 +304,64 @@ private fun ScheduleMainContent(
                                     }
                                 }
                             }
-
                         }
                     }
                 }
             }
         }
     }
+
+        // Floating update badge overlay (appears OVER the calendar and cards without shifting anything)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = refreshStatus != null,
+            enter = slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+            exit = slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 10.dp)
+        ) {
+                val status = refreshStatus
+                if (status != null) {
+                    val isSuccess = status is RefreshStatus.Success
+                    val bgColor = if (isSuccess) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                    val textColor = if (isSuccess) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                    val text = when (status) {
+                        is RefreshStatus.Success -> status.message
+                        is RefreshStatus.Error -> "Ошибка (${status.code.code}): ${status.code.shortTitle}"
+                    }
+                    val icon = if (isSuccess) Icons.Default.Check else Icons.Default.Warning
+
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = bgColor,
+                        shadowElevation = 8.dp,
+                        tonalElevation = 6.dp,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .clickable { viewModel.dismissStatusBadge() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = textColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = text,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = textColor
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showAddSheet) {

@@ -3,6 +3,7 @@ package com.jetbrains.kmpapp.data.storage
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
+import com.jetbrains.kmpapp.screens.components.AppTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,6 +39,9 @@ class ScheduleStorage(
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
+    private val _dockTabs = MutableStateFlow<List<AppTab>>(DEFAULT_DOCK_TABS)
+    val dockTabs: StateFlow<List<AppTab>> = _dockTabs.asStateFlow()
+
     init {
         loadPersistedState()
     }
@@ -59,6 +63,17 @@ class ScheduleStorage(
                 val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
                 if (!showEmptyStr.isNullOrBlank()) {
                     _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: false
+                }
+
+                // Restore dock tabs setting
+                val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
+                if (!dockTabsStr.isNullOrBlank()) {
+                    val loaded = dockTabsStr.split(",").mapNotNull { name ->
+                        try { AppTab.valueOf(name.trim()) } catch (_: Exception) { null }
+                    }
+                    _dockTabs.value = sanitizeDockTabs(loaded)
+                } else {
+                    _dockTabs.value = DEFAULT_DOCK_TABS
                 }
 
                 // Restore saved targets
@@ -114,6 +129,23 @@ class ScheduleStorage(
                 println("Failed to persist showEmptyLessons: ${e.message}")
             }
         }
+    }
+
+    fun setDockTabs(tabs: List<AppTab>) {
+        val sanitized = sanitizeDockTabs(tabs)
+        _dockTabs.value = sanitized
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_DOCK_TABS, sanitized.joinToString(",") { it.name })
+            } catch (e: Exception) {
+                println("Failed to persist dock tabs: ${e.message}")
+            }
+        }
+    }
+
+    private fun sanitizeDockTabs(tabs: List<AppTab>): List<AppTab> {
+        val middle = tabs.filter { !it.isFixed }.distinct()
+        return listOf(AppTab.SCHEDULE) + middle + listOf(AppTab.OTHER)
     }
 
 
@@ -234,6 +266,8 @@ class ScheduleStorage(
         private const val KEY_LESSONS_PREFIX = "mirea_lessons_"
         private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
         private const val KEY_APP_THEME = "mirea_app_theme"
+        private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"
+        val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.FREE_ROOMS, AppTab.TASKS, AppTab.OTHER)
     }
 }
 

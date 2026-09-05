@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
 import com.jetbrains.kmpapp.data.update.UpdateCheckResult
+import com.jetbrains.kmpapp.screens.components.AppTab
 import kotlinx.coroutines.launch
 
 enum class TargetSortOrder(val displayName: String) {
@@ -24,13 +25,14 @@ enum class TargetSortOrder(val displayName: String) {
     OLDEST("Сначала старые")
 }
 
-enum class OtherSubScreen {
-    ROOT,
-    MANAGE_SCHEDULES,
-    SETTINGS,
-    DATA_AND_CACHE,
-    ABOUT,
-    DEBUG_SETTINGS
+enum class OtherSubScreen(val depth: Int) {
+    ROOT(0),
+    MANAGE_SCHEDULES(1),
+    SETTINGS(1),
+    DATA_AND_CACHE(2),
+    DOCK_SETTINGS(2),
+    ABOUT(1),
+    DEBUG_SETTINGS(2)
 }
 
 class OtherViewModel(
@@ -43,6 +45,11 @@ class OtherViewModel(
     val isLoading: StateFlow<Boolean> = repository.isLoading
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
+    val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
+
+    fun setDockTabs(tabs: List<AppTab>) {
+        repository.setDockTabs(tabs)
+    }
 
     private val _activeSubScreen = MutableStateFlow(OtherSubScreen.ROOT)
     val activeSubScreen: StateFlow<OtherSubScreen> = _activeSubScreen.asStateFlow()

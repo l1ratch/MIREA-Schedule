@@ -76,9 +76,6 @@ fun AboutScreen(
     PlatformBackHandler(onBack = onBack)
     val uriHandler = LocalUriHandler.current
 
-    val updateResult by viewModel.updateResult.collectAsState()
-    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
-    val updateStatusMessage by viewModel.updateStatusMessage.collectAsState()
     val contributors by viewModel.contributors.collectAsState()
     val isLoadingContributors by viewModel.isLoadingContributors.collectAsState()
 
@@ -294,107 +291,8 @@ fun AboutScreen(
                 }
             }
 
-            // Update Card
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Обновления",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "Проверка наличия новых релизов и сборок с GitHub",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Button(
-                        onClick = { viewModel.checkForUpdates() },
-                        enabled = !isCheckingUpdate,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (isCheckingUpdate) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text(
-                            text = if (isCheckingUpdate) "Проверка..." else "Проверить обновления",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    if (updateStatusMessage != null) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = updateStatusMessage ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(80.dp))
         }
-    }
-
-    if (updateResult != null && updateResult!!.hasUpdate) {
-        val update = updateResult!!
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissUpdateDialog() },
-            title = { Text("Доступно обновление ${update.latestVersion}") },
-            text = {
-                Column {
-                    Text("Текущая версия: ${update.currentVersion}")
-                    if (!update.changelog.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = update.changelog,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        uriHandler.openUri(update.downloadUrl)
-                        viewModel.dismissUpdateDialog()
-                    }
-                ) {
-                    Text("Скачать")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
-                    Text("Позже")
-                }
-            }
-        )
     }
 }
 
