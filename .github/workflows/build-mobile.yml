@@ -1,0 +1,100 @@
+﻿name: Build Mobile (APK & Unsigned IPA)
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      build_apk:
+        description: 'Build Android APK'
+        required: true
+        type: boolean
+        default: true
+      build_ipa:
+        description: 'Build iOS IPA'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build_apk:
+    name: 🤖 Build Android APK
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.build_apk
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: ♻️ Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 🔨 Build Android APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirea-schedule-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  build_ipa:
+    name: 🍏 Build iOS Unsigned IPA
+    runs-on: macos-14
+    if: github.event_name != 'workflow_dispatch' || inputs.build_ipa
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: ♻️ Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 🛠️ Set Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: 🔨 Build iOS App (no codesign)
+        run: |
+          cd iosApp
+          xcodebuild -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: 📦 Package Unsigned IPA
+        run: |
+          cd iosApp
+          mkdir -p Payload
+          APP_PATH=$(find build -name "*.app" -type d | head -n 1)
+          echo "Found app at: $APP_PATH"
+          cp -r "$APP_PATH" Payload/
+          zip -r ../mirea-schedule-unsigned.ipa Payload
+          rm -rf Payload
+          cd ..
+
+      - name: 📤 Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirea-schedule-unsigned-ipa
+          path: mirea-schedule-unsigned.ipa
+          if-no-files-found: error
