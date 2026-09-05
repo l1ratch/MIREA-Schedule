@@ -4,6 +4,7 @@ import kotlin.time.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
@@ -32,7 +33,7 @@ object DateUtils {
     }
 
     fun getWeekInfo(date: LocalDate): SemesterWeekInfo {
-        val monthNum = date.month.number
+        val monthNum = date.month.ordinal + 1
         val semesterStart = if (monthNum in 2..8) {
             LocalDate(date.year, 2, 9)
         } else {
@@ -62,21 +63,20 @@ object DateUtils {
         }
     }
 
-    fun formatMonthRu(monthNumber: Int): String {
-        return when (monthNumber) {
-            1 -> "января"
-            2 -> "февраля"
-            3 -> "марта"
-            4 -> "апреля"
-            5 -> "мая"
-            6 -> "июня"
-            7 -> "июля"
-            8 -> "августа"
-            9 -> "сентября"
-            10 -> "октября"
-            11 -> "ноября"
-            12 -> "декабря"
-            else -> ""
+    fun formatMonthRu(month: Month): String {
+        return when (month) {
+            Month.JANUARY -> "января"
+            Month.FEBRUARY -> "февраля"
+            Month.MARCH -> "марта"
+            Month.APRIL -> "апреля"
+            Month.MAY -> "мая"
+            Month.JUNE -> "июня"
+            Month.JULY -> "июля"
+            Month.AUGUST -> "августа"
+            Month.SEPTEMBER -> "сентября"
+            Month.OCTOBER -> "октября"
+            Month.NOVEMBER -> "ноября"
+            Month.DECEMBER -> "декабря"
         }
     }
 }

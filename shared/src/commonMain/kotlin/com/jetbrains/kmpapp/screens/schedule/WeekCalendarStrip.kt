@@ -57,7 +57,7 @@ fun WeekCalendarStrip(
         ) {
             Column {
                 Text(
-                    text = "${selectedDate.day} ${DateUtils.formatMonthRu(selectedDate.month.number)}",
+                    text = "${selectedDate.day} ${DateUtils.formatMonthRu(selectedDate.month)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
