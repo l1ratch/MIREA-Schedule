@@ -26,9 +26,6 @@ class ScheduleViewModel(
     private val _selectedDate = MutableStateFlow(DateUtils.today())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
-    private val _searchFilter = MutableStateFlow("")
-    val searchFilter: StateFlow<String> = _searchFilter.asStateFlow()
-
     val datesWithLessons: StateFlow<Set<LocalDate>> = repository.currentLessons
         .combine(MutableStateFlow(Unit)) { lessons, _ ->
             lessons.map { it.date }.toSet()
@@ -36,29 +33,13 @@ class ScheduleViewModel(
 
     val dayLessons: StateFlow<List<Lesson>> = combine(
         repository.currentLessons,
-        _selectedDate,
-        _searchFilter
-    ) { lessons, date, filter ->
-        val forDay = lessons.filter { it.date == date }
-        if (filter.isBlank()) {
-            forDay
-        } else {
-            val q = filter.trim().lowercase()
-            forDay.filter {
-                it.subject.lowercase().contains(q) ||
-                it.teachers.any { t -> t.lowercase().contains(q) } ||
-                it.classrooms.any { c -> c.lowercase().contains(q) } ||
-                it.lessonType.displayName.lowercase().contains(q)
-            }
-        }
+        _selectedDate
+    ) { lessons, date ->
+        lessons.filter { it.date == date }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
-    }
-
-    fun setSearchFilter(query: String) {
-        _searchFilter.value = query
     }
 
     fun selectTarget(target: ScheduleTarget) {

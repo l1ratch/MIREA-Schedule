@@ -2,12 +2,25 @@
 
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
-class ScheduleStorage {
+class ScheduleStorage(
+    private val platformStorage: PlatformStorage
+) {
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     private val _savedTargets = MutableStateFlow<List<ScheduleTarget>>(emptyList())
     val savedTargets: StateFlow<List<ScheduleTarget>> = _savedTargets.asStateFlow()
@@ -18,36 +31,88 @@ class ScheduleStorage {
     private val _cachedLessons = MutableStateFlow<Map<Int, List<Lesson>>>(emptyMap())
     val cachedLessons: StateFlow<Map<Int, List<Lesson>>> = _cachedLessons.asStateFlow()
 
+    init {
+        loadPersistedState()
+    }
+
+    private fun loadPersistedState() {
+        scope.launch {
+            try {
+                // Restore saved targets
+                val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
+                val targets: List<ScheduleTarget> = if (!targetsJson.isNullOrBlank()) {
+                    json.decodeFromString(targetsJson)
+                } else {
+                    emptyList()
+                }
+                _savedTargets.value = targets
+
+                // Restore active target
+                val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
+                val activeId = activeIdStr?.toIntOrNull()
+                val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
+                _selectedTarget.value = selected
+
+                // Restore cached lessons for all saved targets
+                val loadedCache = mutableMapOf<Int, List<Lesson>>()
+                for (target in targets) {
+                    val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
+                    if (!lessonsJson.isNullOrBlank()) {
+                        try {
+                            val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
+                            loadedCache[target.id] = lessons
+                        } catch (_: Exception) {}
+                    }
+                }
+                _cachedLessons.value = loadedCache
+            } catch (e: Exception) {
+                println("ScheduleStorage: failed to load persisted state: ${e.message}")
+            }
+        }
+    }
+
     fun addTarget(target: ScheduleTarget) {
         _savedTargets.update { list ->
             if (list.any { it.id == target.id }) list
             else list + target
         }
         selectTarget(target)
+        persistTargets()
     }
 
     fun removeTarget(targetId: Int) {
         _savedTargets.update { list -> list.filter { it.id != targetId } }
         if (_selectedTarget.value?.id == targetId) {
             _selectedTarget.value = _savedTargets.value.firstOrNull()
+            persistSelectedTargetId(_selectedTarget.value?.id)
         }
         _cachedLessons.update { map -> map - targetId }
+        platformStorage.remove(KEY_LESSONS_PREFIX + targetId)
+        persistTargets()
     }
 
     fun selectTarget(target: ScheduleTarget?) {
         _selectedTarget.value = target
+        persistSelectedTargetId(target?.id)
     }
 
     fun selectTargetById(targetId: Int) {
         val target = _savedTargets.value.firstOrNull { it.id == targetId }
         if (target != null) {
-            _selectedTarget.value = target
+            selectTarget(target)
         }
     }
 
     fun saveLessons(targetId: Int, lessons: List<Lesson>) {
         _cachedLessons.update { map ->
             map + (targetId to lessons)
+        }
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_LESSONS_PREFIX + targetId, json.encodeToString(lessons))
+            } catch (e: Exception) {
+                println("Failed to persist lessons for $targetId: ${e.message}")
+            }
         }
     }
 
@@ -57,5 +122,34 @@ class ScheduleStorage {
 
     fun clearCache() {
         _cachedLessons.value = emptyMap()
+        for (target in _savedTargets.value) {
+            platformStorage.remove(KEY_LESSONS_PREFIX + target.id)
+        }
+    }
+
+    private fun persistTargets() {
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_SAVED_TARGETS, json.encodeToString(_savedTargets.value))
+            } catch (e: Exception) {
+                println("Failed to persist targets: ${e.message}")
+            }
+        }
+    }
+
+    private fun persistSelectedTargetId(id: Int?) {
+        scope.launch {
+            if (id != null) {
+                platformStorage.saveString(KEY_SELECTED_TARGET_ID, id.toString())
+            } else {
+                platformStorage.remove(KEY_SELECTED_TARGET_ID)
+            }
+        }
+    }
+
+    companion object {
+        private const val KEY_SAVED_TARGETS = "mirea_saved_targets"
+        private const val KEY_SELECTED_TARGET_ID = "mirea_selected_target_id"
+        private const val KEY_LESSONS_PREFIX = "mirea_lessons_"
     }
 }

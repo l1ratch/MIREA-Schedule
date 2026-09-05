@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.screens.other
+package com.jetbrains.kmpapp.screens.other
 
 import androidx.lifecycle.ViewModel
 import com.jetbrains.kmpapp.data.ScheduleRepository
@@ -27,5 +27,13 @@ class OtherViewModel(
 
     fun clearCache() {
         repository.clearCache()
+    }
+
+    suspend fun search(query: String): List<ScheduleTarget> {
+        return repository.search(query)
+    }
+
+    fun addAndSelectTarget(target: ScheduleTarget) {
+        repository.addAndSelectTarget(target)
     }
 }

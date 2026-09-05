@@ -1,7 +1,8 @@
-﻿package com.jetbrains.kmpapp.di
+package com.jetbrains.kmpapp.di
 
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.api.MireaScheduleApi
+import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
@@ -28,6 +29,7 @@ val dataModule = module {
         }
     }
 
+    singleOf(::PlatformStorage)
     singleOf(::MireaScheduleApi)
     singleOf(::ScheduleStorage)
     singleOf(::ScheduleRepository)

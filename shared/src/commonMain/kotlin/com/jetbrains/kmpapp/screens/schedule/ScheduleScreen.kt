@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.screens.schedule
+package com.jetbrains.kmpapp.screens.schedule
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,9 +52,7 @@ fun ScheduleScreen(
     val savedTargets by viewModel.savedTargets.collectAsState()
     val selectedTarget by viewModel.selectedTarget.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
-    val datesWithLessons by viewModel.datesWithLessons.collectAsState()
     val dayLessons by viewModel.dayLessons.collectAsState()
-    val searchFilter by viewModel.searchFilter.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
@@ -69,9 +67,7 @@ fun ScheduleScreen(
                     selectedTarget = selectedTarget,
                     savedTargets = savedTargets,
                     onSelectTarget = { viewModel.selectTarget(it) },
-                    onAddClick = { showAddSheet = true },
-                    searchQuery = searchFilter,
-                    onSearchQueryChange = { viewModel.setSearchFilter(it) }
+                    onAddClick = { showAddSheet = true }
                 )
 
                 if (isLoading) {
@@ -133,9 +129,8 @@ fun ScheduleScreen(
                 // Week calendar strip
                 WeekCalendarStrip(
                     selectedDate = selectedDate,
-                    datesWithLessons = datesWithLessons,
                     onDateSelected = { viewModel.selectDate(it) },
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
                 )
 
                 // Lessons list
@@ -153,13 +148,13 @@ fun ScheduleScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = if (searchFilter.isNotBlank()) "Ничего не найдено" else "На этот день пар нет",
+                                text = "На этот день пар нет",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (searchFilter.isNotBlank()) "Попробуйте изменить поисковый запрос" else "Отличный повод отдохнуть!",
+                                text = "Отличный повод отдохнуть!",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

@@ -1,30 +1,26 @@
-package com.jetbrains.kmpapp.screens.schedule
+﻿package com.jetbrains.kmpapp.screens.schedule
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,93 +30,64 @@ import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.DateUtils
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.minus
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
+
+private const val BASE_PAGE = 1000
 
 @Composable
 fun WeekCalendarStrip(
     selectedDate: LocalDate,
-    datesWithLessons: Set<LocalDate>,
     onDateSelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val weekDates = DateUtils.getWeekDates(selectedDate)
     val today = DateUtils.today()
-    val weekInfo = DateUtils.getWeekInfo(selectedDate)
+    val baseMonday = DateUtils.getWeekDates(today).first()
 
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        // Week header info + prev/next week buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "${selectedDate.day} ${DateUtils.formatMonthRu(selectedDate.month)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${weekInfo.weekNumber}-я неделя • ${if (weekInfo.isEven) "Чётная" else "Нечётная"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+    val selectedMonday = DateUtils.getWeekDates(selectedDate).first()
+    val weeksOffset = (baseMonday.daysUntil(selectedMonday) / 7)
+    val targetPage = BASE_PAGE + weeksOffset
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { onDateSelected(selectedDate.minus(DatePeriod(days = 7))) },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Предыдущая неделя"
-                    )
-                }
+    val pagerState = rememberPagerState(
+        initialPage = targetPage,
+        pageCount = { 2000 }
+    )
 
-                if (selectedDate != today) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .clickable { onDateSelected(today) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "Сегодня",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
+    LaunchedEffect(selectedMonday) {
+        val currentMonday = baseMonday.plus(DatePeriod(days = (pagerState.currentPage - BASE_PAGE) * 7))
+        if (currentMonday != selectedMonday) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
 
-                IconButton(
-                    onClick = { onDateSelected(selectedDate.plus(DatePeriod(days = 7))) },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Следующая неделя"
-                    )
-                }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            val pageMonday = baseMonday.plus(DatePeriod(days = (page - BASE_PAGE) * 7))
+            val currentSelectedMonday = DateUtils.getWeekDates(selectedDate).first()
+            if (pageMonday != currentSelectedMonday) {
+                val dayOffset = selectedDate.dayOfWeek.ordinal
+                val newSelectedDate = pageMonday.plus(DatePeriod(days = dayOffset))
+                onDateSelected(newSelectedDate)
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(10.dp))
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier.fillMaxWidth()
+    ) { page ->
+        val pageMonday = baseMonday.plus(DatePeriod(days = (page - BASE_PAGE) * 7))
+        val weekDates = (0..6).map { pageMonday.plus(DatePeriod(days = it)) }
 
-        // 7 days row
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             weekDates.forEach { date ->
                 val isSelected = date == selectedDate
                 val isToday = date == today
-                val hasLessons = date in datesWithLessons
 
                 val bgColor by animateColorAsState(
                     if (isSelected) MaterialTheme.colorScheme.primary
@@ -134,48 +101,34 @@ fun WeekCalendarStrip(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 2.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(bgColor)
                         .then(
                             if (isToday && !isSelected) {
                                 Modifier.border(
                                     width = 1.5.dp,
                                     color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(16.dp)
+                                    shape = RoundedCornerShape(14.dp)
                                 )
                             } else Modifier
                         )
-                        .clickable { onDateSelected(date) }
-                        .padding(vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .clickable { onDateSelected(date) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = DateUtils.formatDayOfWeekShort(date.dayOfWeek),
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isSelected) textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isSelected) textColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = date.day.toString(),
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = textColor
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (hasLessons) {
-                                    if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                    else MaterialTheme.colorScheme.primary
-                                } else {
-                                    androidx.compose.ui.graphics.Color.Transparent
-                                }
-                            )
                     )
                 }
             }
