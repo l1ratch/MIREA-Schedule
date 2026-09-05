@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.data
+package com.jetbrains.kmpapp.data
 
 import com.jetbrains.kmpapp.data.api.MireaScheduleApi
 import com.jetbrains.kmpapp.data.model.Lesson
@@ -53,6 +53,7 @@ class ScheduleRepository(
         return try {
             api.search(query)
         } catch (e: Exception) {
+            println("MireaScheduleApi.search failed: ${e.message}")
             emptyList()
         }
     }

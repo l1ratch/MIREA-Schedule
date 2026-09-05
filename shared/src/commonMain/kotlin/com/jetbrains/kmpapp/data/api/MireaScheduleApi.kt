@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.data.api
+package com.jetbrains.kmpapp.data.api
 
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
@@ -22,7 +22,7 @@ class MireaScheduleApi(private val client: HttpClient) {
 
     suspend fun search(query: String, limit: Int = 20): List<ScheduleTarget> {
         val trimmed = query.trim()
-        val response: SearchResponse = client.get("/schedule/api/search") {
+        val response: SearchResponse = client.get("$baseUrl/schedule/api/search") {
             header(HttpHeaders.UserAgent, "university-app-schedule-fetcher/0.1")
             header(HttpHeaders.Accept, "application/json")
             if (trimmed.isNotEmpty()) {
@@ -34,7 +34,7 @@ class MireaScheduleApi(private val client: HttpClient) {
     }
 
     suspend fun getIcal(targetType: ScheduleTargetType, id: Int): String {
-        return client.get("/schedule/api/ical//") {
+        return client.get("$baseUrl/schedule/api/ical/${targetType.pathName}/$id") {
             header(HttpHeaders.UserAgent, "university-app-schedule-fetcher/0.1")
             parameter("includeMeta", "true")
         }.bodyAsText()

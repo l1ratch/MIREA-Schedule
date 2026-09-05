@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.screens.schedule
+package com.jetbrains.kmpapp.screens.schedule
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -58,13 +60,14 @@ fun AddScheduleBottomSheet(
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<ScheduleTarget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
-    var selectedFilter by remember { mutableStateOf<ScheduleTargetType?>(ScheduleTargetType.GROUP) }
+    var selectedFilter by remember { mutableStateOf<ScheduleTargetType?>(null) }
 
     LaunchedEffect(query) {
-        if (query.trim().length >= 2) {
+        val trimmed = query.trim()
+        if (trimmed.isNotEmpty()) {
             isLoading = true
-            delay(300) // Debounce
-            results = onSearch(query)
+            delay(250) // Debounce
+            results = onSearch(trimmed)
             isLoading = false
         } else {
             results = emptyList()
@@ -86,7 +89,6 @@ fun AddScheduleBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f)
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
         ) {
@@ -146,14 +148,14 @@ fun AddScheduleBottomSheet(
             // Results / Loading
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(36.dp))
                 }
-            } else if (filteredResults.isEmpty() && query.trim().length >= 2) {
+            } else if (filteredResults.isEmpty() && query.trim().isNotEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -161,9 +163,9 @@ fun AddScheduleBottomSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            } else if (query.trim().length < 2) {
+            } else if (query.trim().isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -174,7 +176,10 @@ fun AddScheduleBottomSheet(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 450.dp)
+                        .imePadding(),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(filteredResults, key = { "${it.type}_${it.id}" }) { item ->
