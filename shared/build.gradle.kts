@@ -52,6 +52,8 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.compose.material.icons.core)
+            implementation(libs.compose.material.icons.extended)
+            implementation(libs.kotlinx.datetime)
 
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)

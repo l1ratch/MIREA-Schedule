@@ -1,47 +1,90 @@
-package com.jetbrains.kmpapp
+﻿package com.jetbrains.kmpapp
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import com.jetbrains.kmpapp.screens.detail.DetailScreen
-import com.jetbrains.kmpapp.screens.list.ListScreen
-import kotlinx.serialization.Serializable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.jetbrains.kmpapp.screens.components.AppTab
+import com.jetbrains.kmpapp.screens.components.FloatingDock
+import com.jetbrains.kmpapp.screens.other.OtherScreen
+import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
+import org.koin.compose.viewmodel.koinViewModel
 
-@Serializable
-object ListDestination
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF1E5BB0),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFD6E3FF),
+    onPrimaryContainer = Color(0xFF001B3E),
+    secondary = Color(0xFF555F71),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFD9E3F8),
+    onSecondaryContainer = Color(0xFF121C2B),
+    background = Color(0xFFFDFBFF),
+    onBackground = Color(0xFF1A1C1E),
+    surface = Color(0xFFFDFBFF),
+    onSurface = Color(0xFF1A1C1E),
+    surfaceContainer = Color(0xFFF0F3F9),
+    surfaceContainerHigh = Color(0xFFE8EDF5)
+)
 
-@Serializable
-data class DetailDestination(val objectId: Int)
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFFA8C7FA),
+    onPrimary = Color(0xFF003062),
+    primaryContainer = Color(0xFF00468A),
+    onPrimaryContainer = Color(0xFFD6E3FF),
+    secondary = Color(0xFFBDC7DC),
+    onSecondary = Color(0xFF273141),
+    secondaryContainer = Color(0xFF3D4758),
+    onSecondaryContainer = Color(0xFFD9E3F8),
+    background = Color(0xFF111318),
+    onBackground = Color(0xFFE2E2E9),
+    surface = Color(0xFF111318),
+    onSurface = Color(0xFFE2E2E9),
+    surfaceContainer = Color(0xFF1D2026),
+    surfaceContainerHigh = Color(0xFF282A30)
+)
 
 @Composable
 fun App() {
-    MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-    ) {
-        Surface {
-            val navController: NavHostController = rememberNavController()
-            NavHost(navController = navController, startDestination = ListDestination) {
-                composable<ListDestination> {
-                    ListScreen(navigateToDetails = { objectId ->
-                        navController.navigate(DetailDestination(objectId))
-                    })
-                }
-                composable<DetailDestination> { backStackEntry ->
-                    DetailScreen(
-                        objectId = backStackEntry.toRoute<DetailDestination>().objectId,
-                        navigateBack = {
-                            navController.popBackStack()
+    val isDark = isSystemInDarkTheme()
+    val colors = if (isDark) DarkColors else LightColors
+
+    MaterialTheme(colorScheme = colors) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            var currentTab by remember { mutableStateOf(AppTab.SCHEDULE) }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                Crossfade(targetState = currentTab) { tab ->
+                    when (tab) {
+                        AppTab.SCHEDULE -> {
+                            ScheduleScreen(viewModel = koinViewModel())
                         }
-                    )
+                        AppTab.OTHER -> {
+                            OtherScreen(viewModel = koinViewModel())
+                        }
+                    }
                 }
+
+                FloatingDock(
+                    currentTab = currentTab,
+                    onTabSelected = { currentTab = it },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
     }
