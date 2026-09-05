@@ -12,6 +12,12 @@ class OtherViewModel(
     val savedTargets: StateFlow<List<ScheduleTarget>> = repository.savedTargets
     val selectedTarget: StateFlow<ScheduleTarget?> = repository.selectedTarget
     val isLoading: StateFlow<Boolean> = repository.isLoading
+    val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
+
+    fun setShowEmptyLessons(enabled: Boolean) {
+        repository.setShowEmptyLessons(enabled)
+    }
+
 
     fun selectTarget(target: ScheduleTarget) {
         repository.selectTarget(target)

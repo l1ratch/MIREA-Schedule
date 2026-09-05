@@ -1,5 +1,12 @@
 package com.jetbrains.kmpapp.screens.schedule
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,8 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,10 +42,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jetbrains.kmpapp.data.model.ScheduleSlot
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,16 +56,52 @@ fun ScheduleScreen(
     viewModel: ScheduleViewModel,
     modifier: Modifier = Modifier
 ) {
+    val selectedLessonForDetail by viewModel.selectedLessonForDetail.collectAsState()
+
+    AnimatedContent(
+        targetState = selectedLessonForDetail,
+        transitionSpec = {
+            if (targetState != null) {
+                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                    slideOutHorizontally { width -> -width } + fadeOut()
+                )
+            } else {
+                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                    slideOutHorizontally { width -> width } + fadeOut()
+                )
+            }
+        },
+        modifier = modifier.fillMaxSize()
+    ) { detailLesson ->
+        if (detailLesson != null) {
+            LessonDetailScreen(
+                lesson = detailLesson,
+                onBack = { viewModel.selectLessonForDetail(null) }
+            )
+        } else {
+            ScheduleMainContent(viewModel = viewModel)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScheduleMainContent(
+    viewModel: ScheduleViewModel,
+    modifier: Modifier = Modifier
+) {
     val savedTargets by viewModel.savedTargets.collectAsState()
     val selectedTarget by viewModel.selectedTarget.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
-    val dayLessons by viewModel.dayLessons.collectAsState()
+    val daySlots by viewModel.daySlots.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    var totalDrag by remember { mutableStateOf(0f) }
 
     Scaffold(
         topBar = {
@@ -126,60 +169,112 @@ fun ScheduleScreen(
                     }
                 }
             } else {
-                // Week calendar strip
+                // Week calendar strip with navigation bar
                 WeekCalendarStrip(
                     selectedDate = selectedDate,
                     onDateSelected = { viewModel.selectDate(it) },
-                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
                 )
 
-                // Lessons list
-                if (dayLessons.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = 90.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "🎉",
-                                fontSize = 48.sp
+                // Swipable schedule content area
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(selectedDate) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { totalDrag = 0f },
+                                onDragEnd = {
+                                    if (totalDrag < -90f) {
+                                        viewModel.nextDay()
+                                    } else if (totalDrag > 90f) {
+                                        viewModel.previousDay()
+                                    }
+                                    totalDrag = 0f
+                                },
+                                onDragCancel = { totalDrag = 0f },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    totalDrag += dragAmount
+                                }
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "На этот день пар нет",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Отличный повод отдохнуть!",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            if (errorMessage != null) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = errorMessage ?: "",
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 12.sp,
-                                    textAlign = TextAlign.Center
+                        }
+                ) {
+                    AnimatedContent(
+                        targetState = selectedDate,
+                        transitionSpec = {
+                            if (targetState > initialState) {
+                                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                                    slideOutHorizontally { width -> -width } + fadeOut()
                                 )
-                                IconButton(onClick = { viewModel.refresh() }) {
-                                    Icon(Icons.Default.Refresh, contentDescription = "Повторить")
+                            } else {
+                                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                                    slideOutHorizontally { width -> width } + fadeOut()
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) { _ ->
+                        if (daySlots.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(bottom = 90.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "🎉",
+                                        fontSize = 48.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "На этот день пар нет",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Отличный повод отдохнуть!",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    if (errorMessage != null) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            text = errorMessage ?: "",
+                                            color = MaterialTheme.colorScheme.error,
+                                            fontSize = 12.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        IconButton(onClick = { viewModel.refresh() }) {
+                                            Icon(Icons.Default.Refresh, contentDescription = "Повторить")
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp)
-                    ) {
-                        items(dayLessons, key = { it.id }) { lesson ->
-                            LessonCard(lesson = lesson)
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp)
+                            ) {
+                                items(
+                                    items = daySlots,
+                                    key = { slot ->
+                                        when (slot) {
+                                            is ScheduleSlot.Active -> "active_${slot.bellNumber}_${slot.lessons.firstOrNull()?.id}"
+                                            is ScheduleSlot.Empty -> "empty_${slot.bellNumber}"
+                                        }
+                                    }
+                                ) { slot ->
+                                    ScheduleSlotCard(
+                                        slot = slot,
+                                        onLessonClick = { lesson ->
+                                            viewModel.selectLessonForDetail(lesson)
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.data.storage
+package com.jetbrains.kmpapp.data.storage
 
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
@@ -31,6 +31,9 @@ class ScheduleStorage(
     private val _cachedLessons = MutableStateFlow<Map<Int, List<Lesson>>>(emptyMap())
     val cachedLessons: StateFlow<Map<Int, List<Lesson>>> = _cachedLessons.asStateFlow()
 
+    private val _showEmptyLessons = MutableStateFlow<Boolean>(false)
+    val showEmptyLessons: StateFlow<Boolean> = _showEmptyLessons.asStateFlow()
+
     init {
         loadPersistedState()
     }
@@ -38,6 +41,12 @@ class ScheduleStorage(
     private fun loadPersistedState() {
         scope.launch {
             try {
+                // Restore show empty lessons setting
+                val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
+                if (!showEmptyStr.isNullOrBlank()) {
+                    _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: false
+                }
+
                 // Restore saved targets
                 val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
                 val targets: List<ScheduleTarget> = if (!targetsJson.isNullOrBlank()) {
@@ -70,6 +79,18 @@ class ScheduleStorage(
             }
         }
     }
+
+    fun setShowEmptyLessons(enabled: Boolean) {
+        _showEmptyLessons.value = enabled
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_SHOW_EMPTY_LESSONS, enabled.toString())
+            } catch (e: Exception) {
+                println("Failed to persist showEmptyLessons: ${e.message}")
+            }
+        }
+    }
+
 
     fun addTarget(target: ScheduleTarget) {
         _savedTargets.update { list ->
@@ -151,5 +172,7 @@ class ScheduleStorage(
         private const val KEY_SAVED_TARGETS = "mirea_saved_targets"
         private const val KEY_SELECTED_TARGET_ID = "mirea_selected_target_id"
         private const val KEY_LESSONS_PREFIX = "mirea_lessons_"
+        private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
     }
 }
+

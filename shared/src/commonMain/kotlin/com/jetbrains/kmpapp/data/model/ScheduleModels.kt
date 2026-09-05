@@ -1,4 +1,4 @@
-﻿package com.jetbrains.kmpapp.data.model
+package com.jetbrains.kmpapp.data.model
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
@@ -74,3 +74,23 @@ data class SemesterWeekInfo(
     val weekNumber: Int,
     val isEven: Boolean
 )
+
+sealed class ScheduleSlot {
+    abstract val bellNumber: Int
+    abstract val startTime: String
+    abstract val endTime: String
+
+    data class Active(
+        override val bellNumber: Int,
+        override val startTime: String,
+        override val endTime: String,
+        val lessons: List<Lesson>
+    ) : ScheduleSlot()
+
+    data class Empty(
+        override val bellNumber: Int,
+        override val startTime: String,
+        override val endTime: String
+    ) : ScheduleSlot()
+}
+

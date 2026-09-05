@@ -24,12 +24,18 @@ class ScheduleRepository(
 
     val savedTargets: StateFlow<List<ScheduleTarget>> = storage.savedTargets
     val selectedTarget: StateFlow<ScheduleTarget?> = storage.selectedTarget
+    val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    fun setShowEmptyLessons(enabled: Boolean) {
+        storage.setShowEmptyLessons(enabled)
+    }
+
 
     val currentLessons: StateFlow<List<Lesson>> = combine(
         storage.selectedTarget,
