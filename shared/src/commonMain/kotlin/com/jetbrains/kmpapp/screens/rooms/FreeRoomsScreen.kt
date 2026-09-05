@@ -22,13 +22,21 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -46,18 +54,24 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.FreeRoomBellSlot
@@ -140,6 +154,10 @@ fun FreeRoomsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { focusManager.clearFocus() }
         ) {
             // Search field
             OutlinedTextField(
@@ -163,79 +181,190 @@ fun FreeRoomsScreen(
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            var showCampusDialog by remember { mutableStateOf(false) }
+            var showBellDialog by remember { mutableStateOf(false) }
+            var showFloorDialog by remember { mutableStateOf(false) }
 
-            // Campus Selector Chips
+            // Compact Filter Row matching schedule target selector style
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                availableCampuses.forEach { campus ->
-                    FilterChip(
-                        selected = selectedCampus.equals(campus, ignoreCase = true),
-                        onClick = { viewModel.selectCampus(campus) },
-                        label = { Text(campus, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) },
-                        shape = RoundedCornerShape(14.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Bell / Time Selector Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                bellSlots.forEach { slot ->
-                    val isSelected = selectedBell == slot.bell
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { viewModel.selectBell(slot.bell) },
-                        label = {
-                            Text(
-                                text = "${slot.bell} пара (${slot.start})",
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            }
-
-            // Floor Selector Chips (if available)
-            if (availableFloors.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedFloor == null,
-                        onClick = { viewModel.selectFloor(null) },
-                        label = { Text("Все этажи", fontSize = 12.sp) },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    availableFloors.forEach { floor ->
-                        FilterChip(
-                            selected = selectedFloor == floor,
-                            onClick = { viewModel.selectFloor(floor) },
-                            label = { Text("$floor этаж", fontSize = 12.sp) },
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                // Campus Selector
+                FilterDropdownButton(
+                    title = "Корпус",
+                    value = selectedCampus,
+                    icon = Icons.Default.LocationOn,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        focusManager.clearFocus()
+                        showCampusDialog = true
                     }
-                }
+                )
+
+                // Bell / Time Selector
+                val currentSlot = bellSlots.firstOrNull { it.bell == selectedBell }
+                FilterDropdownButton(
+                    title = "Пара",
+                    value = "$selectedBell пара (${currentSlot?.start ?: ""})",
+                    icon = Icons.Default.AccessTime,
+                    modifier = Modifier.weight(1.3f),
+                    onClick = {
+                        focusManager.clearFocus()
+                        showBellDialog = true
+                    }
+                )
+
+                // Floor Selector
+                FilterDropdownButton(
+                    title = "Этаж",
+                    value = selectedFloor?.let { "$it этаж" } ?: "Все",
+                    icon = Icons.Default.Layers,
+                    modifier = Modifier.weight(0.9f),
+                    onClick = {
+                        focusManager.clearFocus()
+                        showFloorDialog = true
+                    }
+                )
+            }
+
+            if (showCampusDialog) {
+                AlertDialog(
+                    onDismissRequest = { showCampusDialog = false },
+                    title = { Text("Выберите корпус", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            availableCampuses.forEach { campus ->
+                                val isSelected = selectedCampus.equals(campus, ignoreCase = true)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            viewModel.selectCampus(campus)
+                                            showCampusDialog = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = campus,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (isSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showCampusDialog = false }) { Text("Закрыть") }
+                    }
+                )
+            }
+
+            if (showBellDialog) {
+                AlertDialog(
+                    onDismissRequest = { showBellDialog = false },
+                    title = { Text("Выберите пару", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            bellSlots.forEach { slot ->
+                                val isSelected = selectedBell == slot.bell
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            viewModel.selectBell(slot.bell)
+                                            showBellDialog = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${slot.bell} пара (${slot.start} - ${slot.end})",
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (isSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showBellDialog = false }) { Text("Закрыть") }
+                    }
+                )
+            }
+
+            if (showFloorDialog) {
+                AlertDialog(
+                    onDismissRequest = { showFloorDialog = false },
+                    title = { Text("Выберите этаж", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            val isAllSelected = selectedFloor == null
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        viewModel.selectFloor(null)
+                                        showFloorDialog = false
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Все этажи",
+                                    fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (isAllSelected) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+
+                            availableFloors.forEach { floor ->
+                                val isSelected = selectedFloor == floor
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            viewModel.selectFloor(floor)
+                                            showFloorDialog = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "$floor этаж",
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (isSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showFloorDialog = false }) { Text("Закрыть") }
+                    }
+                )
             }
 
             // Results count
@@ -295,7 +424,11 @@ fun FreeRoomsScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures { focusManager.clearFocus() }
+                        }
                 ) {
                     items(filteredRooms, key = { it.id }) { room ->
                         FreeRoomGridCard(
@@ -303,7 +436,10 @@ fun FreeRoomsScreen(
                             dateIso = viewModel.currentDateIso,
                             currentBell = selectedBell,
                             bellSlots = bellSlots,
-                            onClick = { viewModel.selectRoomForDetail(room) }
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.selectRoomForDetail(room)
+                            }
                         )
                     }
                 }
@@ -445,3 +581,48 @@ private fun RoomDetailDialog(
         }
     )
 }
+
+@Composable
+private fun FilterDropdownButton(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = value,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+

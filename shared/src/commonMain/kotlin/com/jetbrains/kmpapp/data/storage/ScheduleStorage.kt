@@ -42,6 +42,9 @@ class ScheduleStorage(
     private val _dockTabs = MutableStateFlow<List<AppTab>>(DEFAULT_DOCK_TABS)
     val dockTabs: StateFlow<List<AppTab>> = _dockTabs.asStateFlow()
 
+    private val _isSakuraTheme = MutableStateFlow<Boolean>(false)
+    val isSakuraTheme: StateFlow<Boolean> = _isSakuraTheme.asStateFlow()
+
     init {
         loadPersistedState()
     }
@@ -74,6 +77,12 @@ class ScheduleStorage(
                     _dockTabs.value = sanitizeDockTabs(loaded)
                 } else {
                     _dockTabs.value = DEFAULT_DOCK_TABS
+                }
+
+                // Restore sakura theme
+                val sakuraStr = platformStorage.getString(KEY_SAKURA_THEME)
+                if (!sakuraStr.isNullOrBlank()) {
+                    _isSakuraTheme.value = sakuraStr.toBooleanStrictOrNull() ?: false
                 }
 
                 // Restore saved targets
@@ -260,6 +269,13 @@ class ScheduleStorage(
         }
     }
 
+    fun setSakuraTheme(enabled: Boolean) {
+        _isSakuraTheme.value = enabled
+        scope.launch {
+            platformStorage.saveString(KEY_SAKURA_THEME, enabled.toString())
+        }
+    }
+
     companion object {
         private const val KEY_SAVED_TARGETS = "mirea_saved_targets"
         private const val KEY_SELECTED_TARGET_ID = "mirea_selected_target_id"
@@ -267,6 +283,7 @@ class ScheduleStorage(
         private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
         private const val KEY_APP_THEME = "mirea_app_theme"
         private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"
+        private const val KEY_SAKURA_THEME = "mirea_sakura_theme_secret"
         val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.FREE_ROOMS, AppTab.TASKS, AppTab.OTHER)
     }
 }

@@ -82,7 +82,6 @@ fun AboutScreen(
     // Easter Egg: 8 taps on version text to unlock debug menu
     var tapCount by remember { mutableIntStateOf(0) }
     var lastTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
-    var easterEggHint by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadContributors()
@@ -137,7 +136,10 @@ fun AboutScreen(
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable {
+                modifier = Modifier.clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) {
                     val mark = lastTapMark
                     if (mark != null && mark.elapsedNow().inWholeMilliseconds < 1500L) {
                         tapCount++
@@ -146,12 +148,8 @@ fun AboutScreen(
                     }
                     lastTapMark = kotlin.time.TimeSource.Monotonic.markNow()
 
-                    if (tapCount in 4..7) {
-                        val remaining = 8 - tapCount
-                        easterEggHint = "Осталось $remaining ${if (remaining == 1) "нажатие" else "нажатия"} до режима отладки"
-                    } else if (tapCount >= 8) {
+                    if (tapCount >= 8) {
                         tapCount = 0
-                        easterEggHint = null
                         onOpenDebugMenu()
                     }
                 }
@@ -167,24 +165,6 @@ fun AboutScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-
-            AnimatedVisibility(visible = easterEggHint != null, enter = fadeIn(), exit = fadeOut()) {
-                if (easterEggHint != null) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        Text(
-                            text = easterEggHint!!,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -262,7 +242,7 @@ fun AboutScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Участники и контрибьюторы",
+                                text = "Участники проекта",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )

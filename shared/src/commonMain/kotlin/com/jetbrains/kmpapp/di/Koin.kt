@@ -19,6 +19,9 @@ import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
+import com.jetbrains.kmpapp.data.TaskRepository
+import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
+
 val dataModule = module {
     single {
         val json = Json {
@@ -38,12 +41,14 @@ val dataModule = module {
     singleOf(::ScheduleRepository)
     singleOf(::AppUpdateChecker)
     singleOf(::FreeRoomsRepository)
+    singleOf(::TaskRepository)
 }
 
 val viewModelModule = module {
     factoryOf(::ScheduleViewModel)
     factoryOf(::OtherViewModel)
     factoryOf(::FreeRoomsViewModel)
+    factoryOf(::TasksViewModel)
 }
 
 fun initKoin() {

@@ -108,6 +108,7 @@ private fun ScheduleMainContent(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeDiff by viewModel.activeDiff.collectAsState()
     val refreshStatus by viewModel.refreshStatus.collectAsState()
+    val dayLessonSummaries by viewModel.dayLessonSummaries.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -190,36 +191,40 @@ private fun ScheduleMainContent(
                 WeekCalendarStrip(
                     selectedDate = selectedDate,
                     onDateSelected = { viewModel.selectDate(it) },
+                    lessonSummaries = dayLessonSummaries,
                     modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
                 )
 
-                // Swipable schedule content area
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(selectedDate) {
-                            detectHorizontalDragGestures(
-                                onDragStart = { totalDrag = 0f },
-                                onDragEnd = {
-                                    if (totalDrag < -90f) {
-                                        viewModel.nextDay()
-                                    } else if (totalDrag > 90f) {
-                                        viewModel.previousDay()
-                                    }
-                                    totalDrag = 0f
-                                },
-                                onDragCancel = { totalDrag = 0f },
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    totalDrag += dragAmount
-                                }
-                            )
-                        }
+                // Pull-to-refresh container on outer level for natural gesture handling
+                PullToRefreshBox(
+                    isRefreshing = isLoading,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    PullToRefreshBox(
-                        isRefreshing = isLoading,
-                        onRefresh = { viewModel.refresh() },
-                        modifier = Modifier.fillMaxSize()
+                    // Swipable schedule content area
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(selectedDate) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { totalDrag = 0f },
+                                    onDragEnd = {
+                                        if (totalDrag < -90f) {
+                                            viewModel.nextDay()
+                                        } else if (totalDrag > 90f) {
+                                            viewModel.previousDay()
+                                        }
+                                        totalDrag = 0f
+                                    },
+                                    onDragCancel = { totalDrag = 0f },
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        if (kotlin.math.abs(dragAmount) > 2f) {
+                                            change.consume()
+                                        }
+                                        totalDrag += dragAmount
+                                    }
+                                )
+                            }
                     ) {
                         AnimatedContent(
                         targetState = selectedDate,

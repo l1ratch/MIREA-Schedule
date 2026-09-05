@@ -63,6 +63,18 @@ class ScheduleViewModel(
             lessons.map { it.date }.toSet()
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
+    val dayLessonSummaries: StateFlow<Map<LocalDate, DayLessonSummary>> = repository.currentLessons
+        .combine(MutableStateFlow(Unit)) { lessons, _ ->
+            lessons.groupBy { it.date }.mapValues { (_, dayLessons) ->
+                DayLessonSummary(
+                    hasLecture = dayLessons.any { it.lessonType == com.jetbrains.kmpapp.data.model.LessonType.LECTURE },
+                    hasPractice = dayLessons.any { it.lessonType == com.jetbrains.kmpapp.data.model.LessonType.PRACTICE },
+                    hasLab = dayLessons.any { it.lessonType == com.jetbrains.kmpapp.data.model.LessonType.LAB },
+                    hasOther = dayLessons.any { it.lessonType == com.jetbrains.kmpapp.data.model.LessonType.OTHER }
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
     val daySlots: StateFlow<List<ScheduleSlot>> = combine(
         repository.currentLessons,
         _selectedDate,
@@ -159,3 +171,11 @@ class ScheduleViewModel(
         return repository.search(query)
     }
 }
+
+data class DayLessonSummary(
+    val hasLecture: Boolean = false,
+    val hasPractice: Boolean = false,
+    val hasLab: Boolean = false,
+    val hasOther: Boolean = false
+)
+

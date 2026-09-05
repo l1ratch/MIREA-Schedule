@@ -42,12 +42,17 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+
 private const val BASE_PAGE = 1000
 
 @Composable
 fun WeekCalendarStrip(
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
+    lessonSummaries: Map<LocalDate, DayLessonSummary> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
     val today = DateUtils.today()
@@ -190,10 +195,12 @@ fun WeekCalendarStrip(
                     val bgColor by animateColorAsState(targetBgColor)
                     val textColor by animateColorAsState(targetTextColor)
 
+                    val summary = lessonSummaries[date]
+
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
+                            .height(64.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(bgColor)
                             .then(
@@ -205,7 +212,8 @@ fun WeekCalendarStrip(
                                     )
                                 } else Modifier
                             )
-                            .clickable { onDateSelected(date) },
+                            .clickable { onDateSelected(date) }
+                            .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -216,13 +224,50 @@ fun WeekCalendarStrip(
                             color = if (isSelected) textColor.copy(alpha = 0.85f)
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(1.dp))
                         Text(
                             text = date.day.toString(),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = textColor
                         )
+                        Spacer(modifier = Modifier.height(3.dp))
+
+                        // Colored indicator dots for lecture, practice, lab
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.height(5.dp)
+                        ) {
+                            if (summary != null && (summary.hasLecture || summary.hasPractice || summary.hasLab)) {
+                                if (summary.hasLecture) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.5.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) Color.White else Color(0xFF3B82F6))
+                                    )
+                                }
+                                if (summary.hasPractice) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.5.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) Color.White.copy(alpha = 0.85f) else Color(0xFFF59E0B))
+                                    )
+                                }
+                                if (summary.hasLab) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.5.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) Color.White.copy(alpha = 0.85f) else Color(0xFF10B981))
+                                    )
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.size(4.5.dp))
+                            }
+                        }
                     }
                 }
             }

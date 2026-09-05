@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun OtherScreen(
     viewModel: OtherViewModel,
+    tasksViewModel: com.jetbrains.kmpapp.screens.tasks.TasksViewModel = org.koin.compose.viewmodel.koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val activeSubScreen by viewModel.activeSubScreen.collectAsState()
@@ -90,7 +91,8 @@ fun OtherScreen(
                     viewModel = viewModel,
                     onBack = { viewModel.resetToRoot() },
                     onOpenDataAndCache = { viewModel.navigateToSubScreen(OtherSubScreen.DATA_AND_CACHE) },
-                    onOpenDockSettings = { viewModel.navigateToSubScreen(OtherSubScreen.DOCK_SETTINGS) }
+                    onOpenDockSettings = { viewModel.navigateToSubScreen(OtherSubScreen.DOCK_SETTINGS) },
+                    onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) }
                 )
             }
             OtherSubScreen.DATA_AND_CACHE -> {
@@ -102,6 +104,12 @@ fun OtherScreen(
             OtherSubScreen.DOCK_SETTINGS -> {
                 DockSettingsScreen(
                     viewModel = viewModel,
+                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.SETTINGS) }
+                )
+            }
+            OtherSubScreen.TASK_SETTINGS -> {
+                TaskSettingsScreen(
+                    tasksViewModel = tasksViewModel,
                     onBack = { viewModel.navigateToSubScreen(OtherSubScreen.SETTINGS) }
                 )
             }

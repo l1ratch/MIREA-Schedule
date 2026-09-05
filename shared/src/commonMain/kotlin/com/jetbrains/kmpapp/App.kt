@@ -29,6 +29,9 @@ import com.jetbrains.kmpapp.screens.rooms.FreeRoomsViewModel
 import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import com.jetbrains.kmpapp.screens.tasks.TasksScreen
+import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
+import com.jetbrains.kmpapp.theme.SakuraDarkColors
+import com.jetbrains.kmpapp.theme.SakuraLightColors
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -70,11 +73,13 @@ private val DarkColors = darkColorScheme(
 fun App() {
     val repository: ScheduleRepository = koinInject()
     val themeMode by repository.themeMode.collectAsState()
+    val isSakuraTheme by repository.isSakuraTheme.collectAsState()
     val dockTabs by repository.dockTabs.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
     val freeRoomsViewModel: FreeRoomsViewModel = koinViewModel()
+    val tasksViewModel: TasksViewModel = koinViewModel()
 
     val systemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
@@ -83,7 +88,11 @@ fun App() {
         ThemeMode.DARK -> true
     }
 
-    val colors = if (isDark) DarkColors else LightColors
+    val colors = if (isSakuraTheme) {
+        if (isDark) SakuraDarkColors else SakuraLightColors
+    } else {
+        if (isDark) DarkColors else LightColors
+    }
 
     MaterialTheme(colorScheme = colors) {
         Surface(
@@ -108,7 +117,7 @@ fun App() {
                             FreeRoomsScreen(viewModel = freeRoomsViewModel)
                         }
                         AppTab.TASKS -> {
-                            TasksScreen()
+                            TasksScreen(viewModel = tasksViewModel)
                         }
                         AppTab.OTHER -> {
                             OtherScreen(viewModel = otherViewModel)

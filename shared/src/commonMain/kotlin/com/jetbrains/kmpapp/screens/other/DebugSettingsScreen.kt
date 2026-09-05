@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.model.AppErrorCode
 import com.jetbrains.kmpapp.data.model.AppVersion
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
@@ -59,11 +60,9 @@ fun DebugSettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
 
-    val storageStats by viewModel.storageStats.collectAsState()
-
-    var simulateOffline by remember { mutableStateOf(false) }
-    var simulateSlowNetwork by remember { mutableStateOf(false) }
-    var detailedLogging by remember { mutableStateOf(false) }
+    val simulateOffline by DebugConfig.isOfflineSimulated.collectAsState()
+    val networkDelayMs by DebugConfig.networkDelayMs.collectAsState()
+    val detailedLogging by DebugConfig.detailedLogging.collectAsState()
     var lastTriggeredMessage by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -118,8 +117,8 @@ fun DebugSettingsScreen(
                     subtitle = "Тестирование работы с сохраненным кэшем без сети",
                     checked = simulateOffline,
                     onCheckedChange = {
-                        simulateOffline = it
-                        lastTriggeredMessage = if (it) "Оффлайн-режим активирован" else "Оффлайн-режим отключен"
+                        DebugConfig.setOfflineSimulated(it)
+                        lastTriggeredMessage = if (it) "Оффлайн-режим активирован (сеть отключена)" else "Оффлайн-режим отключен"
                     }
                 )
 
@@ -131,9 +130,9 @@ fun DebugSettingsScreen(
                 DebugSwitchRow(
                     title = "Искусственная задержка (2 сек)",
                     subtitle = "Эмуляция медленного 3G для проверки лоадеров",
-                    checked = simulateSlowNetwork,
+                    checked = networkDelayMs > 0,
                     onCheckedChange = {
-                        simulateSlowNetwork = it
+                        DebugConfig.setNetworkDelay(if (it) 2000L else 0L)
                         lastTriggeredMessage = if (it) "Задержка 2 сек включена" else "Задержка отключена"
                     }
                 )
@@ -148,7 +147,7 @@ fun DebugSettingsScreen(
                     subtitle = "Вывод заголовков и тел сетевых запросов в консоль",
                     checked = detailedLogging,
                     onCheckedChange = {
-                        detailedLogging = it
+                        DebugConfig.setDetailedLogging(it)
                         lastTriggeredMessage = if (it) "Логирование включено" else "Логирование отключено"
                     }
                 )
@@ -242,18 +241,18 @@ fun DebugSettingsScreen(
                 }
             }
 
-            // Section 3: Diagnostic Info
+            // Section 3: Diagnostic Info (technical only, no duplicate storage stats)
             DebugSectionCard(
-                title = "Диагностика окружения",
+                title = "Информация о сборке",
                 icon = Icons.Default.Info
             ) {
                 DiagnosticItem("Версия приложения", AppVersion.DISPLAY_VERSION)
+                DiagnosticItem("Идентификатор (Bundle/ID)", AppVersion.APPLICATION_ID)
                 DiagnosticItem("Репозиторий", AppVersion.GITHUB_REPO)
-                DiagnosticItem("Фреймворк", "Compose Multiplatform 1.12")
-                DiagnosticItem("Сетевой клиент", "Ktor 3.5.1")
-                DiagnosticItem("Кэш расписаний", "${storageStats.schedulesCount} групп (${storageStats.formatBytes(storageStats.schedulesSizeBytes)})")
-                DiagnosticItem("Всего занятий в базе", "${storageStats.lessonsCount}")
-                DiagnosticItem("Размер хранилища", storageStats.formatBytes(storageStats.totalSizeBytes))
+                DiagnosticItem("Платформа", "Kotlin Multiplatform")
+                DiagnosticItem("UI Движок", "Compose Multiplatform 1.8.0")
+                DiagnosticItem("Сетевой клиент", "Ktor 3.1.1 (Engine/CIO)")
+                DiagnosticItem("Локальное хранилище", "PlatformStorage (NSUserDefaults / SharedPreferences)")
             }
 
             Spacer(modifier = Modifier.height(80.dp))

@@ -66,6 +66,12 @@ class ScheduleRepository(
         storage.setThemeMode(mode)
     }
 
+    val isSakuraTheme: StateFlow<Boolean> = storage.isSakuraTheme
+
+    fun setSakuraTheme(enabled: Boolean) {
+        storage.setSakuraTheme(enabled)
+    }
+
     val currentLessons: StateFlow<List<Lesson>> = combine(
         storage.selectedTarget,
         storage.cachedLessons

@@ -31,6 +31,7 @@ enum class OtherSubScreen(val depth: Int) {
     SETTINGS(1),
     DATA_AND_CACHE(2),
     DOCK_SETTINGS(2),
+    TASK_SETTINGS(2),
     ABOUT(1),
     DEBUG_SETTINGS(2)
 }
@@ -45,7 +46,12 @@ class OtherViewModel(
     val isLoading: StateFlow<Boolean> = repository.isLoading
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
+    val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
+
+    fun setSakuraTheme(enabled: Boolean) {
+        repository.setSakuraTheme(enabled)
+    }
 
     fun setDockTabs(tabs: List<AppTab>) {
         repository.setDockTabs(tabs)
@@ -90,11 +96,12 @@ class OtherViewModel(
             _isLoadingContributors.value = true
             val fetched = updateChecker.fetchContributors()
             if (fetched.isNotEmpty()) {
+                val l1ratchFromApi = fetched.find { it.login.equals("l1ratch", ignoreCase = true) }
                 val staticLead = com.jetbrains.kmpapp.data.model.GitHubContributor(
                     login = "l1ratch",
                     htmlUrl = "https://github.com/l1ratch",
-                    avatarUrl = "https://avatars.githubusercontent.com/u/103525164?v=4",
-                    contributions = 14,
+                    avatarUrl = l1ratchFromApi?.avatarUrl ?: "https://avatars.githubusercontent.com/u/103525164?v=4",
+                    contributions = l1ratchFromApi?.contributions ?: 14,
                     role = "Создатель и ведущий разработчик"
                 )
                 val otherContributors = fetched.filterNot { it.login.equals("l1ratch", ignoreCase = true) }

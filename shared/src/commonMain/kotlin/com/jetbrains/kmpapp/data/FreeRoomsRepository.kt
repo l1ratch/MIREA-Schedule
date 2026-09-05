@@ -23,6 +23,19 @@ class FreeRoomsRepository(
      * Loads free rooms data: from disk cache first, or fetches fresh copy from GitHub Pages CDN.
      */
     suspend fun getFreeRooms(forceRefresh: Boolean = false): FreeRoomsData {
+        if (DebugConfig.isOfflineSimulated.value) {
+            val cached = storage.getString(cacheKey)
+            return if (!cached.isNullOrEmpty()) {
+                try {
+                    json.decodeFromString<FreeRoomsData>(cached)
+                } catch (_: Exception) {
+                    FreeRoomsData()
+                }
+            } else {
+                FreeRoomsData()
+            }
+        }
+
         if (!forceRefresh) {
             val cached = storage.getString(cacheKey)
             if (!cached.isNullOrEmpty()) {
@@ -32,6 +45,11 @@ class FreeRoomsRepository(
                     println("FreeRoomsRepository: cache decode failed: ${e.message}")
                 }
             }
+        }
+
+        val delayMs = DebugConfig.networkDelayMs.value
+        if (delayMs > 0) {
+            kotlinx.coroutines.delay(delayMs)
         }
 
         return try {

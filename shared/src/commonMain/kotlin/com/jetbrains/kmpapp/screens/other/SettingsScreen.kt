@@ -46,18 +46,33 @@ import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
 @Composable
 fun SettingsScreen(
     viewModel: OtherViewModel,
     onBack: () -> Unit,
     onOpenDataAndCache: () -> Unit,
     onOpenDockSettings: () -> Unit,
+    onOpenTaskSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
 
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val isSakuraTheme by viewModel.isSakuraTheme.collectAsState()
+
+    var sakuraTapCount by remember { mutableIntStateOf(0) }
+    var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
+    var showSakuraDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -97,7 +112,20 @@ fun SettingsScreen(
             // Section: Appearance
             SettingsSectionCard(
                 title = "Внешний вид",
-                icon = Icons.Default.Palette
+                icon = Icons.Default.Palette,
+                onIconClick = {
+                    val mark = lastSakuraTapMark
+                    if (mark != null && mark.elapsedNow().inWholeMilliseconds < 1500L) {
+                        sakuraTapCount++
+                    } else {
+                        sakuraTapCount = 1
+                    }
+                    lastSakuraTapMark = kotlin.time.TimeSource.Monotonic.markNow()
+                    if (sakuraTapCount >= 8) {
+                        sakuraTapCount = 0
+                        showSakuraDialog = true
+                    }
+                }
             ) {
                 Text(
                     text = "Тема приложения",
@@ -166,6 +194,41 @@ fun SettingsScreen(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Открыть",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Section: Tasks Settings
+            SettingsSectionCard(
+                title = "Задачи и дедлайны",
+                icon = Icons.Default.TaskAlt
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onOpenTaskSettings)
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Настройки задач",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Генератор лабораторных, приоритеты, очистка базы",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Открыть",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
             }
@@ -239,12 +302,49 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
+
+    if (showSakuraDialog) {
+        AlertDialog(
+            onDismissRequest = { showSakuraDialog = false },
+            title = { Text("Секретная тема 🌸", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        text = "Очередной тыкальщик? 😏\n\nРаз уж ты нашёл этот секрет — держи эксклюзивную тему «Сакура / Аниме» в нежных пастельно-розовых тонах!",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Тема «Сакура»",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        androidx.compose.material3.Switch(
+                            checked = isSakuraTheme,
+                            onCheckedChange = { viewModel.setSakuraTheme(it) }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSakuraDialog = false }) {
+                    Text("Готово")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun SettingsSectionCard(
     title: String,
     icon: ImageVector,
+    onIconClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Card(
@@ -258,7 +358,17 @@ private fun SettingsSectionCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier
+                        .size(22.dp)
+                        .then(
+                            if (onIconClick != null) {
+                                Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = onIconClick
+                                )
+                            } else Modifier
+                        )
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
