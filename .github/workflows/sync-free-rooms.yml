@@ -1,0 +1,35 @@
+name: Sync Free Classrooms Schedule
+
+on:
+  schedule:
+    # Запуск 1-го и 15-го числа каждого месяца в 03:00 UTC (06:00 МСК)
+    - cron: '0 3 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    name: 🏢 Build Free Rooms Schedule
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 🔨 Run Free Rooms Builder
+        run: |
+          python tools/free_rooms_builder/build_free_rooms.py
+
+      - name: 🚀 Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist_free_rooms
+          publish_branch: gh-pages
+          force_orphan: true
