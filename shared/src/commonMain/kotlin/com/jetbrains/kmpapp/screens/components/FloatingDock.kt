@@ -41,6 +41,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.collectAsState
+import com.jetbrains.kmpapp.data.power.PlatformPowerManager
+import org.koin.compose.koinInject
+
 enum class AppTab(
     val title: String,
     val selectedIcon: ImageVector,
@@ -62,6 +67,8 @@ fun FloatingDock(
     tabs: List<AppTab> = AppTab.entries,
     modifier: Modifier = Modifier
 ) {
+    val powerManager: PlatformPowerManager = koinInject()
+    val isLowPowerMode by powerManager.isLowPowerMode.collectAsState()
     val displayedTabs = remember(tabs) { tabs.take(5) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Elevated comfortably above bottom: iOS home indicator (34dp) sits at ~20dp offset; Android button bar sits safely above buttons
@@ -107,12 +114,17 @@ fun FloatingDock(
                         if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    val scale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.15f else 1.0f,
-                        animationSpec = spring(
+                    val scaleSpec = if (isLowPowerMode) {
+                        tween<Float>(durationMillis = 140)
+                    } else {
+                        spring(
                             dampingRatio = Spring.DampingRatioMediumBouncy,
                             stiffness = Spring.StiffnessLow
                         )
+                    }
+                    val scale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.15f else 1.0f,
+                        animationSpec = scaleSpec
                     )
 
                     Box(
