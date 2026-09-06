@@ -57,10 +57,10 @@ object MapHtmlGenerator {
               fill: #f1f5f9 !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               font-weight: 700 !important;
-              font-size: ${'$'}{labelFontSize}px !important;
+              font-size: ${labelFontSize}px !important;
               letter-spacing: 0.5px;
               stroke: #0f141c !important;
-              stroke-width: ${'$'}{labelStrokeWidth}px !important;
+              stroke-width: ${labelStrokeWidth}px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
@@ -68,9 +68,9 @@ object MapHtmlGenerator {
               fill: #60a5fa !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               font-weight: 700 !important;
-              font-size: ${'$'}{markerFontSize}px !important;
+              font-size: ${markerFontSize}px !important;
               stroke: #0f141c !important;
-              stroke-width: ${'$'}{markerStrokeWidth}px !important;
+              stroke-width: ${markerStrokeWidth}px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
@@ -119,10 +119,10 @@ object MapHtmlGenerator {
               fill: #0f172a !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               font-weight: 700 !important;
-              font-size: ${'$'}{labelFontSize}px !important;
+              font-size: ${labelFontSize}px !important;
               letter-spacing: 0.5px;
               stroke: #ffffff !important;
-              stroke-width: ${'$'}{labelStrokeWidth}px !important;
+              stroke-width: ${labelStrokeWidth}px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
@@ -130,9 +130,9 @@ object MapHtmlGenerator {
               fill: #2563eb !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               font-weight: 700 !important;
-              font-size: ${'$'}{markerFontSize}px !important;
+              font-size: ${markerFontSize}px !important;
               stroke: #ffffff !important;
-              stroke-width: ${'$'}{markerStrokeWidth}px !important;
+              stroke-width: ${markerStrokeWidth}px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
@@ -177,7 +177,7 @@ object MapHtmlGenerator {
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    background-color: ${'$'}{if (isDark) "#0b0f17" else "#f8fafc"}; user-select: none; -webkit-user-select: none;
+    background-color: ${if (isDark) "#0b0f17" else "#f8fafc"}; user-select: none; -webkit-user-select: none;
     touch-action: none;
   }
   #viewport {
@@ -194,7 +194,7 @@ object MapHtmlGenerator {
     overflow: visible !important;
     touch-action: none;
   }
-  ${'$'}themeStyles
+  $themeStyles
   
   .Room rect, .Room path {
     cursor: pointer;
@@ -207,10 +207,10 @@ object MapHtmlGenerator {
     top: 76px;
     left: 50%;
     transform: translateX(-50%) translateY(0);
-    background: ${'$'}cardBg;
+    background: $cardBg;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid ${'$'}cardBorder;
+    border: 1px solid $cardBorder;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
     border-radius: 18px;
     padding: 10px 16px;
@@ -243,14 +243,14 @@ object MapHtmlGenerator {
   .room-card-title {
     font-size: 15px;
     font-weight: 700;
-    color: ${'$'}cardTitleColor;
+    color: $cardTitleColor;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .room-card-subtitle {
     font-size: 12px;
-    color: ${'$'}cardSubColor;
+    color: $cardSubColor;
     margin-top: 1px;
     white-space: nowrap;
     overflow: hidden;
@@ -259,7 +259,7 @@ object MapHtmlGenerator {
   .room-card-close {
     background: transparent;
     border: none;
-    color: ${'$'}cardSubColor;
+    color: $cardSubColor;
     font-size: 15px;
     font-weight: bold;
     cursor: pointer;
@@ -283,7 +283,7 @@ object MapHtmlGenerator {
       <button class="room-card-close" id="room-card-close">✕</button>
     </div>
   </div>
-  ${'$'}preparedSvg
+  $preparedSvg
 </div>
 <script>
   const viewport = document.getElementById('viewport');
@@ -294,10 +294,10 @@ object MapHtmlGenerator {
   const roomIcon = document.getElementById('room-card-icon');
   const roomClose = document.getElementById('room-card-close');
 
-  const origX = ${'$'}{origX};
-  const origY = ${'$'}{origY};
-  const origW = ${'$'}{origW};
-  const origH = ${'$'}{origH};
+  const origX = $origX;
+  const origY = $origY;
+  const origW = $origW;
+  const origH = $origH;
   const campusAspect = (origH > 0) ? (origW / origH) : 1.0;
 
   let curVx = origX;
