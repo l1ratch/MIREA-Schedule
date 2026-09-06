@@ -1,9 +1,9 @@
 {
   "version": "26.9.0",
-  "build": 41,
+  "build": 42,
   "critical": false,
   "min_supported_build": 1,
   "changelog": "Карты: устранение слипания номеров аудиторий на В-78, гармоничные размеры подписей",
   "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
-  "updated_at": "2026-09-06T13:25:26.761332+00:00"
+  "updated_at": "2026-09-06T13:46:58.866677+00:00"
 }
