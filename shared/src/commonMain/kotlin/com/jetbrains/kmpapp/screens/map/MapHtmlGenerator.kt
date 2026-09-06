@@ -6,60 +6,98 @@ object MapHtmlGenerator {
         svgContent: String,
         isDark: Boolean = true
     ): String {
+        // 1. Parse viewBox from SVG content to calculate concrete base canvas dimensions
+        val vbRegex = Regex("""viewBox=["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']""")
+        val vbMatch = vbRegex.find(svgContent)
+        var baseW = 4000
+        var baseH = 4000
+        if (vbMatch != null) {
+            val w = vbMatch.groupValues[3].toDoubleOrNull() ?: 4000.0
+            val h = vbMatch.groupValues[4].toDoubleOrNull() ?: 4000.0
+            val aspect = if (h > 0) w / h else 1.0
+            val maxDim = 4000.0
+            if (aspect >= 1.0) {
+                baseW = maxDim.toInt()
+                baseH = (maxDim / aspect).toInt().coerceAtLeast(600)
+            } else {
+                baseH = maxDim.toInt()
+                baseW = (maxDim * aspect).toInt().coerceAtLeast(600)
+            }
+        }
+
+        // 2. Prepare SVG root tag: ensure width and height are 100% inside our fixed-size container
+        val svgTagRegex = Regex("""<svg\b([^>]*)>""")
+        val firstSvgMatch = svgTagRegex.find(svgContent)
+        val preparedSvg = if (firstSvgMatch != null) {
+            var tag = firstSvgMatch.value
+            tag = tag.replace(Regex("""\bwidth=["'][^"']*["']"""), "")
+            tag = tag.replace(Regex("""\bheight=["'][^"']*["']"""), "")
+            tag = tag.replace(Regex("""style=["'][^"']*["']"""), "")
+            val newTag = tag.replace(">", """ width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%;overflow:visible;">""")
+            svgContent.substring(0, firstSvgMatch.range.first) + newTag + svgContent.substring(firstSvgMatch.range.last + 1)
+        } else {
+            svgContent
+        }
+
         val themeStyles = if (isDark) {
             """
             /* Official pulse maps - Dark theme */
             g[role="button"] path {
-              fill: #161b22 !important;
-              stroke: #484f58 !important;
-              stroke-width: 6px !important;
+              fill: #222b3d !important;
+              stroke: #475569 !important;
+              stroke-width: 1.5px !important;
+              vector-effect: non-scaling-stroke !important;
               cursor: pointer;
               transition: fill 0.15s ease, stroke 0.15s ease;
             }
             g[style*="pointer-events: none"] > path {
-              fill: #0d1117 !important;
-              stroke: #30363d !important;
-              stroke-width: 6px !important;
+              fill: #151b26 !important;
+              stroke: #334155 !important;
+              stroke-width: 1px !important;
+              vector-effect: non-scaling-stroke !important;
             }
             .room-label {
-              fill: #f0f6fc !important;
+              fill: #f1f5f9 !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-              font-weight: 600 !important;
+              font-weight: 700 !important;
               letter-spacing: 0.5px;
-              stroke: #0d1117 !important;
-              stroke-width: 4.5px !important;
+              stroke: #0f141c !important;
+              stroke-width: 2.5px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
             #markers text {
-              fill: #58a6ff !important;
+              fill: #60a5fa !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-              stroke: #0d1117 !important;
-              stroke-width: 5px !important;
+              stroke: #0f141c !important;
+              stroke-width: 3.5px !important;
               paint-order: stroke fill !important;
               font-weight: 700 !important;
               pointer-events: none;
             }
             #markers rect {
-              fill: #15325b !important;
-              stroke: #58a6ff !important;
+              fill: #1e3a8a !important;
+              stroke: #60a5fa !important;
+              vector-effect: non-scaling-stroke !important;
             }
             #markers path {
-              stroke: #58a6ff !important;
+              stroke: #60a5fa !important;
+              vector-effect: non-scaling-stroke !important;
             }
             .selected-room > path {
-              fill: #1f6feb !important;
-              stroke: #58a6ff !important;
-              stroke-width: 10px !important;
+              fill: #2563eb !important;
+              stroke: #93c5fd !important;
+              stroke-width: 3px !important;
+              vector-effect: non-scaling-stroke !important;
             }
 
             /* Legacy MP-1 dark theme */
-            .BigAreaPath { fill: #0d1117 !important; stroke: #30363d !important; }
-            rect[fill="#F8F8F8"] { fill: #0d1117 !important; stroke: #30363d !important; }
-            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #161b22 !important; stroke: #484f58 !important; }
+            .BigAreaPath { fill: #151b26 !important; stroke: #334155 !important; vector-effect: non-scaling-stroke !important; }
+            rect[fill="#F8F8F8"] { fill: #151b26 !important; stroke: #334155 !important; vector-effect: non-scaling-stroke !important; }
+            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #222b3d !important; stroke: #475569 !important; vector-effect: non-scaling-stroke !important; }
             path[fill="#262A34"] { fill: #e6edf3 !important; }
             path[fill="#000"], path[fill="#000000"] { fill: #cbd5e1 !important; }
-            .Room:hover rect, .Room:active rect { fill: #1f6feb !important; }
+            .Room:hover rect, .Room:active rect { fill: #2563eb !important; }
             """
         } else {
             """
@@ -67,22 +105,24 @@ object MapHtmlGenerator {
             g[role="button"] path {
               fill: #ffffff !important;
               stroke: #94a3b8 !important;
-              stroke-width: 6px !important;
+              stroke-width: 1.5px !important;
+              vector-effect: non-scaling-stroke !important;
               cursor: pointer;
               transition: fill 0.15s ease, stroke 0.15s ease;
             }
             g[style*="pointer-events: none"] > path {
-              fill: #f1f5f9 !important;
+              fill: #e2e8f0 !important;
               stroke: #cbd5e1 !important;
-              stroke-width: 6px !important;
+              stroke-width: 1px !important;
+              vector-effect: non-scaling-stroke !important;
             }
             .room-label {
               fill: #0f172a !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-              font-weight: 600 !important;
+              font-weight: 700 !important;
               letter-spacing: 0.5px;
               stroke: #ffffff !important;
-              stroke-width: 4.5px !important;
+              stroke-width: 2.5px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
@@ -90,7 +130,7 @@ object MapHtmlGenerator {
               fill: #2563eb !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               stroke: #ffffff !important;
-              stroke-width: 5px !important;
+              stroke-width: 3.5px !important;
               paint-order: stroke fill !important;
               font-weight: 700 !important;
               pointer-events: none;
@@ -98,20 +138,23 @@ object MapHtmlGenerator {
             #markers rect {
               fill: #eff6ff !important;
               stroke: #2563eb !important;
+              vector-effect: non-scaling-stroke !important;
             }
             #markers path {
               stroke: #2563eb !important;
+              vector-effect: non-scaling-stroke !important;
             }
             .selected-room > path {
               fill: #bfdbfe !important;
               stroke: #2563eb !important;
-              stroke-width: 10px !important;
+              stroke-width: 3px !important;
+              vector-effect: non-scaling-stroke !important;
             }
 
             /* Legacy MP-1 light theme */
-            .BigAreaPath { fill: #f1f5f9 !important; stroke: #cbd5e1 !important; }
-            rect[fill="#F8F8F8"] { fill: #f8fafc !important; stroke: #cbd5e1 !important; }
-            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #ffffff !important; stroke: #cbd5e1 !important; }
+            .BigAreaPath { fill: #e2e8f0 !important; stroke: #cbd5e1 !important; vector-effect: non-scaling-stroke !important; }
+            rect[fill="#F8F8F8"] { fill: #f1f5f9 !important; stroke: #cbd5e1 !important; vector-effect: non-scaling-stroke !important; }
+            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #ffffff !important; stroke: #94a3b8 !important; vector-effect: non-scaling-stroke !important; }
             path[fill="#262A34"] { fill: #1e293b !important; }
             path[fill="#000"], path[fill="#000000"] { fill: #0f172a !important; }
             .Room:hover rect, .Room:active rect { fill: #60a5fa !important; }
@@ -128,12 +171,12 @@ object MapHtmlGenerator {
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=25.0, user-scalable=no">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    background-color: ${if (isDark) "#111318" else "#FDFBFF"}; user-select: none; -webkit-user-select: none;
+    background-color: ${if (isDark) "#0b0f17" else "#f8fafc"}; user-select: none; -webkit-user-select: none;
     touch-action: none;
   }
   #viewport {
@@ -147,12 +190,15 @@ object MapHtmlGenerator {
     transform-origin: 0 0;
     will-change: transform;
     touch-action: none;
+    width: ${baseW}px;
+    height: ${baseH}px;
   }
-  svg {
-    display: block;
-    width: auto;
-    height: auto;
-    max-width: none;
+  #svg-container svg {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
   }
   $themeStyles
   
@@ -244,7 +290,7 @@ object MapHtmlGenerator {
     </div>
   </div>
   <div id="svg-container">
-    $svgContent
+    $preparedSvg
   </div>
 </div>
 <script>
@@ -348,23 +394,25 @@ object MapHtmlGenerator {
     });
   }
 
+  function getContainerSize() {
+    const w = container.offsetWidth || ${baseW};
+    const h = container.offsetHeight || ${baseH};
+    return { w: w > 0 ? w : ${baseW}, h: h > 0 ? h : ${baseH} };
+  }
+
   function fitToScreen() {
-    const svg = container.querySelector('svg');
-    if (!svg) return;
-    const vW = viewport.clientWidth;
-    const vH = viewport.clientHeight;
+    const vW = viewport.clientWidth || window.innerWidth;
+    const vH = viewport.clientHeight || window.innerHeight;
+    if (!vW || !vH) return;
     
-    let sW = 3000, sH = 3000;
-    const vb = svg.viewBox && svg.viewBox.baseVal;
-    if (vb && vb.width > 0) {
-      sW = vb.width;
-      sH = vb.height;
-    }
+    const size = getContainerSize();
+    const sW = size.w;
+    const sH = size.h;
     
     const scaleX = (vW * 0.94) / sW;
     const scaleY = (vH * 0.94) / sH;
     scale = Math.min(scaleX, scaleY);
-    if (scale <= 0) scale = 0.25;
+    if (scale <= 0) scale = 0.2;
     
     translateX = (vW - sW * scale) / 2;
     translateY = (vH - sH * scale) / 2;
@@ -382,7 +430,7 @@ object MapHtmlGenerator {
   };
 
   function zoomAt(clientX, clientY, factor, smooth) {
-    const newScale = Math.max(0.06, Math.min(16.0, scale * factor));
+    const newScale = Math.max(0.01, Math.min(25.0, scale * factor));
     const factorApplied = newScale / scale;
     translateX = clientX - (clientX - translateX) * factorApplied;
     translateY = clientY - (clientY - translateY) * factorApplied;
@@ -433,7 +481,7 @@ object MapHtmlGenerator {
         const curMidY = (t0.clientY + t1.clientY) / 2;
 
         const ratio = curDist / pinchStartDist;
-        const targetScale = Math.max(0.06, Math.min(16.0, pinchStartScale * ratio));
+        const targetScale = Math.max(0.01, Math.min(25.0, pinchStartScale * ratio));
         const factor = targetScale / pinchStartScale;
 
         translateX = pinchStartMidX - (pinchStartMidX - pinchStartTx) * factor + (curMidX - pinchStartMidX);
@@ -525,20 +573,34 @@ object MapHtmlGenerator {
     const now = Date.now();
     if (now - lastTapTime < 280) {
       e.preventDefault();
-      if (scale > 1.2) {
+      const fitSize = getContainerSize();
+      const vW = viewport.clientWidth || window.innerWidth;
+      const baseFitScale = (vW * 0.94) / fitSize.w;
+      if (scale > baseFitScale * 1.5) {
         fitToScreen();
       } else {
         const touch = e.changedTouches[0];
-        zoomAt(touch.clientX, touch.clientY, 2.2, true);
+        zoomAt(touch.clientX, touch.clientY, 2.5, true);
       }
     }
     lastTapTime = now;
   });
 
-  // Initial fit
-  window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(fitToScreen, 60);
-  });
+  // Multi-pass initial fit for reliable WebView geometry resolution
+  function init() {
+    fitToScreen();
+    setTimeout(fitToScreen, 50);
+    setTimeout(fitToScreen, 150);
+    setTimeout(fitToScreen, 400);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  window.addEventListener('load', init);
+  window.addEventListener('resize', fitToScreen);
 </script>
 </body>
 </html>
