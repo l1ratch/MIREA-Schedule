@@ -122,7 +122,9 @@ fun App() {
             LaunchedEffect(Unit) {
                 kotlinx.coroutines.delay(2000)
                 try {
-                    otherViewModel.checkForUpdates()
+                    if (!repository.isLowPowerMode.value) {
+                        otherViewModel.checkForUpdates()
+                    }
                 } catch (_: Throwable) {}
             }
 

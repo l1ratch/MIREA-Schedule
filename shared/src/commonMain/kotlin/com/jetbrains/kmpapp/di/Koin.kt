@@ -23,6 +23,9 @@ import com.jetbrains.kmpapp.data.TaskRepository
 import com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 
+import com.jetbrains.kmpapp.data.power.PlatformPowerManager
+import io.ktor.client.plugins.HttpTimeout
+
 val dataModule = module {
     single {
         val json = Json {
@@ -33,9 +36,15 @@ val dataModule = module {
             install(ContentNegotiation) {
                 json(json, contentType = ContentType.Any)
             }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 15_000
+                connectTimeoutMillis = 10_000
+                socketTimeoutMillis = 15_000
+            }
         }
     }
 
+    singleOf(::PlatformPowerManager)
     singleOf(::PlatformStorage)
     singleOf(::UnifiedSyncManager)
     singleOf(::MireaScheduleApi)

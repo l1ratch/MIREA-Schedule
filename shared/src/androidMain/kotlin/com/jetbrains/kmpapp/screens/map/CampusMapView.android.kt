@@ -16,6 +16,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 actual fun CampusMapView(
@@ -26,10 +30,24 @@ actual fun CampusMapView(
 ) {
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var loadedHtml by remember { mutableStateOf<String?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    DisposableEffect(Unit) {
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> {
+                    // Pauses Chromium timers, JS, and WebGL rendering while screen is locked/app is backgrounded
+                    webViewRef?.onPause()
+                }
+                Lifecycle.Event.ON_RESUME, Lifecycle.Event.ON_START -> {
+                    webViewRef?.onResume()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            // Safely release reference on disposal without calling destructive global pauseTimers()
+            lifecycleOwner.lifecycle.removeObserver(observer)
             webViewRef?.stopLoading()
             webViewRef = null
         }

@@ -23,10 +23,12 @@ import kotlin.time.Clock
 
 class ScheduleRepository(
     private val api: MireaScheduleApi,
-    private val storage: ScheduleStorage
+    private val storage: ScheduleStorage,
+    private val powerManager: com.jetbrains.kmpapp.data.power.PlatformPowerManager
 ) {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
+    val isLowPowerMode: StateFlow<Boolean> = powerManager.isLowPowerMode
     val savedTargets: StateFlow<List<ScheduleTarget>> = storage.savedTargets
     val selectedTarget: StateFlow<ScheduleTarget?> = storage.selectedTarget
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
@@ -95,8 +97,13 @@ class ScheduleRepository(
                         // First load for this target: fetch from network with loading indicator
                         refreshSchedule(target, silent = false)
                     } else if (!isFresh) {
-                        // Cache present but older than 30 minutes: silent background refresh
-                        refreshSchedule(target, silent = true)
+                        // Power saving policy:
+                        // If system is in Low Power Mode / Battery Saver OR the app is in background,
+                        // do not wake up the cellular/Wi-Fi radio for silent background sync! Use cached lessons.
+                        val shouldSkipSilentSync = powerManager.isLowPowerMode.value || !powerManager.isAppInForeground.value
+                        if (!shouldSkipSilentSync) {
+                            refreshSchedule(target, silent = true)
+                        }
                     }
                     // Otherwise: cache is fresh (< 30 min), do not make network call!
                 }
