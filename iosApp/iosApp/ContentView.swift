@@ -57,7 +57,22 @@ struct ComposeView: UIViewControllerRepresentable {
                 self?.transitionToActive()
             }
 
-            observers = [resignObs, bgObs, activeObs, fgObs]
+            // Sync initial and dynamic Low Power Mode from Swift ProcessInfo
+            updateLowPowerMode()
+            let powerObs = center.addObserver(
+                forName: Notification.Name.NSProcessInfoPowerStateDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.updateLowPowerMode()
+            }
+
+            observers = [resignObs, bgObs, activeObs, fgObs, powerObs]
+        }
+
+        private func updateLowPowerMode() {
+            let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            PlatformPowerManager.companion.updateLowPowerMode(enabled: isLowPower)
         }
 
         func updateScenePhase(_ phase: ScenePhase) {
