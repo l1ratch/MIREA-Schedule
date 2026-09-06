@@ -1,9 +1,9 @@
 {
   "version": "26.9.0",
-  "build": 48,
+  "build": 49,
   "critical": false,
   "min_supported_build": 1,
   "changelog": "Исправление пустого экрана карт на Android, надежная инициализация и исправление масштабирования",
   "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
-  "updated_at": "2026-09-06T18:03:50.030925+00:00"
+  "updated_at": "2026-09-06T18:10:08.223635+00:00"
 }
