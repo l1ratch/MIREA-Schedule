@@ -41,14 +41,14 @@ class FreeRoomsRepository(
         campus: String,
         floor: Int?,
         dateIso: String,
-        bellNumber: Int,
+        bellNumber: Int?,
         searchQuery: String = ""
     ): List<FreeRoomItem> {
         val query = searchQuery.trim().lowercase()
         return allRooms.filter { room ->
             val matchCampus = room.campus.equals(campus, ignoreCase = true)
             val matchFloor = floor == null || room.floor == floor
-            val matchFree = room.isFreeAt(dateIso, bellNumber)
+            val matchFree = bellNumber == null || room.isFreeAt(dateIso, bellNumber)
             val matchQuery = query.isEmpty() || room.name.lowercase().contains(query)
             matchCampus && matchFloor && matchFree && matchQuery
         }

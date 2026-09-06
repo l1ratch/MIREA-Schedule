@@ -30,8 +30,8 @@ class FreeRoomsViewModel(
     private val _selectedFloor = MutableStateFlow<Int?>(null)
     val selectedFloor: StateFlow<Int?> = _selectedFloor.asStateFlow()
 
-    private val _selectedBell = MutableStateFlow(calculateCurrentBell())
-    val selectedBell: StateFlow<Int> = _selectedBell.asStateFlow()
+    private val _selectedBell = MutableStateFlow<Int?>(calculateCurrentBell())
+    val selectedBell: StateFlow<Int?> = _selectedBell.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -130,7 +130,7 @@ class FreeRoomsViewModel(
         _selectedFloor.value = floor
     }
 
-    fun selectBell(bell: Int) {
+    fun selectBell(bell: Int?) {
         _selectedBell.value = bell
     }
 
@@ -144,13 +144,20 @@ class FreeRoomsViewModel(
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
+        // If switched to Sunday, auto-switch bell to null (all pairs)
+        if (date.dayOfWeek == kotlinx.datetime.DayOfWeek.SUNDAY) {
+            _selectedBell.value = null
+        }
     }
 
     private companion object {
         fun getCurrentDateIso(): String = DateUtils.today().toString()
 
-        fun calculateCurrentBell(): Int {
+        fun calculateCurrentBell(): Int? {
             val now = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+            if (now.date.dayOfWeek == kotlinx.datetime.DayOfWeek.SUNDAY) {
+                return null // On Sunday no pairs are held
+            }
             val hhmm = "${now.hour.toString().padStart(2, '0')}:${now.minute.toString().padStart(2, '0')}"
             return when {
                 hhmm < "10:35" -> 1 // 09:00 - 10:30
@@ -160,7 +167,7 @@ class FreeRoomsViewModel(
                 hhmm < "18:00" -> 5 // 16:20 - 17:50
                 hhmm < "19:35" -> 6 // 18:00 - 19:30
                 hhmm < "21:15" -> 7 // 19:40 - 21:10
-                else -> 1
+                else -> null // Late evening -> all pairs
             }
         }
     }

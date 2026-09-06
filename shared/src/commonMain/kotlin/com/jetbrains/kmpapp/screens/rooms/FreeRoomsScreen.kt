@@ -158,7 +158,11 @@ fun FreeRoomsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "${selectedDate.day} ${DateUtils.formatMonthRu(selectedDate.month)} • Пара $selectedBell",
+                                    text = if (selectedBell != null) {
+                                        "${selectedDate.day} ${DateUtils.formatMonthRu(selectedDate.month)} • Пара $selectedBell"
+                                    } else {
+                                        "${selectedDate.day} ${DateUtils.formatMonthRu(selectedDate.month)} • Все пары"
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -220,6 +224,44 @@ fun FreeRoomsScreen(
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
+            // Sunday Friendly Banner
+            val isSunday = selectedDate.dayOfWeek == kotlinx.datetime.DayOfWeek.SUNDAY
+            if (isSunday) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "☀️",
+                            fontSize = 24.sp,
+                            modifier = Modifier.padding(end = 12.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Сегодня воскресенье — выходной!",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Учебные пары сегодня не проводятся, поэтому свободные аудитории вам вряд ли понадобятся. Отдыхайте и набирайтесь сил! ☕",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+
             var showCampusDialog by remember { mutableStateOf(false) }
             var showBellDialog by remember { mutableStateOf(false) }
             var showFloorDialog by remember { mutableStateOf(false) }
@@ -247,7 +289,7 @@ fun FreeRoomsScreen(
                 val currentSlot = bellSlots.firstOrNull { it.bell == selectedBell }
                 FilterDropdownButton(
                     title = "Пара",
-                    value = "$selectedBell пара (${currentSlot?.start ?: ""})",
+                    value = selectedBell?.let { "$it пара (${currentSlot?.start ?: ""})" } ?: "Все пары",
                     icon = Icons.Default.AccessTime,
                     modifier = Modifier.weight(1.3f),
                     onClick = {
@@ -313,6 +355,29 @@ fun FreeRoomsScreen(
                     title = { Text("Выберите пару", fontWeight = FontWeight.Bold) },
                     text = {
                         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            val isAllSelected = selectedBell == null
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        viewModel.selectBell(null)
+                                        showBellDialog = false
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Все пары (без фильтра)",
+                                    fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (isAllSelected) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+
                             bellSlots.forEach { slot ->
                                 val isSelected = selectedBell == slot.bell
                                 Row(
@@ -415,7 +480,7 @@ fun FreeRoomsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Свободно: ${filteredRooms.size}",
+                    text = if (selectedBell != null) "Свободно на $selectedBell пару: ${filteredRooms.size}" else "Всего аудиторий: ${filteredRooms.size}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -516,7 +581,7 @@ fun FreeRoomsScreen(
 private fun FreeRoomGridCard(
     room: FreeRoomItem,
     dateIso: String,
-    currentBell: Int,
+    currentBell: Int?,
     bellSlots: List<FreeRoomBellSlot>,
     onClick: () -> Unit
 ) {
@@ -555,12 +620,16 @@ private fun FreeRoomGridCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            val untilText = room.getFreeUntilDescription(dateIso, currentBell, bellSlots)
+            val untilText = if (currentBell != null) {
+                room.getFreeUntilDescription(dateIso, currentBell, bellSlots)
+            } else {
+                room.getFreeSummaryDescription(dateIso, bellSlots.size.coerceAtLeast(7))
+            }
             Text(
                 text = untilText,
                 fontSize = 10.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
+                color = if (untilText.startsWith("Занята")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center
             )
         }

@@ -65,4 +65,16 @@ data class FreeRoomItem(
             "До конца дня"
         }
     }
+
+    /**
+     * Returns a summary description of room availability across all bells on given date.
+     */
+    fun getFreeSummaryDescription(dateIso: String, maxBells: Int = 7): String {
+        val busyBells = busy[dateIso]?.toSet() ?: emptySet()
+        if (busyBells.isEmpty()) return "Весь день"
+        val freeCount = (1..maxBells).count { it !in busyBells }
+        if (freeCount == 0) return "Занята весь день"
+        if (freeCount == maxBells) return "Весь день"
+        return "Свободно: $freeCount из $maxBells пар"
+    }
 }
