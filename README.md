@@ -92,10 +92,6 @@
 * **Без компьютера**: [SideStore](https://sidestore.io), [TrollStore](https://github.com/opa334/TrollStore) (если поддерживается вашей версией iOS) или [Scarlet](https://usescarlet.com).
 * **С компьютера (Mac/PC)**: [AltStore](https://altstore.io) или [Sideloadly](https://sideloadly.io).
 
-> 🛠️ **Для разработчиков и тестировщиков**:
-> * Все промежуточные сборки с номерами билдов сохраняются в [Архиве сборок (Pre-release)](https://github.com/l1ratch/MIREA-Schedule/releases/tag/build-archive).
-> * Артефакты самых свежих запусков CI доступны на вкладке [GitHub Actions](https://github.com/l1ratch/MIREA-Schedule/actions) (требуется авторизация на GitHub).
-
 ---
 
 ## ⚙️ Сборка и запуск
