@@ -133,7 +133,7 @@ object MapHtmlGenerator {
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    background-color: transparent; user-select: none; -webkit-user-select: none;
+    background-color: ${if (isDark) "#111318" else "#FDFBFF"}; user-select: none; -webkit-user-select: none;
     touch-action: none;
   }
   #viewport {
@@ -332,9 +332,20 @@ object MapHtmlGenerator {
   let pinchStartMidX = 0, pinchStartMidY = 0;
   let pinchStartTx = 0, pinchStartTy = 0;
 
+  let rafId = null;
   function updateTransform(smooth) {
-    container.style.transition = smooth ? 'transform 0.22s cubic-bezier(0.2, 0, 0, 1)' : 'none';
-    container.style.transform = 'translate3d(' + translateX + 'px, ' + translateY + 'px, 0) scale(' + scale + ')';
+    if (smooth) {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      container.style.transition = 'transform 0.22s cubic-bezier(0.2, 0, 0, 1)';
+      container.style.transform = 'translate3d(' + translateX + 'px, ' + translateY + 'px, 0) scale(' + scale + ')';
+      return;
+    }
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      container.style.transition = 'none';
+      container.style.transform = 'translate3d(' + translateX + 'px, ' + translateY + 'px, 0) scale(' + scale + ')';
+    });
   }
 
   function fitToScreen() {

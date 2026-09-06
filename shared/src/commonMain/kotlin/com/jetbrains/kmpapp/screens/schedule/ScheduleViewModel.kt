@@ -61,7 +61,7 @@ class ScheduleViewModel(
     val datesWithLessons: StateFlow<Set<LocalDate>> = repository.currentLessons
         .combine(MutableStateFlow(Unit)) { lessons, _ ->
             lessons.map { it.date }.toSet()
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     val dayLessonSummaries: StateFlow<Map<LocalDate, DayLessonSummary>> = repository.currentLessons
         .combine(MutableStateFlow(Unit)) { lessons, _ ->
@@ -71,7 +71,7 @@ class ScheduleViewModel(
                     .map { (_, slotLessons) -> slotLessons.first().lessonType }
                 DayLessonSummary(lessonTypes = orderedTypes)
             }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val daySlots: StateFlow<List<ScheduleSlot>> = combine(
         repository.currentLessons,
@@ -135,7 +135,7 @@ class ScheduleViewModel(
                 result
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date

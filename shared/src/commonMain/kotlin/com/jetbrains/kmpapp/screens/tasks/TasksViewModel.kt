@@ -28,18 +28,18 @@ class TasksViewModel(
 
     val activeCount: StateFlow<Int> = taskRepository.tasks.combine(MutableStateFlow(Unit)) { list, _ ->
         list.count { it.status != TaskStatus.COMPLETED }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val completedCount: StateFlow<Int> = taskRepository.tasks.combine(MutableStateFlow(Unit)) { list, _ ->
         list.count { it.status == TaskStatus.COMPLETED }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val overallProgress: StateFlow<Int> = taskRepository.tasks.combine(MutableStateFlow(Unit)) { list, _ ->
         if (list.isEmpty()) 0 else {
             val total = list.sumOf { it.completionRatio }
             ((total / list.size) * 100).toInt()
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun createSubject(
         name: String,

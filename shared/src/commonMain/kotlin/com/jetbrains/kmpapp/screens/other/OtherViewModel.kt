@@ -203,7 +203,7 @@ class OtherViewModel(
             TargetSortOrder.RECENT -> result
             TargetSortOrder.OLDEST -> result.reversed()
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
