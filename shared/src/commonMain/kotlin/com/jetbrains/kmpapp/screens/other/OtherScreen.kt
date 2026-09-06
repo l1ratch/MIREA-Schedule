@@ -290,30 +290,73 @@ private fun OtherMainContent(
                 onClick = { onNavigate(OtherSubScreen.SETTINGS) }
             )
 
-            // 4. App Version / Auto-Update Card
+            // 4. App Version / Auto-Update Card with 3-tier colors
+            val urgency = updateResult?.urgency ?: com.jetbrains.kmpapp.data.update.UpdateUrgency.UP_TO_DATE
             val hasUpdate = updateResult?.hasUpdate == true
+
+            val cardContainerColor = when (urgency) {
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> Color(0xFF581C87).copy(alpha = 0.20f)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION -> Color(0xFFDC2626).copy(alpha = 0.16f)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD -> Color(0xFFD97706).copy(alpha = 0.16f)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.UP_TO_DATE -> MaterialTheme.colorScheme.surfaceContainer
+            }
+
+            val iconBoxColor = when (urgency) {
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> Color(0xFF581C87).copy(alpha = 0.40f)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION -> Color(0xFFDC2626).copy(alpha = 0.30f)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD -> Color(0xFFD97706).copy(alpha = 0.30f)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.UP_TO_DATE -> MaterialTheme.colorScheme.surfaceContainerHigh
+            }
+
+            val accentTint = when (urgency) {
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> Color(0xFFC084FC)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION -> Color(0xFFEF4444)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD -> Color(0xFFF59E0B)
+                com.jetbrains.kmpapp.data.update.UpdateUrgency.UP_TO_DATE -> if (isCheckingUpdate) MaterialTheme.colorScheme.primary else Color(0xFF22C55E)
+            }
+
+            val titleText = when {
+                isCheckingUpdate -> "Проверка обновлений..."
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> "Критическое обновление!"
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION -> "Вышла новая версия!"
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD -> "Доступна новая сборка"
+                else -> "У вас актуальная версия"
+            }
+
+            val subtitleText = when {
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL ->
+                    "Версия ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Важные исправления безопасности"
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION ->
+                    "Версия ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Нажмите для перехода"
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD ->
+                    "Сборка ${updateResult?.latestBuild} • Доступны микро-правки"
+                else -> com.jetbrains.kmpapp.data.model.AppVersion.DISPLAY_VERSION
+            }
+
+            val statusIcon = when {
+                isCheckingUpdate -> Icons.Default.Refresh
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> Icons.Default.SystemUpdate
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION -> Icons.Default.SystemUpdate
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD -> Icons.Default.Refresh
+                else -> Icons.Default.CheckCircle
+            }
+
             Card(
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (hasUpdate) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    }
-                ),
+                colors = CardDefaults.cardColors(containerColor = cardContainerColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .then(
+                    .clickable {
                         if (hasUpdate) {
-                            Modifier.clickable {
-                                val url = updateResult?.releaseUrl ?: com.jetbrains.kmpapp.data.model.AppVersion.GITHUB_REPO_URL
-                                uriHandler.openUri(url)
-                            }
+                            val url = updateResult?.downloadUrl 
+                                ?: updateResult?.releaseUrl 
+                                ?: com.jetbrains.kmpapp.data.model.AppVersion.GITHUB_REPO_URL
+                            uriHandler.openUri(url)
                         } else {
-                            Modifier
+                            viewModel.checkForUpdates()
                         }
-                    )
+                    }
             ) {
                 Row(
                     modifier = Modifier
@@ -330,27 +373,13 @@ private fun OtherMainContent(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (hasUpdate) {
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh
-                                    }
-                                ),
+                                .background(iconBoxColor),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = when {
-                                    hasUpdate -> Icons.Default.SystemUpdate
-                                    isCheckingUpdate -> Icons.Default.Refresh
-                                    else -> Icons.Default.CheckCircle
-                                },
+                                imageVector = statusIcon,
                                 contentDescription = null,
-                                tint = when {
-                                    hasUpdate -> MaterialTheme.colorScheme.primary
-                                    isCheckingUpdate -> MaterialTheme.colorScheme.primary
-                                    else -> Color(0xFF22C55E)
-                                },
+                                tint = accentTint,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -359,23 +388,16 @@ private fun OtherMainContent(
 
                         Column {
                             Text(
-                                text = when {
-                                    hasUpdate -> "Доступно обновление!"
-                                    isCheckingUpdate -> "Проверка обновлений..."
-                                    else -> "У вас актуальная версия"
-                                },
+                                text = titleText,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = when {
-                                    hasUpdate -> "Версия ${updateResult?.latestVersion} • Нажмите для перехода"
-                                    else -> com.jetbrains.kmpapp.data.model.AppVersion.DISPLAY_VERSION
-                                },
+                                text = subtitleText,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (hasUpdate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (hasUpdate) accentTint else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -384,7 +406,7 @@ private fun OtherMainContent(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                             contentDescription = "Перейти к релизу",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = accentTint,
                             modifier = Modifier.size(20.dp)
                         )
                     }

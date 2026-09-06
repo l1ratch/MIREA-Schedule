@@ -3,7 +3,10 @@ package com.jetbrains.kmpapp
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
@@ -33,6 +36,20 @@ import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 import com.jetbrains.kmpapp.theme.SakuraDarkColors
 import com.jetbrains.kmpapp.theme.SakuraLightColors
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.jetbrains.kmpapp.data.update.UpdateUrgency
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -107,6 +124,89 @@ fun App() {
                 try {
                     otherViewModel.checkForUpdates()
                 } catch (_: Throwable) {}
+            }
+
+            val updateResult by otherViewModel.updateResult.collectAsState()
+            val uriHandler = LocalUriHandler.current
+            var dismissedUpdateKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+            val activeUpdate = updateResult
+            if (activeUpdate != null && activeUpdate.hasUpdate) {
+                val updateKey = "${activeUpdate.latestVersion}_${activeUpdate.latestBuild}_${activeUpdate.urgency}"
+                val isCritical = activeUpdate.urgency == UpdateUrgency.CRITICAL
+                val isNewVersion = activeUpdate.urgency == UpdateUrgency.NEW_VERSION
+
+                if ((isCritical || isNewVersion) && dismissedUpdateKey != updateKey) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            if (!isCritical) {
+                                dismissedUpdateKey = updateKey
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = if (isCritical) Icons.Default.Warning else Icons.Default.SystemUpdate,
+                                contentDescription = null,
+                                tint = if (isCritical) Color(0xFFC084FC) else MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        title = {
+                            Text(
+                                text = if (isCritical) "Критическое обновление!" else "Доступна новая версия",
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            androidx.compose.foundation.layout.Column {
+                                Text(
+                                    text = if (isCritical) {
+                                        "Обнаружено критическое обновление безопасности/стабильности (сборка ${activeUpdate.latestBuild}). Рекомендуется установить его сейчас."
+                                    } else {
+                                        "Вышла версия ${activeUpdate.latestVersion} (сборка ${activeUpdate.latestBuild})."
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (!activeUpdate.changelog.isNullOrBlank()) {
+                                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = activeUpdate.changelog,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    uriHandler.openUri(activeUpdate.downloadUrl)
+                                    dismissedUpdateKey = updateKey
+                                },
+                                colors = if (isCritical) {
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF881337),
+                                        contentColor = Color.White
+                                    )
+                                } else {
+                                    ButtonDefaults.buttonColors()
+                                }
+                            ) {
+                                Text("Обновить сейчас")
+                            }
+                        },
+                        dismissButton = {
+                            if (!isCritical) {
+                                TextButton(onClick = { dismissedUpdateKey = updateKey }) {
+                                    Text("Позже")
+                                }
+                            } else {
+                                TextButton(onClick = { dismissedUpdateKey = updateKey }) {
+                                    Text("Игнорировать", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    )
+                }
             }
 
             Box(modifier = Modifier.fillMaxSize()) {

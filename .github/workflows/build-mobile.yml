@@ -65,6 +65,8 @@ jobs:
 
       - name: ♻️ Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: false
 
       - name: 🔨 Build Android APK
         run: ./gradlew assembleDebug --stacktrace
@@ -131,6 +133,10 @@ jobs:
 
       - name: ♻️ Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: false
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
       - name: 🛠️ Set Xcode Version
         run: |
@@ -171,3 +177,31 @@ jobs:
           name: Schedule-MIREA-IPA
           path: Schedule-MIREA.ipa
           if-no-files-found: error
+
+  update_version_feed:
+    name: 📡 Update Version Feed (gh-pages)
+    runs-on: ubuntu-latest
+    needs: [build_apk, build_ipa]
+    if: always() && (needs.build_apk.result == 'success' || needs.build_ipa.result == 'success') && github.ref == 'refs/heads/main'
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📝 Generate version.json
+        env:
+          BUILD_NUM: ${{ github.run_number }}
+        run: |
+          python tools/update_version_feed.py --build-number ${{ github.run_number }} --out-dir dist_version
+
+      - name: 🚀 Deploy version.json to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist_version
+          publish_branch: gh-pages
+          keep_files: true

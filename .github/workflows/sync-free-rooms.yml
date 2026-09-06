@@ -34,4 +34,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist_free_rooms
           publish_branch: gh-pages
-          force_orphan: true
+          keep_files: true

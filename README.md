@@ -1,27 +1,153 @@
-# Kotlin Multiplatform app template
+# 🎓 MIREA Schedule & Campus App
 
-[![official project](http://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+<div align="center">
 
-This is a basic Kotlin Multiplatform app template for Android and iOS. It includes shared business logic and data handling, and a shared UI implementation using Compose Multiplatform.
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84.svg?logo=android&logoColor=white)](https://github.com/l1ratch/MIREA-Schedule)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.7.1-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
+[![Build Mobile](https://github.com/l1ratch/MIREA-Schedule/actions/workflows/build-mobile.yml/badge.svg)](https://github.com/l1ratch/MIREA-Schedule/actions/workflows/build-mobile.yml)
+[![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
 
-> The template is also available [with native UI written in Jetpack Compose and SwiftUI](https://github.com/kotlin/KMP-App-Template-Native).
->
-> The [`kotlin-toolchain` branch](https://github.com/Kotlin/KMP-App-Template/tree/kotlin-toolchain) showcases the same project configured with the [Kotlin Toolchain](https://github.com/JetBrains/kotlin-toolchain).
+**Современный, быстрый и автономный мобильный клиент для студентов и преподавателей РТУ МИРЭА.**  
+*Расписание занятий, интерактивные векторные карты корпусов, трекер академических задач, мониторинг свободных аудиторий и сервисы университета в одном приложении.*
 
-![Screenshots of the app](images/screenshots.png)
+[Скачать последний релиз (.apk / .ipa)](https://github.com/l1ratch/MIREA-Schedule/releases/latest) • [Документация API аудиторий](FREE_ROOMS_API.md)
 
-### Technologies
+</div>
 
-The data displayed by the app is from [The Metropolitan Museum of Art Collection API](https://metmuseum.github.io/).
+---
 
-The app uses the following multiplatform dependencies in its implementation:
+## ✨ Основные возможности
 
-- [Compose Multiplatform](https://jb.gg/compose) for UI
-- [Compose Navigation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-navigation-routing.html)
-- [Ktor](https://ktor.io/) for networking
-- [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) for JSON handling
-- [Coil](https://github.com/coil-kt/coil) for image loading
-- [Koin](https://github.com/InsertKoinIO/koin) for dependency injection
+### 📅 1. Умное расписание занятий
+* **Поддержка любых целей**: поиск и отображение расписания учебных групп, преподавателей и аудиторий.
+* **100% Offline-First**: мгновенная загрузка из локального кэша, работа без доступа к интернету.
+* **Интеллектуальный календарь**:
+  * Чётные и нечётные недели с определением текущей недели семестра.
+  * Индикатор текущей пары в реальном времени с прогрессом до конца занятия.
+  * Цветовая индикация типов занятий (лекции, практики, лабораторные).
+* **История и избранное**: сохранение нескольких расписаний с быстрым переключением между ними.
+* **Diff-контроль**: автоматическое отслеживание изменений в расписании и подсветка обновлённых пар.
 
-> These are just some of the possible libraries to use for these tasks with Kotlin Multiplatform, and their usage here isn't a strong recommendation for these specific libraries over the available alternatives. You can find a wide variety of curated multiplatform libraries in the [kmp-awesome](https://github.com/terrakok/kmp-awesome) repository.
+### 🗺️ 2. Векторные карты корпусов РТУ МИРЭА
+* **Официальные векторные SVG-схемы** ключевых кампусов университета:
+  * **В-78** (пр-т Вернадского, 78 — все 4 этажа).
+  * **В-86** (пр-т Вернадского, 86 — все корпуса и этажи).
+  * **С-20** (ул. Стромынка, 20 — все 4 этажа).
+  * **МП-1** (ул. Малая Пироговская, 1).
+* **Интерактивность**:
+  * Плавное жестовое масштабирование (Pinch-to-zoom) и панорамирование на 60/120 FPS.
+  * Тап по любой аудитории открывает подробную карточку с номером, этажом, корпусом и назначением.
+  * Полноценная поддержка светлой и тёмной темы для всех планов этажей.
+
+### 🏢 3. Свободные аудитории в реальном времени
+* Узнавайте, какие кабинеты свободны прямо сейчас или на выбранной паре.
+* Фильтрация по кампусам и временным интервалам.
+* Автоматическая фоновая синхронизация через GitHub Actions.
+* Подробности архитектуры и форматы данных описаны в [FREE_ROOMS_API.md](FREE_ROOMS_API.md).
+
+### 📋 4. Академический трекер задач (Tasks)
+* **Subject-Centric архитектура**: организация дедлайнов по дисциплинам с прогресс-барами («Завершено N / Всего M»).
+* **Типизация задач**: Лабораторные, Практики, Домашние задания, Курсовые, Экзамены и Зачёты.
+* Приоритеты, дедлайны с напоминаниями и гибкая сортировка.
+
+### 🏛️ 5. Университетские ресурсы и сервисы
+* Каталог официальных сервисов с быстрым переходом:
+  * Личный кабинет студента РТУ МИРЭА
+  * СДО (Система дистанционного обучения)
+  * Портал «Пульс МИРЭА»
+  * Электронная библиотечная система
+  * Mirea Ninja и сервисы сообщества
+
+### 🎨 6. Кастомизация и эргономика
+* **Темы оформления**: Системная, Светлая, Тёмная и специальная пастельная тема «Цветение Сакуры» (Sakura).
+* **Floating Dock (плавающая навигация)**: настройка порядка и видимости разделов приложения.
+* **Контроль энергопотребления**: оптимизированный рендеринг без постоянного дрейна аккумулятора.
+
+### 🚀 7. Трёхуровневая система автообновлений
+* Автоматическая проверка новых релизов через `gh-pages/version.json`:
+  * 🟡 **Жёлтый статус (Минорная сборка)**: точечные исправления и оптимизации, ненавязчивое уведомление в настройках.
+  * 🔴 **Красный статус (Новая версия)**: крупный релиз с новыми функциями, диалог обновления при запуске.
+  * 🟣 **Бордово-пурпурный статус (Критическое обновление)**: обязательное обновление безопасности или фикс протокола данных.
+
+---
+
+## 🛠️ Стек технологий и архитектура
+
+Проект построен на современном стеке **Kotlin Multiplatform** с общим кодом для Android и iOS:
+
+* **UI & Графика**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (Material Design 3)
+* **Сетевой стек**: [Ktor Client](https://ktor.io/) + ContentNegotiation
+* **Сериализация**: [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization)
+* **Асинхронность**: Kotlin Coroutines + StateFlow / SharedFlow
+* **Внедрение зависимостей**: [Koin](https://insert-koin.io/)
+* **Кэширование изображений**: [Coil 3](https://github.com/coil-kt/coil)
+* **Картография**: Оптимизированный векторный движок на базе WebView (WKWebView на iOS / Android WebView)
+* **Хранилище**: Кроссплатформенное абстрагированное локальное хранилище (`PlatformStorage`)
+
+---
+
+## 📂 Структура репозитория
+
+```
+MIREA-Schedule/
+├── androidApp/          # Специфичный код и сборка для Android (MainActivity, Manifest)
+├── iosApp/              # Xcode-проект и обёртка для iOS (SwiftUI App delegate, Info.plist)
+├── shared/              # Общий кроссплатформенный модуль (Compose Multiplatform)
+│   ├── src/commonMain/  # Общая бизнес-логика, модели, экраны, репозиторий, темы
+│   ├── src/androidMain/ # Специфичные платформенные реализации Android
+│   └── src/iosMain/     # Специфичные платформенные реализации iOS (WKWebView, хранилище)
+├── tools/               # Утилиты автоматизации (генератор карт, парсер аудиторий, генератор version.json)
+├── .github/workflows/   # CI/CD автоматизация (сборка APK/IPA, синхронизация аудиторий)
+├── FREE_ROOMS_API.md    # Спецификация и формат данных API свободных аудиторий
+└── README.md            # Основная документация проекта
+```
+
+---
+
+## ⚙️ Сборка и запуск
+
+### Требования к окружению
+* **JDK**: 21 (рекомендуется Azul Zulu или Eclipse Temurin)
+* **Android SDK**: API level 35, Build Tools 35.0.0
+* **Xcode**: 16.0+ (для сборки iOS)
+* **Gradle**: 8.11+ (поставляется через `gradlew`)
+
+### Сборка Android приложения
+```bash
+# Клонирование репозитория
+git clone https://github.com/l1ratch/MIREA-Schedule.git
+cd MIREA-Schedule
+
+# Сборка Debug APK
+./gradlew assembleDebug
+
+# Готовый APK будет расположен в:
+# androidApp/build/outputs/apk/debug/androidApp-debug.apk
+```
+
+### Сборка iOS приложения
+Сборка iOS доступна на macOS:
+```bash
+# Открытие проекта в Xcode
+open iosApp/iosApp.xcodeproj
+
+# Или сборка через командную строку (Unsigned Release)
+cd iosApp
+xcodebuild -scheme iosApp -configuration Release -sdk iphoneos \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+```
+
+---
+
+## 🤝 Контрибьюторы и благодарности
+
+* **Автор проекта**: [l1ratch](https://github.com/l1ratch)
+* **Карты корпусов**: Векторные схемы [pulse.mirea.ru](https://pulse.mirea.ru/services/maps) и проект [university-app](https://github.com/0niel/university-app) от [0niel](https://github.com/0niel).
+* **API расписания**: Сервисы [Mirea Ninja](https://mirea.ninja) и официальные API РТУ МИРЭА.
+
+---
+
+## 📜 Лицензия
+
+Проект распространяется под свободной лицензией с открытым исходным кодом. Подробнее см. в файле [LICENSE](LICENSE).

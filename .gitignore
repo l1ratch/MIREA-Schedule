@@ -1,22 +1,47 @@
-*.iml
-.kotlin
-.gradle
+# Build & Gradle
+.gradle/
+build/
 **/build/
-xcuserdata
 !src/**/build/
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
 local.properties
-.idea
+
+# Android & IDE
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# macOS & OS files
 .DS_Store
-captures
-.externalNativeBuild
-.cxx
-*.xcodeproj/*
+Thumbs.db
+desktop.ini
+
+# iOS & Xcode
+xcuserdata/
+DerivedData/
+*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 !*.xcodeproj/project.xcworkspace/
-!*.xcworkspace/contents.xcworkspacedata
-**/xcshareddata/WorkspaceSettings.xcsettings
 
+# Python & Builder artifacts
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+env/
 dist_free_rooms/
+dist_version/
+dist/
+
+# Application packages
+*.apk
+*.aab
+*.ipa

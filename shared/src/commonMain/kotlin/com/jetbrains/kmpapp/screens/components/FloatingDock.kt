@@ -90,8 +90,7 @@ fun FloatingDock(
             shape = RoundedCornerShape(32.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 8.dp,
-            shadowElevation = 10.dp,
-            modifier = Modifier.shadow(12.dp, shape = RoundedCornerShape(32.dp))
+            shadowElevation = 8.dp
         ) {
             Row(
                 modifier = Modifier.padding(6.dp),
