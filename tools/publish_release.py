@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 tools/publish_release.py
 Automates GitHub Release publishing and build archiving.
@@ -48,6 +48,7 @@ def parse_app_version(app_version_path: str):
 def main():
     parser = argparse.ArgumentParser(description="Publish release and archive builds to GitHub Releases")
     parser.add_argument("--build-number", type=int, default=None, help="CI build run number")
+    parser.add_argument("--preview-branch", type=str, default=None, help="Branch name for test preview release")
     parser.add_argument("--apk", type=str, default=None, help="Path to built APK")
     parser.add_argument("--ipa", type=str, default=None, help="Path to built IPA")
     parser.add_argument("--app-version-file", default="shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt")
@@ -99,6 +100,79 @@ def main():
 
     if not has_files:
         print("No APK or IPA found to publish. Exiting.")
+        return
+
+    # Branch preview mode: upload to 'preview' pre-release without modifying official release
+    if args.preview_branch:
+        import re
+        clean_branch = re.sub(r'[^a-zA-Z0-9._-]', '-', args.preview_branch).strip('-')
+        if not clean_branch:
+            clean_branch = "dev"
+        print(f"==> Publishing Preview for branch '{clean_branch}'...")
+
+        dist_preview = Path("dist_preview")
+        shutil.rmtree(dist_preview, ignore_errors=True)
+        dist_preview.mkdir(parents=True, exist_ok=True)
+
+        apk_name = f"Schedule-MIREA-preview-{clean_branch}.apk"
+        ipa_name = f"Schedule-MIREA-preview-{clean_branch}.ipa"
+
+        if apk_src:
+            shutil.copy2(apk_src, dist_preview / apk_name)
+        if ipa_src:
+            shutil.copy2(ipa_src, dist_preview / ipa_name)
+
+        preview_files = [str(p) for p in dist_preview.glob("*")]
+        if not preview_files:
+            print("No preview files to upload. Exiting.")
+            return
+
+        if args.dry_run:
+            print("[DRY RUN] Preview files:", preview_files)
+            return
+
+        tag = "preview"
+        title = "🧪 Тестовые сборки веток (Branch Preview)"
+        try:
+            check_release = subprocess.run(["gh", "release", "view", tag], capture_output=True, text=True)
+            if check_release.returncode == 0:
+                print(f"Release '{tag}' exists. Uploading preview assets...")
+                subprocess.run(["gh", "release", "upload", tag, *preview_files, "--clobber"], check=True)
+            else:
+                print(f"Creating new pre-release '{tag}'...")
+                preview_notes = (
+                    "### 🧪 Тестовые сборки веток разработчиков\n\n"
+                    "Этот предрелиз содержит временные сборки из веток и Pull Request для тестирования фичей перед вливанием в `main`.\n\n"
+                    "⚠️ Сборки предназначены исключительно для проверки и тестирования.\n"
+                )
+                Path("preview_notes.md").write_text(preview_notes, encoding="utf-8")
+                subprocess.run([
+                    "gh", "release", "create", tag, *preview_files,
+                    "--title", title,
+                    "-F", "preview_notes.md",
+                    "--prerelease"
+                ], check=True)
+            published_to_release = True
+        except Exception as e:
+            print(f"Warning: Could not upload to pre-release '{tag}': {e}")
+            published_to_release = False
+
+        # Write direct download links to GITHUB_STEP_SUMMARY if running in GitHub Actions
+        step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if step_summary:
+            with open(step_summary, "a", encoding="utf-8") as f:
+                f.write(f"\n### 🧪 Тестовая сборка для ветки `{args.preview_branch}` готова!\n\n")
+                f.write(f"* **Номер CI-сборки:** `#{build_num}`\n")
+                if published_to_release:
+                    if apk_src:
+                        f.write(f"* 🤖 **Android APK:** [`{apk_name}`](https://github.com/{repo}/releases/download/preview/{apk_name})\n")
+                    if ipa_src:
+                        f.write(f"* 🍏 **iOS IPA:** [`{ipa_name}`](https://github.com/{repo}/releases/download/preview/{ipa_name})\n")
+                    f.write(f"\n> 💡 Сборка также сохранена в разделе [Releases -> Preview](https://github.com/{repo}/releases/tag/preview).\n")
+                else:
+                    f.write("\n> 💡 Файлы сборки доступны для скачивания в секции **Artifacts** внизу страницы этого запуска.\n")
+
+        print(f"==> Branch preview for '{clean_branch}' published successfully!")
         return
 
     if args.dry_run:
