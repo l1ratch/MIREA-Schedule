@@ -21,7 +21,7 @@ actual class PlatformPowerManager actual constructor() {
 
     init {
         val processInfo = NSProcessInfo.processInfo
-        _isLowPowerMode.value = processInfo.lowPowerModeEnabled
+        _isLowPowerMode.value = processInfo.isLowPowerModeEnabled
 
         val center = NSNotificationCenter.defaultCenter
         val mainQueue = NSOperationQueue.mainQueue
@@ -31,7 +31,7 @@ actual class PlatformPowerManager actual constructor() {
             `object` = null,
             queue = mainQueue
         ) { _ ->
-            _isLowPowerMode.value = NSProcessInfo.processInfo.lowPowerModeEnabled
+            _isLowPowerMode.value = NSProcessInfo.processInfo.isLowPowerModeEnabled
         }
 
         center.addObserverForName(
