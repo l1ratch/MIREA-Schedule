@@ -169,12 +169,16 @@ object MapHtmlGenerator {
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
-    margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    margin: 0; padding: 0; width: 100%; height: 100%; min-height: 100%;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
     background-color: ${if (isDark) "#0b0f17" else "#f8fafc"}; user-select: none; -webkit-user-select: none;
     touch-action: none;
   }
   #viewport {
-    width: 100%; height: 100%; position: relative; overflow: hidden;
+    width: 100%; height: 100%;
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
     cursor: grab;
     touch-action: none;
   }
@@ -183,6 +187,8 @@ object MapHtmlGenerator {
     display: block !important;
     width: 100% !important;
     height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
     max-width: none !important;
     overflow: visible !important;
     touch-action: none;
@@ -280,7 +286,7 @@ object MapHtmlGenerator {
 </div>
 <script>
   const viewport = document.getElementById('viewport');
-  const svg = document.getElementById('map-svg');
+  const svg = document.getElementById('map-svg') || document.querySelector('svg');
   const roomCard = document.getElementById('room-card');
   const roomTitle = document.getElementById('room-card-title');
   const roomSubtitle = document.getElementById('room-card-subtitle');
@@ -307,6 +313,7 @@ object MapHtmlGenerator {
   let maxVw = origW * 2.0;
 
   function applyViewBox() {
+    if (!svg) return;
     svg.setAttribute('viewBox', curVx.toFixed(2) + ' ' + curVy.toFixed(2) + ' ' + curVw.toFixed(2) + ' ' + curVh.toFixed(2));
   }
 
@@ -696,6 +703,17 @@ object MapHtmlGenerator {
     setTimeout(init, 50);
     setTimeout(init, 150);
     setTimeout(init, 400);
+  }
+
+  if (typeof ResizeObserver !== 'undefined' && viewport) {
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          fitToScreen(false);
+        }
+      }
+    });
+    ro.observe(viewport);
   }
 
   if (document.readyState === 'loading') {

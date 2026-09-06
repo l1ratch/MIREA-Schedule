@@ -2,10 +2,10 @@ package com.jetbrains.kmpapp.data.model
 
 object AppVersion {
     const val VERSION_NAME = "26.9.0"
-    const val BUILD_NUMBER = 30
+    const val BUILD_NUMBER = 31
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1
-    const val CHANGELOG = "Карты: устранение слипания номеров аудиторий на В-78, гармоничные размеры подписей"
+    const val CHANGELOG = "Исправление пустого экрана карт на Android, надежная инициализация и исправление масштабирования"
 
     const val APPLICATION_ID = "ru.l1ratch.mireaschedule"
     const val DISPLAY_VERSION = "Версия $VERSION_NAME (сборка $BUILD_NUMBER)"
