@@ -5,8 +5,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
-import platform.Foundation.NSProcessInfo
-import platform.Foundation.NSProcessInfoPowerStateDidChangeNotification
 import platform.UIKit.UIApplicationDidBecomeActiveNotification
 import platform.UIKit.UIApplicationDidEnterBackgroundNotification
 import platform.UIKit.UIApplicationWillEnterForegroundNotification
@@ -20,19 +18,10 @@ actual class PlatformPowerManager actual constructor() {
     actual val isAppInForeground: StateFlow<Boolean> = _isAppInForeground.asStateFlow()
 
     init {
-        val processInfo = NSProcessInfo.processInfo
-        _isLowPowerMode.value = processInfo.isLowPowerModeEnabled
+        sharedInstance = this
 
         val center = NSNotificationCenter.defaultCenter
         val mainQueue = NSOperationQueue.mainQueue
-
-        center.addObserverForName(
-            name = NSProcessInfoPowerStateDidChangeNotification,
-            `object` = null,
-            queue = mainQueue
-        ) { _ ->
-            _isLowPowerMode.value = NSProcessInfo.processInfo.isLowPowerModeEnabled
-        }
 
         center.addObserverForName(
             name = UIApplicationWillResignActiveNotification,
@@ -64,6 +53,19 @@ actual class PlatformPowerManager actual constructor() {
             queue = mainQueue
         ) { _ ->
             _isAppInForeground.value = true
+        }
+    }
+
+    fun setLowPowerMode(enabled: Boolean) {
+        _isLowPowerMode.value = enabled
+    }
+
+    companion object {
+        var sharedInstance: PlatformPowerManager? = null
+            private set
+
+        fun updateLowPowerMode(enabled: Boolean) {
+            sharedInstance?.setLowPowerMode(enabled)
         }
     }
 }
