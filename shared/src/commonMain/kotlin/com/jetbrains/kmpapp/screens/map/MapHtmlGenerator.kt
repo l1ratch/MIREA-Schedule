@@ -203,7 +203,7 @@ object MapHtmlGenerator {
   /* Floating Info Card */
   .room-card {
     position: absolute;
-    top: 76px;
+    top: 140px;
     left: 50%;
     transform: translateX(-50%) translateY(0);
     background: $cardBg;
