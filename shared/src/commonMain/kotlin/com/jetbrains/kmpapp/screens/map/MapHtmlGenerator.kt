@@ -14,11 +14,8 @@ object MapHtmlGenerator {
         val origW = vbMatch?.groupValues?.get(3)?.toDoubleOrNull() ?: 4000.0
         val origH = vbMatch?.groupValues?.get(4)?.toDoubleOrNull() ?: 4000.0
 
-        // Calculate dynamic label and marker font sizes proportional to coordinate space
-        val labelFontSize = (origW * 0.0035).toInt().coerceIn(65, 230)
-        val labelStrokeWidth = (labelFontSize * 0.12).toInt().coerceIn(4, 25)
-        val markerFontSize = (origW * 0.0045).toInt().coerceIn(80, 290)
-        val markerStrokeWidth = (markerFontSize * 0.14).toInt().coerceIn(5, 30)
+        // Note: We intentionally preserve the author's tailored font-size (20, 24, 30, 38)
+        // on each SVG text element so labels fit cleanly inside their room geometry without collisions.
 
         // 2. Prepare SVG root tag: inject id="map-svg", width/height 100%, preserveAspectRatio
         val svgTagRegex = Regex("""<svg\b([^>]*)>""")
@@ -57,21 +54,19 @@ object MapHtmlGenerator {
               fill: #f1f5f9 !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               font-weight: 700 !important;
-              font-size: ${labelFontSize}px !important;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.25px;
               stroke: #0f141c !important;
-              stroke-width: ${labelStrokeWidth}px !important;
+              stroke-width: 3px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
             #markers text {
               fill: #60a5fa !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-              font-weight: 700 !important;
-              font-size: ${markerFontSize}px !important;
               stroke: #0f141c !important;
-              stroke-width: ${markerStrokeWidth}px !important;
+              stroke-width: 3.5px !important;
               paint-order: stroke fill !important;
+              font-weight: 700 !important;
               pointer-events: none;
             }
             #markers rect {
@@ -119,21 +114,19 @@ object MapHtmlGenerator {
               fill: #0f172a !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
               font-weight: 700 !important;
-              font-size: ${labelFontSize}px !important;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.25px;
               stroke: #ffffff !important;
-              stroke-width: ${labelStrokeWidth}px !important;
+              stroke-width: 3px !important;
               paint-order: stroke fill !important;
               pointer-events: none;
             }
             #markers text {
               fill: #2563eb !important;
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-              font-weight: 700 !important;
-              font-size: ${markerFontSize}px !important;
               stroke: #ffffff !important;
-              stroke-width: ${markerStrokeWidth}px !important;
+              stroke-width: 3.5px !important;
               paint-order: stroke fill !important;
+              font-weight: 700 !important;
               pointer-events: none;
             }
             #markers rect {
