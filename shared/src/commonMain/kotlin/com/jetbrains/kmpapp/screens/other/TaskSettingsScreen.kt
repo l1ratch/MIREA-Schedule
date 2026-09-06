@@ -129,7 +129,7 @@ fun TaskSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Зачтено:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Завершено:", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${tasks.count { it.status.isFinished }}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             }

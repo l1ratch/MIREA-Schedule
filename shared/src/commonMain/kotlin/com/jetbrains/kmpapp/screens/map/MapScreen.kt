@@ -45,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +70,16 @@ import androidx.compose.ui.text.style.TextAlign
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import org.koin.compose.koinInject
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.model.ThemeMode
+
 @Composable
 fun MapScreen(
     modifier: Modifier = Modifier
@@ -77,6 +88,15 @@ fun MapScreen(
     val controller = remember { CampusMapController() }
     val uriHandler = LocalUriHandler.current
     val platformStorage: PlatformStorage = koinInject()
+    val scheduleRepository: ScheduleRepository = koinInject()
+
+    val themeMode by scheduleRepository.themeMode.collectAsState()
+    val systemDark = isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        else -> systemDark
+    }
 
     var showDisclaimerDialog by remember {
         mutableStateOf(platformStorage.getString("mirea_map_disclaimer_seen") != "true")
@@ -86,12 +106,7 @@ fun MapScreen(
     var selectedFloor by remember { mutableStateOf(selectedCampus.defaultFloor) }
     var svgContent by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-
     var campusDropdownExpanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var searchResults by remember { mutableStateOf<List<RoomSearchResult>>(emptyList()) }
-    var isSearchFocused by remember { mutableStateOf(false) }
-    var highlightedRoom by remember { mutableStateOf<String?>(null) }
 
     // Load SVG whenever campus or floor changes
     LaunchedEffect(selectedCampus, selectedFloor) {
@@ -99,15 +114,6 @@ fun MapScreen(
         val svg = MapRepository.loadFloorSvg(selectedCampus.id, selectedFloor)
         svgContent = svg
         isLoading = false
-    }
-
-    // Search effect
-    LaunchedEffect(searchQuery) {
-        if (searchQuery.trim().length >= 2) {
-            searchResults = MapRepository.searchRooms(searchQuery)
-        } else {
-            searchResults = emptyList()
-        }
     }
 
     Scaffold(
@@ -118,8 +124,8 @@ fun MapScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             // 1. Campus Map WebView Canvas
             if (svgContent != null) {
-                val html = remember(svgContent, highlightedRoom) {
-                    MapHtmlGenerator.generateHtml(svgContent ?: "", highlightedRoom)
+                val html = remember(svgContent, isDark) {
+                    MapHtmlGenerator.generateHtml(svgContent ?: "", isDark)
                 }
                 CampusMapView(
                     htmlContent = html,
@@ -136,7 +142,7 @@ fun MapScreen(
                 modifier = Modifier.align(Alignment.Center)
             ) {
                 Surface(
-                    color = Color(0xCC161B22),
+                    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f),
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.size(80.dp)
                 ) {
@@ -150,16 +156,15 @@ fun MapScreen(
                 }
             }
 
-            // 3. Top Header Bar: Campus Selector & Search
+            // 3. Top Header Bar: Campus Selector
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                // Campus Selector Bar
                 Surface(
-                    color = Color(0xEE161B22),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
                     shape = RoundedCornerShape(20.dp),
                     shadowElevation = 6.dp,
                     modifier = Modifier.fillMaxWidth()
@@ -183,12 +188,12 @@ fun MapScreen(
                                 text = selectedCampus.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = selectedCampus.address,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF8B949E),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -196,7 +201,7 @@ fun MapScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
                             contentDescription = "Выбрать кампус",
-                            tint = Color(0xFF8B949E)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         // Campus Dropdown Menu
@@ -211,12 +216,12 @@ fun MapScreen(
                                             Text(
                                                 text = campus.name,
                                                 fontWeight = if (campus.id == selectedCampus.id) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (campus.id == selectedCampus.id) MaterialTheme.colorScheme.primary else Color.Unspecified
+                                                color = if (campus.id == selectedCampus.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
                                                 text = campus.address,
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     },
@@ -224,101 +229,8 @@ fun MapScreen(
                                         selectedCampus = campus
                                         selectedFloor = campus.defaultFloor
                                         campusDropdownExpanded = false
-                                        highlightedRoom = null
                                     }
                                 )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Search Bar
-                Surface(
-                    color = Color(0xEE161B22),
-                    shape = RoundedCornerShape(16.dp),
-                    shadowElevation = 4.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = {
-                            Text("Поиск аудитории (например, Г-302, 127)", color = Color(0xFF8B949E), fontSize = 14.sp)
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF8B949E), modifier = Modifier.size(18.dp))
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = ""; searchResults = emptyList() }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Очистить", tint = Color(0xFF8B949E), modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // Search Results Dropdown List
-                if (searchResults.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Surface(
-                        color = Color(0xF21C2128),
-                        shape = RoundedCornerShape(14.dp),
-                        shadowElevation = 8.dp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 240.dp)
-                    ) {
-                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                            items(searchResults) { result ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val targetCampus = CAMPUSES.find { it.id == result.campusId } ?: selectedCampus
-                                            selectedCampus = targetCampus
-                                            selectedFloor = result.floor
-                                            highlightedRoom = result.name
-                                            searchQuery = ""
-                                            searchResults = emptyList()
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = result.name,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            fontSize = 15.sp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "Этаж ${result.floor}",
-                                            color = Color(0xFF58A6FF),
-                                            fontSize = 12.sp,
-                                            modifier = Modifier
-                                                .background(Color(0x33388BFD), RoundedCornerShape(6.dp))
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = result.campusName,
-                                        color = Color(0xFF8B949E),
-                                        fontSize = 12.sp
-                                    )
-                                }
                             }
                         }
                     }
@@ -327,7 +239,7 @@ fun MapScreen(
 
             // 4. Floating Floor Selector (Right Side - Vertical Pill)
             Surface(
-                color = Color(0xEE161B22),
+                color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = RoundedCornerShape(24.dp),
                 shadowElevation = 8.dp,
                 modifier = Modifier
@@ -351,13 +263,12 @@ fun MapScreen(
                                 )
                                 .clickable {
                                     selectedFloor = floor
-                                    highlightedRoom = null
                                 },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = displayText,
-                                color = if (isSelected) Color.White else Color(0xFFC9D1D9),
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 15.sp
                             )
@@ -368,7 +279,7 @@ fun MapScreen(
 
             // 5. Floating Zoom Controls (Bottom-Right)
             Surface(
-                color = Color(0xEE161B22),
+                color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = RoundedCornerShape(20.dp),
                 shadowElevation = 8.dp,
                 modifier = Modifier
@@ -384,60 +295,90 @@ fun MapScreen(
                         onClick = { controller.zoomIn() },
                         modifier = Modifier.size(40.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Приблизить", tint = Color(0xFFC9D1D9))
+                        Icon(Icons.Default.Add, contentDescription = "Приблизить", tint = MaterialTheme.colorScheme.onSurface)
                     }
                     IconButton(
                         onClick = { controller.zoomOut() },
                         modifier = Modifier.size(40.dp)
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Отдалить", tint = Color(0xFFC9D1D9))
+                        Icon(Icons.Default.Remove, contentDescription = "Отдалить", tint = MaterialTheme.colorScheme.onSurface)
                     }
                     IconButton(
                         onClick = { controller.resetView() },
                         modifier = Modifier.size(40.dp)
                     ) {
-                        Icon(Icons.Default.CenterFocusStrong, contentDescription = "Центрировать", tint = Color(0xFFC9D1D9), modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.CenterFocusStrong, contentDescription = "Центрировать", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
                     }
                 }
             }
 
-            // 6. First-Time Disclaimer Dialog
-            if (showDisclaimerDialog) {
-                AlertDialog(
-                    onDismissRequest = {
-                        platformStorage.saveString("mirea_map_disclaimer_seen", "true")
-                        showDisclaimerDialog = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    },
-                    title = {
-                        Text(
-                            text = "Схемы корпусов",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // 6. Smooth In-Layout Disclaimer Modal (No window freeze!)
+            AnimatedVisibility(
+                visible = showDisclaimerDialog,
+                enter = fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.95f),
+                exit = fadeOut(tween(180)) + scaleOut(tween(180), targetScale = 0.95f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            platformStorage.saveString("mirea_map_disclaimer_seen", "true")
+                            showDisclaimerDialog = false
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {}
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+
                             Text(
-                                text = "Планы этажей и расположение аудиторий могут быть неточными из-за перепланировок и ремонтов в корпусах.",
+                                text = "Схемы корпусов",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Text(
+                                text = "Планы этажей и расположение аудиторий могут содержать неточности из-за текущих перепланировок и ремонтов в корпусах.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 20.sp
+                                lineHeight = 20.sp,
+                                textAlign = TextAlign.Center
                             )
+
                             Text(
-                                text = "Для точной информации сверяйтесь со схемами эвакуации и указателями внутри здания или официальным сервисом «Карта РТУ МИРЭА»:",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "Для точной информации сверяйтесь со схемами эвакуации внутри здания или официальным сервисом «Карта РТУ МИРЭА»:",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 20.sp
+                                lineHeight = 18.sp,
+                                textAlign = TextAlign.Center
                             )
+
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -466,22 +407,22 @@ fun MapScreen(
                                     )
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Button(
+                                onClick = {
+                                    platformStorage.saveString("mirea_map_disclaimer_seen", "true")
+                                    showDisclaimerDialog = false
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Понятно", fontWeight = FontWeight.SemiBold)
+                            }
                         }
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                platformStorage.saveString("mirea_map_disclaimer_seen", "true")
-                                showDisclaimerDialog = false
-                            },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Понятно", fontWeight = FontWeight.SemiBold)
-                        }
-                    },
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = RoundedCornerShape(24.dp)
-                )
+                    }
+                }
             }
         }
     }

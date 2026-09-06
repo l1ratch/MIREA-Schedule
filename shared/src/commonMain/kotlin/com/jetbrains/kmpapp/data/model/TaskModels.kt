@@ -79,7 +79,7 @@ enum class TaskStatus(
     PENDING("Не начато"),
     IN_PROGRESS("В процессе"),
     SUBMITTED("На проверке"),
-    COMPLETED("Зачтено"),
+    COMPLETED("Завершено"),
     NEEDS_FIX("Требует доработки");
 
     val isFinished: Boolean

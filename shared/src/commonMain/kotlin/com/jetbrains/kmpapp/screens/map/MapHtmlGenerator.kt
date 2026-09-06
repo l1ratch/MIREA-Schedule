@@ -4,19 +4,36 @@ object MapHtmlGenerator {
 
     fun generateHtml(
         svgContent: String,
-        highlightRoom: String? = null
+        isDark: Boolean = true
     ): String {
-        val safeSvg = svgContent
-            .replace("\"", "\\\"")
-            .replace("\n", " ")
-            .replace("\r", " ")
+        val themeStyles = if (isDark) {
+            """
+            /* Dark theme overrides */
+            .BigAreaPath { fill: #151b26 !important; stroke: #2d3748 !important; }
+            rect[fill="#F8F8F8"] { fill: #151b26 !important; stroke: #2d3748 !important; }
+            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #1e2638 !important; stroke: #2d3748 !important; }
+            path[fill="#262A34"] { fill: #e2e8f0 !important; }
+            path[fill="#000"], path[fill="#000000"] { fill: #cbd5e1 !important; }
+            .Room:hover rect, .Room:active rect { fill: #3b82f6 !important; }
+            """
+        } else {
+            """
+            /* Light theme styles */
+            .BigAreaPath { fill: #f1f5f9 !important; stroke: #cbd5e1 !important; }
+            rect[fill="#F8F8F8"] { fill: #f8fafc !important; stroke: #cbd5e1 !important; }
+            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #ffffff !important; stroke: #cbd5e1 !important; }
+            path[fill="#262A34"] { fill: #1e293b !important; }
+            path[fill="#000"], path[fill="#000000"] { fill: #0f172a !important; }
+            .Room:hover rect, .Room:active rect { fill: #60a5fa !important; }
+            """
+        }
 
         return """
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=no">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -27,12 +44,14 @@ object MapHtmlGenerator {
   #viewport {
     width: 100%; height: 100%; position: relative; overflow: hidden;
     cursor: grab;
+    touch-action: none;
   }
   #viewport:active { cursor: grabbing; }
   #svg-container {
     position: absolute;
     transform-origin: 0 0;
     will-change: transform;
+    touch-action: none;
   }
   svg {
     display: block;
@@ -40,24 +59,11 @@ object MapHtmlGenerator {
     height: auto;
     max-width: none;
   }
-  /* Dark theme overrides */
-  .BigAreaPath { fill: #151b26 !important; stroke: #2d3748 !important; }
-  rect[fill="#F8F8F8"] { fill: #151b26 !important; stroke: #2d3748 !important; }
-  rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #1e2638 !important; stroke: #2d3748 !important; }
-  path[fill="#262A34"] { fill: #e2e8f0 !important; }
-  path[fill="#000"], path[fill="#000000"] { fill: #cbd5e1 !important; }
+  $themeStyles
   
   .Room rect, .Room path {
     cursor: pointer;
     transition: fill 0.15s ease, stroke 0.15s ease;
-  }
-  .Room:hover rect, .Room:active rect {
-    fill: #3b82f6 !important;
-  }
-  .room-highlight rect {
-    fill: #2563eb !important;
-    stroke: #60a5fa !important;
-    stroke-width: 4px !important;
   }
 </style>
 </head>
@@ -74,13 +80,16 @@ object MapHtmlGenerator {
   let scale = 1;
   let translateX = 0;
   let translateY = 0;
-  
-  let pointers = new Map();
-  let prevDiff = -1;
-  let prevMidX = 0, prevMidY = 0;
-  let isPanning = false;
-  let startX = 0, startY = 0;
-  let originX = 0, originY = 0;
+
+  // Touch state
+  let touchMode = 0; // 0: idle, 1: pan, 2: pinch
+  let panStartX = 0, panStartY = 0;
+  let panStartTx = 0, panStartTy = 0;
+
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let pinchStartMidX = 0, pinchStartMidY = 0;
+  let pinchStartTx = 0, pinchStartTy = 0;
 
   function updateTransform(smooth) {
     container.style.transition = smooth ? 'transform 0.22s cubic-bezier(0.2, 0, 0, 1)' : 'none';
@@ -121,7 +130,7 @@ object MapHtmlGenerator {
   };
 
   function zoomAt(clientX, clientY, factor, smooth) {
-    const newScale = Math.max(0.08, Math.min(12, scale * factor));
+    const newScale = Math.max(0.06, Math.min(16.0, scale * factor));
     const factorApplied = newScale / scale;
     translateX = clientX - (clientX - translateX) * factorApplied;
     translateY = clientY - (clientY - translateY) * factorApplied;
@@ -129,87 +138,96 @@ object MapHtmlGenerator {
     updateTransform(Boolean(smooth));
   }
 
-  // Pointer events
-  viewport.addEventListener('pointerdown', (e) => {
+  // --- Touch event handling (native mobile multi-touch) ---
+  viewport.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    pointers.set(e.pointerId, e);
-    if (pointers.size === 1) {
-      isPanning = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      originX = translateX;
-      originY = translateY;
-    } else if (pointers.size === 2) {
-      isPanning = false;
-      const pts = Array.from(pointers.values());
-      prevDiff = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
-      prevMidX = (pts[0].clientX + pts[1].clientX) / 2;
-      prevMidY = (pts[0].clientY + pts[1].clientY) / 2;
+    if (e.touches.length === 1) {
+      touchMode = 1;
+      panStartX = e.touches[0].clientX;
+      panStartY = e.touches[0].clientY;
+      panStartTx = translateX;
+      panStartTy = translateY;
+    } else if (e.touches.length >= 2) {
+      touchMode = 2;
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      pinchStartDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      pinchStartScale = scale;
+      pinchStartMidX = (t0.clientX + t1.clientX) / 2;
+      pinchStartMidY = (t0.clientY + t1.clientY) / 2;
+      pinchStartTx = translateX;
+      pinchStartTy = translateY;
     }
-  });
+  }, { passive: false });
 
-  viewport.addEventListener('pointermove', (e) => {
-    if (!pointers.has(e.pointerId)) return;
+  viewport.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    pointers.set(e.pointerId, e);
-
-    if (pointers.size === 1 && isPanning) {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      translateX = originX + dx;
-      translateY = originY + dy;
+    if (touchMode === 1 && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - panStartX;
+      const dy = e.touches[0].clientY - panStartY;
+      translateX = panStartTx + dx;
+      translateY = panStartTy + dy;
       updateTransform(false);
-    } else if (pointers.size === 2) {
-      isPanning = false;
-      const pts = Array.from(pointers.values());
-      const curDiff = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
-      const midX = (pts[0].clientX + pts[1].clientX) / 2;
-      const midY = (pts[0].clientY + pts[1].clientY) / 2;
+    } else if (touchMode === 2 && e.touches.length >= 2) {
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      const curDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      if (pinchStartDist > 0 && curDist > 0) {
+        const curMidX = (t0.clientX + t1.clientX) / 2;
+        const curMidY = (t0.clientY + t1.clientY) / 2;
 
-      if (prevDiff > 0 && curDiff > 0) {
-        const factor = curDiff / prevDiff;
-        // Clamp factor per movement to avoid abrupt jumps
-        const clampedFactor = Math.max(0.6, Math.min(1.8, factor));
-        const newScale = Math.max(0.08, Math.min(12, scale * clampedFactor));
-        const factorApplied = newScale / scale;
-        
-        // Scale around the midpoint
-        translateX = midX - (midX - translateX) * factorApplied;
-        translateY = midY - (midY - translateY) * factorApplied;
-        scale = newScale;
+        const ratio = curDist / pinchStartDist;
+        const targetScale = Math.max(0.06, Math.min(16.0, pinchStartScale * ratio));
+        const factor = targetScale / pinchStartScale;
 
-        // Pan with the midpoint movement
-        translateX += (midX - prevMidX);
-        translateY += (midY - prevMidY);
+        translateX = pinchStartMidX - (pinchStartMidX - pinchStartTx) * factor + (curMidX - pinchStartMidX);
+        translateY = pinchStartMidY - (pinchStartMidY - pinchStartTy) * factor + (curMidY - pinchStartMidY);
+        scale = targetScale;
 
         updateTransform(false);
       }
-      prevDiff = curDiff;
-      prevMidX = midX;
-      prevMidY = midY;
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', (e) => {
+    if (e.touches.length === 1) {
+      touchMode = 1;
+      panStartX = e.touches[0].clientX;
+      panStartY = e.touches[0].clientY;
+      panStartTx = translateX;
+      panStartTy = translateY;
+    } else if (e.touches.length === 0) {
+      touchMode = 0;
     }
   });
 
-  function endPointer(e) {
-    pointers.delete(e.pointerId);
-    if (pointers.size < 2) {
-      prevDiff = -1;
-    }
-    if (pointers.size === 1) {
-      // Seamless handover to 1-finger pan without jumping
-      const remaining = Array.from(pointers.values())[0];
-      startX = remaining.clientX;
-      startY = remaining.clientY;
-      originX = translateX;
-      originY = translateY;
-      isPanning = true;
-    } else if (pointers.size === 0) {
-      isPanning = false;
-    }
-  }
+  viewport.addEventListener('touchcancel', () => {
+    touchMode = 0;
+  });
 
-  viewport.addEventListener('pointerup', endPointer);
-  viewport.addEventListener('pointercancel', endPointer);
+  // --- Mouse events for desktop/emulator ---
+  let isMouseDown = false;
+  let mouseStartX = 0, mouseStartY = 0;
+  let mouseStartTx = 0, mouseStartTy = 0;
+
+  viewport.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    mouseStartX = e.clientX;
+    mouseStartY = e.clientY;
+    mouseStartTx = translateX;
+    mouseStartTy = translateY;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isMouseDown) return;
+    translateX = mouseStartTx + (e.clientX - mouseStartX);
+    translateY = mouseStartTy + (e.clientY - mouseStartY);
+    updateTransform(false);
+  });
+
+  window.addEventListener('mouseup', () => {
+    isMouseDown = false;
+  });
 
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -218,32 +236,25 @@ object MapHtmlGenerator {
   }, { passive: false });
 
   // Double tap
-  let lastTap = 0;
+  let lastTapTime = 0;
   viewport.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if (now - lastTap < 300) {
+    if (now - lastTapTime < 280) {
       e.preventDefault();
-      if (scale > 1.0) {
+      if (scale > 1.2) {
         fitToScreen();
       } else {
         const touch = e.changedTouches[0];
         zoomAt(touch.clientX, touch.clientY, 2.2, true);
       }
     }
-    lastTap = now;
+    lastTapTime = now;
   });
 
-  // Touch move passive prevention
-  document.addEventListener('touchmove', (e) => {
-    if (pointers.size > 0) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
+  // Initial fit
   window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(fitToScreen, 60);
+    setTimeout(fitToScreen, 50);
   });
-  window.addEventListener('resize', fitToScreen);
 </script>
 </body>
 </html>

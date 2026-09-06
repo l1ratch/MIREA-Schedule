@@ -1,7 +1,13 @@
 package com.jetbrains.kmpapp.screens.tasks
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +38,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -42,6 +50,8 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.AlertDialog
@@ -55,7 +65,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +78,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -95,6 +105,8 @@ import com.jetbrains.kmpapp.data.model.SubjectImportance
 import com.jetbrains.kmpapp.data.model.TaskCategory
 import com.jetbrains.kmpapp.data.model.TaskPriority
 import com.jetbrains.kmpapp.data.model.TaskStatus
+import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 import kotlinx.coroutines.launch
 
 private fun parseHexColor(hex: String, defaultColor: Color = Color(0xFF00E5FF)): Color {
@@ -131,181 +143,56 @@ fun TasksScreen(
     var taskToDelete by remember { mutableStateOf<StudyTask?>(null) }
     var subjectToDelete by remember { mutableStateOf<Subject?>(null) }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Задачи",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Активных: $activeCount • Зачтено: $completedCount",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+    var selectedSubjectId by remember { mutableStateOf<String?>(null) }
 
-                    // Overall Progress Badge
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = "$overallProgress%",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Progress Bar
-                LinearProgressIndicator(
-                    progress = { overallProgress / 100f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    AnimatedContent(
+        targetState = selectedSubjectId,
+        transitionSpec = {
+            if (targetState != null) {
+                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                    slideOutHorizontally { width -> -width } + fadeOut()
                 )
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    if (subjects.isEmpty()) {
-                        showCreateSubjectSheet = true
-                    } else {
-                        selectedSubjectForTask = subjects.first().id
-                        showCreateTaskSheet = true
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.padding(bottom = 80.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Добавить")
+            } else {
+                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                    slideOutHorizontally { width -> width } + fadeOut()
+                )
             }
         },
         modifier = modifier.fillMaxSize()
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Header Bar with "ПРЕДМЕТЫ И ПРАКТИКИ" and "+ Предмет"
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "ПРЕДМЕТЫ И ПРАКТИКИ",
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    letterSpacing = 0.5.sp
+    ) { activeSubjectId ->
+        if (activeSubjectId == null) {
+            TasksMainContent(
+                subjects = subjects,
+                tasks = tasks,
+                activeCount = activeCount,
+                completedCount = completedCount,
+                overallProgress = overallProgress,
+                onSelectSubject = { selectedSubjectId = it },
+                onCreateSubject = { showCreateSubjectSheet = true }
+            )
+        } else {
+            val currentSubject = subjects.find { it.id == activeSubjectId }
+            if (currentSubject != null) {
+                val subjectTasks = tasks.filter { it.subjectId == currentSubject.id }
+                SubjectDetailScreen(
+                    subject = currentSubject,
+                    tasks = subjectTasks,
+                    onBack = { selectedSubjectId = null },
+                    onAddTask = {
+                        selectedSubjectForTask = currentSubject.id
+                        showCreateTaskSheet = true
+                    },
+                    onEditSubject = { subjectToEdit = currentSubject },
+                    onDeleteSubject = { subjectToDelete = currentSubject },
+                    onToggleTask = { task -> viewModel.toggleTaskCompletion(task.id) },
+                    onToggleSubtask = { taskId, subtaskId -> viewModel.toggleSubtask(taskId, subtaskId) },
+                    onEditTask = { task -> taskToEdit = task },
+                    onDeleteTask = { task -> taskToDelete = task },
+                    onStatusChange = { taskId, status -> viewModel.setTaskStatus(taskId, status) }
                 )
-
-                TextButton(
-                    onClick = { showCreateSubjectSheet = true },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Предмет", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
-
-            if (subjects.isEmpty()) {
-                // Empty state
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(horizontal = 32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(
-                            text = "Предметов пока нет",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Создайте свой первый предмет, чтобы добавлять в него лабораторные работы, практики и чеклисты сдачи",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = { showCreateSubjectSheet = true },
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Создать предмет", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
             } else {
-                // List of Subject Cards
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(subjects, key = { it.id }) { subject ->
-                        val subjectTasks = tasks.filter { it.subjectId == subject.id }
-                        SubjectCardItem(
-                            subject = subject,
-                            tasks = subjectTasks,
-                            onAddTask = {
-                                selectedSubjectForTask = subject.id
-                                showCreateTaskSheet = true
-                            },
-                            onEditSubject = { subjectToEdit = subject },
-                            onDeleteSubject = { subjectToDelete = subject },
-                            onToggleTask = { task -> viewModel.toggleTaskCompletion(task.id) },
-                            onToggleSubtask = { taskId, subtaskId -> viewModel.toggleSubtask(taskId, subtaskId) },
-                            onEditTask = { task -> taskToEdit = task },
-                            onDeleteTask = { task -> taskToDelete = task },
-                            onStatusChange = { taskId, status -> viewModel.setTaskStatus(taskId, status) }
-                        )
-                    }
+                LaunchedEffect(Unit) {
+                    selectedSubjectId = null
                 }
             }
         }
@@ -410,6 +297,9 @@ fun TasksScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        if (selectedSubjectId == subject.id) {
+                            selectedSubjectId = null
+                        }
                         viewModel.deleteSubject(subject.id)
                         subjectToDelete = null
                     }
@@ -427,38 +317,205 @@ fun TasksScreen(
 }
 
 @Composable
-private fun SubjectCardItem(
+private fun TasksMainContent(
+    subjects: List<Subject>,
+    tasks: List<StudyTask>,
+    activeCount: Int,
+    completedCount: Int,
+    overallProgress: Int,
+    onSelectSubject: (String) -> Unit,
+    onCreateSubject: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Задачи",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Активных: $activeCount • Завершено: $completedCount",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Overall Progress Badge
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "$overallProgress%",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Progress Bar
+                LinearProgressIndicator(
+                    progress = { overallProgress / 100f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            }
+        },
+        modifier = modifier.fillMaxSize()
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            // Header Bar with "ПРЕДМЕТЫ И ПРАКТИКИ" and "+ Предмет"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ПРЕДМЕТЫ И ПРАКТИКИ",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    letterSpacing = 0.5.sp
+                )
+
+                TextButton(
+                    onClick = onCreateSubject,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Предмет", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            if (subjects.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "Предметов пока нет",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Создайте свой первый предмет, чтобы добавлять в него лабораторные работы, практики и чеклисты сдачи",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick = onCreateSubject,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Создать предмет", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                // List of Subject Cards
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(subjects, key = { it.id }) { subject ->
+                        val subjectTasks = tasks.filter { it.subjectId == subject.id }
+                        SubjectCompactCard(
+                            subject = subject,
+                            tasks = subjectTasks,
+                            onClick = { onSelectSubject(subject.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubjectCompactCard(
     subject: Subject,
     tasks: List<StudyTask>,
-    onAddTask: () -> Unit,
-    onEditSubject: () -> Unit,
-    onDeleteSubject: () -> Unit,
-    onToggleTask: (StudyTask) -> Unit,
-    onToggleSubtask: (String, String) -> Unit,
-    onEditTask: (StudyTask) -> Unit,
-    onDeleteTask: (StudyTask) -> Unit,
-    onStatusChange: (String, TaskStatus) -> Unit
+    onClick: () -> Unit
 ) {
     val subjectColor = parseHexColor(subject.colorHex)
     val completedCount = tasks.count { it.status.isFinished }
     val progress = if (tasks.isEmpty()) 0f else completedCount.toFloat() / tasks.size.toFloat()
+    val progressPercent = (progress * 100).toInt()
 
-    var showMenu by remember { mutableStateOf(false) }
+    val importanceColor = when (subject.importance) {
+        SubjectImportance.CRITICAL -> Color(0xFFEF4444)
+        SubjectImportance.HIGH -> Color(0xFFF97316)
+        SubjectImportance.MEDIUM -> Color(0xFFEAB308)
+        SubjectImportance.LOW -> Color(0xFF22C55E)
+    }
 
     Card(
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header: Short Code + Name + Importance + Menu
+            // Top row: Short Code + Full Name + Importance + Chevron
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -468,12 +525,12 @@ private fun SubjectCardItem(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(subjectColor.copy(alpha = 0.18f))
-                        .border(0.8.dp, subjectColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .border(0.8.dp, subjectColor.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = subject.shortCode,
-                        fontSize = 12.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.Black,
                         color = subjectColor
                     )
@@ -481,7 +538,6 @@ private fun SubjectCardItem(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                // Subject Name & Assessment Type
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = subject.name,
@@ -492,18 +548,12 @@ private fun SubjectCardItem(
                     )
                     Text(
                         text = subject.assessmentType.displayName,
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 // Importance Indicator
-                val importanceColor = when (subject.importance) {
-                    SubjectImportance.CRITICAL -> Color(0xFFEF4444)
-                    SubjectImportance.HIGH -> Color(0xFFF97316)
-                    SubjectImportance.MEDIUM -> Color(0xFFEAB308)
-                    SubjectImportance.LOW -> Color(0xFF22C55E)
-                }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
@@ -527,97 +577,389 @@ private fun SubjectCardItem(
                     }
                 }
 
-                // Menu button
-                Box {
-                    IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Опции", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Редактировать") },
-                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                            onClick = {
-                                showMenu = false
-                                onEditSubject()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Удалить предмет", color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                            onClick = {
-                                showMenu = false
-                                onDeleteSubject()
-                            }
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Открыть",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
             // Thin Progress Bar
-            LinearProgressIndicator(
-                progress = { progress },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp)),
-                color = subjectColor,
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Progress text
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
             ) {
-                Text(
-                    text = "Сдано: $completedCount из ${tasks.size}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (subject.teacherName.isNotBlank()) {
-                    Text(
-                        text = subject.teacherName,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                if (progress > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .height(4.dp)
+                            .background(subjectColor)
                     )
                 }
             }
 
-            // Tasks List
-            if (tasks.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-                Spacer(modifier = Modifier.height(8.dp))
+            // Stats row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Задач: $completedCount из ${tasks.size}",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Завершено $progressPercent%",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (progressPercent == 100) Color(0xFF10B981) else subjectColor
+                )
+            }
+        }
+    }
+}
 
-                tasks.forEach { task ->
+@Composable
+private fun SubjectDetailScreen(
+    subject: Subject,
+    tasks: List<StudyTask>,
+    onBack: () -> Unit,
+    onAddTask: () -> Unit,
+    onEditSubject: () -> Unit,
+    onDeleteSubject: () -> Unit,
+    onToggleTask: (StudyTask) -> Unit,
+    onToggleSubtask: (String, String) -> Unit,
+    onEditTask: (StudyTask) -> Unit,
+    onDeleteTask: (StudyTask) -> Unit,
+    onStatusChange: (String, TaskStatus) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PlatformBackHandler(onBack = onBack)
+
+    val subjectColor = parseHexColor(subject.colorHex)
+    val completedCount = tasks.count { it.status.isFinished }
+    val progress = if (tasks.isEmpty()) 0f else completedCount.toFloat() / tasks.size.toFloat()
+    val progressPercent = (progress * 100).toInt()
+
+    var showMenu by remember { mutableStateOf(false) }
+
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Назад"
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = subject.shortCode,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(
+                        onClick = onAddTask,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Задание", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Меню")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Редактировать предмет") },
+                                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    onEditSubject()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Удалить предмет", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteSubject()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        modifier = modifier
+            .fillMaxSize()
+            .swipeToDismissBack(requireEdge = true, onBack = onBack)
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Subject Info Hero Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(subjectColor.copy(alpha = 0.18f))
+                                    .border(1.dp, subjectColor.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = subject.shortCode,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = subjectColor
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = subject.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = subject.assessmentType.displayName,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // Badges Row
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val importanceColor = when (subject.importance) {
+                                SubjectImportance.CRITICAL -> Color(0xFFEF4444)
+                                SubjectImportance.HIGH -> Color(0xFFF97316)
+                                SubjectImportance.MEDIUM -> Color(0xFFEAB308)
+                                SubjectImportance.LOW -> Color(0xFF22C55E)
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = importanceColor.copy(alpha = 0.12f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(importanceColor)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = subject.importance.displayName,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = importanceColor
+                                    )
+                                }
+                            }
+                        }
+
+                        if (subject.teacherName.isNotBlank() || subject.roomOrLink.isNotBlank()) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            )
+                            if (subject.teacherName.isNotBlank()) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = subject.teacherName,
+                                        fontSize = 12.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                            if (subject.roomOrLink.isNotBlank()) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Place,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = subject.roomOrLink,
+                                        fontSize = 12.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+
+                        if (subject.notes.isNotBlank()) {
+                            Text(
+                                text = subject.notes,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Progress section
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Завершено $completedCount из ${tasks.size}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "$progressPercent%",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (progressPercent == 100) Color(0xFF10B981) else subjectColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = subjectColor,
+                                trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Tasks Section Title
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "ЗАДАНИЯ И ПРАКТИКИ",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+
+            if (tasks.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.TaskAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Заданий пока нет",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Добавьте лабораторные, практики или контрольные",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = onAddTask,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Добавить задание")
+                            }
+                        }
+                    }
+                }
+            } else {
+                items(tasks, key = { it.id }) { task ->
                     TaskRowItem(
                         task = task,
                         onToggle = { onToggleTask(task) },
-                        onToggleSubtask = { subId -> onToggleSubtask(task.id, subId) },
+                        onToggleSubtask = { subtaskId -> onToggleSubtask(task.id, subtaskId) },
                         onEdit = { onEditTask(task) },
                         onDelete = { onDeleteTask(task) },
-                        onStatusChange = { status -> onStatusChange(task.id, status) }
+                        onStatusChange = { newStatus -> onStatusChange(task.id, newStatus) }
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
                 }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Add Task Button
-            TextButton(
-                onClick = onAddTask,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Добавить задачу", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }

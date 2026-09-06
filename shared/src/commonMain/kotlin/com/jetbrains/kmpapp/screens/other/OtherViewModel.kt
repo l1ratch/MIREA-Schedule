@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
+import com.jetbrains.kmpapp.data.model.StorageStats
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +35,7 @@ enum class OtherSubScreen(val depth: Int) {
     DATA_AND_CACHE(2),
     DOCK_SETTINGS(2),
     TASK_SETTINGS(2),
+    RESOURCES(1),
     ABOUT(1),
     DEBUG_SETTINGS(2)
 }
@@ -71,7 +73,7 @@ class OtherViewModel(
     }
 
     private val _storageStats = MutableStateFlow(repository.getStorageStats())
-    val storageStats: StateFlow<com.jetbrains.kmpapp.data.model.StorageStats> = _storageStats.asStateFlow()
+    val storageStats: StateFlow<StorageStats> = _storageStats.asStateFlow()
 
     fun refreshStorageStats() {
         _storageStats.value = repository.getStorageStats()
@@ -85,6 +87,13 @@ class OtherViewModel(
                 avatarUrl = "https://avatars.githubusercontent.com/u/103525164?v=4",
                 contributions = 14,
                 role = "Создатель и ведущий разработчик"
+            ),
+            com.jetbrains.kmpapp.data.model.GitHubContributor(
+                login = "prosto-max",
+                htmlUrl = "https://github.com/prosto-max",
+                avatarUrl = "https://github.com/prosto-max.png",
+                contributions = 5,
+                role = "Соавтор и тестировщик"
             )
         )
     )
@@ -97,19 +106,27 @@ class OtherViewModel(
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 _isLoadingContributors.value = true
-                val fetched = updateChecker.fetchContributors()
-                if (fetched.isNotEmpty()) {
-                    val l1ratchFromApi = fetched.find { it.login.equals("l1ratch", ignoreCase = true) }
-                    val staticLead = com.jetbrains.kmpapp.data.model.GitHubContributor(
-                        login = "l1ratch",
-                        htmlUrl = "https://github.com/l1ratch",
-                        avatarUrl = l1ratchFromApi?.avatarUrl ?: "https://avatars.githubusercontent.com/u/103525164?v=4",
-                        contributions = l1ratchFromApi?.contributions ?: 14,
-                        role = "Создатель и ведущий разработчик"
-                    )
-                    val otherContributors = fetched.filterNot { it.login.equals("l1ratch", ignoreCase = true) }
-                    _contributors.value = listOf(staticLead) + otherContributors
+                val fetched = updateChecker.fetchContributors(forceRefresh = true)
+                val l1ratchFromApi = fetched.find { it.login.equals("l1ratch", ignoreCase = true) }
+                val prostoMaxFromApi = fetched.find { it.login.equals("prosto-max", ignoreCase = true) }
+                val staticLead = com.jetbrains.kmpapp.data.model.GitHubContributor(
+                    login = "l1ratch",
+                    htmlUrl = "https://github.com/l1ratch",
+                    avatarUrl = l1ratchFromApi?.avatarUrl ?: "https://avatars.githubusercontent.com/u/103525164?v=4",
+                    contributions = l1ratchFromApi?.contributions ?: 14,
+                    role = "Создатель и ведущий разработчик"
+                )
+                val coAuthor = com.jetbrains.kmpapp.data.model.GitHubContributor(
+                    login = "prosto-max",
+                    htmlUrl = "https://github.com/prosto-max",
+                    avatarUrl = prostoMaxFromApi?.avatarUrl ?: "https://github.com/prosto-max.png",
+                    contributions = prostoMaxFromApi?.contributions ?: 5,
+                    role = "Соавтор и тестировщик"
+                )
+                val otherContributors = fetched.filterNot {
+                    it.login.equals("l1ratch", ignoreCase = true) || it.login.equals("prosto-max", ignoreCase = true)
                 }
+                _contributors.value = listOf(staticLead, coAuthor) + otherContributors
             } catch (t: Throwable) {
                 println("Failed to load contributors: ${t.message}")
             } finally {

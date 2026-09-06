@@ -201,7 +201,8 @@ fun SettingsScreen(
                 }
             }
 
-            // Section: Tasks Settings
+            // Section: Tasks Settings (temporarily hidden)
+            /*
             SettingsSectionCard(
                 title = "Задачи и дедлайны",
                 icon = Icons.Default.TaskAlt
@@ -235,6 +236,7 @@ fun SettingsScreen(
                     )
                 }
             }
+            */
 
             // Section: Schedule presentation
             SettingsSectionCard(

@@ -30,11 +30,14 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -124,6 +127,11 @@ fun OtherScreen(
                     onBack = { viewModel.navigateToSubScreen(OtherSubScreen.SETTINGS) }
                 )
             }
+            OtherSubScreen.RESOURCES -> {
+                ResourcesScreen(
+                    onBack = { viewModel.resetToRoot() }
+                )
+            }
             OtherSubScreen.ABOUT -> {
                 AboutScreen(
                     viewModel = viewModel,
@@ -161,11 +169,13 @@ private fun OtherMainContent(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 14.dp)
+                    .padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Другое",
@@ -173,6 +183,13 @@ private fun OtherMainContent(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                IconButton(onClick = { onNavigate(OtherSubScreen.ABOUT) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "О программе",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         },
         modifier = modifier.fillMaxSize()
@@ -257,20 +274,20 @@ private fun OtherMainContent(
                 onClick = { onNavigate(OtherSubScreen.MANAGE_SCHEDULES) }
             )
 
-            // 2. Settings card
+            // 2. University resources card
+            OtherNavCard(
+                title = "Ресурсы университета",
+                subtitle = "Личный кабинет, СДО, Пульс и сервисы",
+                icon = Icons.Default.School,
+                onClick = { onNavigate(OtherSubScreen.RESOURCES) }
+            )
+
+            // 3. Settings card
             OtherNavCard(
                 title = "Настройки",
                 subtitle = "Оформление, тема, навигация",
                 icon = Icons.Default.Tune,
                 onClick = { onNavigate(OtherSubScreen.SETTINGS) }
-            )
-
-            // 3. About card
-            OtherNavCard(
-                title = "О программе",
-                subtitle = "Версия, разработчик, участники",
-                icon = Icons.Default.Info,
-                onClick = { onNavigate(OtherSubScreen.ABOUT) }
             )
 
             // 4. App Version / Auto-Update Card
