@@ -1,4 +1,4 @@
-﻿name: 🧹 Очистка неактивных Issue (Stale Bot)
+name: 🧹 Stale Issues Cleanup Bot
 
 on:
   schedule:

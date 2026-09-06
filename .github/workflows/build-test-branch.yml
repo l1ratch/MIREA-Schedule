@@ -5,7 +5,6 @@ on:
     branches-ignore:
       - main
       - gh-pages
-      - 'api/**'
     paths:
       - 'shared/**'
       - 'androidApp/**'
