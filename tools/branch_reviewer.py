@@ -371,6 +371,115 @@ def generate_report(git_info, domain_analysis, heuristics, ai_review):
 
     return "\n".join(lines)
 
+def generate_pr_content(git_info, domain_analysis, heuristics):
+    """
+    Generate a high-quality, human-friendly AND AI-friendly Pull Request title and body.
+    Requires no external AI: uses deterministic AST & git metadata analysis.
+    """
+    branch = git_info['branch']
+    commits = git_info['commits']
+    file_stats = git_info['file_stats']
+    authors = git_info['authors']
+    
+    # 1. Determine PR Title
+    if len(commits) == 1:
+        parts = commits[0].split(' ', 1)
+        raw_title = parts[1] if len(parts) > 1 else commits[0]
+        title = raw_title.strip()
+    else:
+        modules = domain_analysis.get('modules', [])
+        primary_scope = "core"
+        if any("Карты" in m for m in modules):
+            primary_scope = "map"
+        elif any("Расписание" in m for m in modules):
+            primary_scope = "schedule"
+        elif any("Аудитории" in m for m in modules):
+            primary_scope = "rooms"
+        elif any("Сборщик" in m or "CI" in m for m in modules):
+            primary_scope = "ci"
+        
+        c_type = "feat"
+        if commits and any(c.lower().find("fix") != -1 for c in commits):
+            c_type = "fix"
+        elif commits and any(c.lower().find("refactor") != -1 for c in commits):
+            c_type = "refactor"
+        
+        clean_branch = branch.replace("feat/", "").replace("fix/", "").replace("refactor/", "").replace("-", " ").replace("_", " ")
+        title = f"{c_type}({primary_scope}): {clean_branch}"
+
+    # 2. Build PR Body
+    body_lines = []
+    body_lines.append("## 📋 Описание изменений (Pull Request)")
+    body_lines.append("")
+    
+    author_str = ", ".join(f"`{a}`" for a in authors) if authors else "контрибьютор"
+    body_lines.append(f"Автоматически сформированный запрос на слияние ветки `{branch}` в `{git_info['base_ref']}`.")
+    body_lines.append(f"- **Автор(ы):** {author_str}")
+    body_lines.append(f"- **Коммитов:** {len(commits)}")
+    body_lines.append(f"- **Файлов затронуто:** {len(file_stats)} (+{git_info['total_added']} / -{git_info['total_deleted']} строк)")
+    body_lines.append("")
+    
+    body_lines.append("### 🎯 Затронутые модули и области")
+    if domain_analysis['modules']:
+        for m in domain_analysis['modules']:
+            body_lines.append(f"- {m}")
+    else:
+        body_lines.append("- Внутренние компоненты и конфигурация проекта")
+    body_lines.append("")
+    
+    if domain_analysis['impacts']:
+        body_lines.append("### 📝 Детали правок")
+        for imp in domain_analysis['impacts']:
+            body_lines.append(f"{imp}")
+        body_lines.append("")
+        
+    if commits:
+        body_lines.append("### 📜 История коммитов")
+        for c in commits:
+            body_lines.append(f"- `{c}`")
+        body_lines.append("")
+        
+    body_lines.append("### 🛡️ Проверка архитектуры и безопасности")
+    if not heuristics['warnings']:
+        body_lines.append("- [x] **Безопасность:** Захардкоженные API-ключи, пароли и токены не обнаружены.")
+        body_lines.append("- [x] **Потоки:** Блокировки UI-потока (`runBlocking`) отсутствуют.")
+        body_lines.append("- [x] **Синтаксис:** Файлы проверены анализатором, конфликтов с `main` нет.")
+    else:
+        for w in heuristics['warnings']:
+            body_lines.append(f"- [ ] {w}")
+    body_lines.append("")
+    
+    body_lines.append("### 🧪 Чеклист проверки на физическом устройстве")
+    if domain_analysis['testing']:
+        for t in domain_analysis['testing']:
+            body_lines.append(f"- [ ] {t}")
+    else:
+        body_lines.append("- [ ] Запустите тестовую сборку через воркфлоу `🧪 Contributor Test Build (APK & IPA)` и проверьте запуск на устройстве.")
+    body_lines.append("")
+    
+    ai_meta = {
+        "schema_version": "1.0",
+        "target_branch": branch,
+        "base_branch": git_info['base_ref'],
+        "authors": authors,
+        "affected_modules": [m.replace("*", "").strip() for m in domain_analysis['modules']],
+        "commits_count": len(commits),
+        "files_changed": len(file_stats),
+        "total_added": git_info['total_added'],
+        "total_deleted": git_info['total_deleted'],
+        "safety_checks_passed": len(heuristics['warnings']) == 0,
+        "recommended_action": "MERGE" if not heuristics['warnings'] else "REVIEW_WARNINGS"
+    }
+    body_lines.append("---")
+    body_lines.append("### 🤖 Метаданные для AI-агентов")
+    body_lines.append("<!-- PR_AI_CONTEXT")
+    body_lines.append(json.dumps(ai_meta, ensure_ascii=False, indent=2))
+    body_lines.append("-->")
+    body_lines.append("> 💡 *Этот PR и описание подготовлены автоматически инструментом Branch Reviewer без сторонних ИИ-квот.*\n")
+    
+    body = "\n".join(body_lines)
+    return title, body
+
 def main():
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -378,10 +487,11 @@ def main():
         sys.stderr.reconfigure(encoding='utf-8')
 
     parser = argparse.ArgumentParser(description="Review and evaluate branch diff vs main")
-    parser.add_argument('--branch', required=True, help="Target branch name (e.g. fix_p_m)")
+    parser.add_argument('--branch', required=True, help="Target branch name (e.g. fix/room-card)")
     parser.add_argument('--base', default='main', help="Base branch to compare against (default: main)")
     parser.add_argument('--pr-number', type=int, default=None, help="Pull Request number to post comment to")
     parser.add_argument('--post-comment', action='store_true', help="Post comment to GitHub PR via gh cli")
+    parser.add_argument('--create-pr', action='store_true', help="Create or update Pull Request to base branch via gh cli")
     parser.add_argument('--output', default='review_report.md', help="Output markdown file path")
     parser.add_argument('--step-summary', action='store_true', help="Write to GITHUB_STEP_SUMMARY")
     args = parser.parse_args()
@@ -398,14 +508,58 @@ def main():
     out_path.write_text(report, encoding='utf-8')
     print(f"==> Report saved to {out_path.resolve()}")
 
+    pr_url = None
+    pr_num = args.pr_number
+
+    # Pull Request creation / updating logic
+    if args.create_pr:
+        title, pr_body = generate_pr_content(git_info, domain_analysis, heuristics)
+        pr_body_file = Path("pr_body.md")
+        pr_body_file.write_text(pr_body, encoding='utf-8')
+        
+        print(f"==> Creating or updating Pull Request: '{args.branch}' -> '{args.base}'...")
+        print(f"==> PR Title: {title}")
+        
+        existing_pr = None
+        try:
+            pr_list_raw = run_cmd(['gh', 'pr', 'list', '--head', args.branch, '--base', args.base, '--state', 'open', '--json', 'number,url'], check=False)
+            pr_list = json.loads(pr_list_raw) if pr_list_raw else []
+            if pr_list:
+                existing_pr = pr_list[0]
+        except Exception as e:
+            print(f"Notice checking existing PRs: {e}")
+            
+        if existing_pr:
+            pr_num = existing_pr['number']
+            pr_url = existing_pr['url']
+            print(f"==> PR #{pr_num} already exists: {pr_url}. Updating title and description...")
+            try:
+                run_cmd(['gh', 'pr', 'edit', str(pr_num), '--title', title, '--body-file', str(pr_body_file)])
+                print(f"==> PR #{pr_num} updated successfully!")
+            except Exception as e:
+                print(f"Warning: Failed to edit PR #{pr_num}: {e}", file=sys.stderr)
+        else:
+            print(f"==> Creating new Pull Request...")
+            try:
+                pr_create_out = run_cmd(['gh', 'pr', 'create', '--head', args.branch, '--base', args.base, '--title', title, '--body-file', str(pr_body_file)])
+                pr_url = pr_create_out.strip()
+                print(f"==> Created Pull Request: {pr_url}")
+                # Extract number if url ends with /pull/N
+                num_match = re.search(r'/pull/(\d+)', pr_url)
+                if num_match:
+                    pr_num = int(num_match.group(1))
+            except Exception as e:
+                print(f"Warning: Failed to create PR: {e}", file=sys.stderr)
+
     if args.step_summary or os.environ.get('GITHUB_STEP_SUMMARY'):
         summary_env = os.environ.get('GITHUB_STEP_SUMMARY')
         if summary_env:
             with open(summary_env, 'a', encoding='utf-8') as f:
+                if pr_url:
+                    f.write(f"### 🚀 Pull Request: [{pr_url}]({pr_url})\n\n")
                 f.write(report + '\n')
             print("==> Appended to GITHUB_STEP_SUMMARY")
 
-    pr_num = args.pr_number
     if not pr_num and args.post_comment:
         try:
             pr_out = run_cmd(['gh', 'pr', 'list', '--head', args.branch, '--state', 'open', '--json', 'number', '--jq', '.[0].number'], check=False)

@@ -13,6 +13,11 @@ on:
         required: false
         default: 'main'
         type: string
+      create_pr:
+        description: 'Создать / обновить Pull Request в main с понятным описанием'
+        required: false
+        default: true
+        type: boolean
       post_comment:
         description: 'Оставить отчёт комментарием в открытый Pull Request (если есть)'
         required: false
@@ -22,7 +27,7 @@ on:
     types: [opened, reopened]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
 
@@ -64,6 +69,11 @@ jobs:
           git fetch origin "$TARGET_BRANCH":"$TARGET_BRANCH" || true
           git fetch origin "$BASE_BRANCH":"$BASE_BRANCH" || true
           
+          CREATE_PR_FLAG=""
+          if [ "${{ inputs.create_pr != 'false' }}" = "true" ] && [ "${{ github.event_name }}" != "pull_request" ]; then
+            CREATE_PR_FLAG="--create-pr"
+          fi
+          
           COMMENT_FLAG=""
           if [ "$POST_COMMENT" = "true" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
             COMMENT_FLAG="--post-comment"
@@ -79,6 +89,7 @@ jobs:
             --base "$BASE_BRANCH" \
             --step-summary \
             --output "branch_review_report.md" \
+            $CREATE_PR_FLAG \
             $COMMENT_FLAG \
             $PR_FLAG
 
