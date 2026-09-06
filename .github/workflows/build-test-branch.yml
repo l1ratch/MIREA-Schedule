@@ -1,7 +1,27 @@
-name: 🚀 Build & Release Mobile (Main Only)
+name: 🧪 Build Test Branch (Artifacts)
 
 on:
   push:
+    branches-ignore:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.gitattributes'
+      - '.editorconfig'
+      - 'renovate.json'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/workflows/issue-triage.yml'
+      - '.github/workflows/stale.yml'
+      - '.github/workflows/sync-free-rooms.yml'
+      - '.github/workflows/review-branch.yml'
+      - '.github/workflows/build-mobile.yml'
+      - 'tools/branch_reviewer.py'
+      - '.github/copilot-instructions.md'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - 'docs/**'
+  pull_request:
     branches:
       - main
     paths-ignore:
@@ -16,13 +36,11 @@ on:
       - '.github/workflows/stale.yml'
       - '.github/workflows/sync-free-rooms.yml'
       - '.github/workflows/review-branch.yml'
-      - '.github/workflows/build-test-branch.yml'
+      - '.github/workflows/build-mobile.yml'
       - 'tools/branch_reviewer.py'
       - '.github/copilot-instructions.md'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - 'docs/**'
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       build_apk:
@@ -37,39 +55,16 @@ on:
         default: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build_apk:
-    name: 🤖 Build Android APK
+    name: 🤖 Test Build Android APK
     runs-on: ubuntu-latest
     if: github.event_name != 'workflow_dispatch' || inputs.build_apk
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
-
-      - name: 🔢 Sync Build Number with GitHub Actions Run
-        env:
-          BUILD_NUM: ${{ github.run_number }}
-        run: |
-          python3 -c "
-          import re, os
-          num = os.environ.get('BUILD_NUM', '30')
-          p1 = 'shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt'
-          with open(p1, 'r', encoding='utf-8') as f: c = f.read()
-          c = re.sub(r'const val BUILD_NUMBER = \\d+', f'const val BUILD_NUMBER = {num}', c)
-          with open(p1, 'w', encoding='utf-8') as f: f.write(c)
-
-          p2 = 'androidApp/build.gradle.kts'
-          with open(p2, 'r', encoding='utf-8') as f: c = f.read()
-          c = re.sub(r'versionCode = .*?\\n', f'versionCode = {num}\\n', c)
-          with open(p2, 'w', encoding='utf-8') as f: f.write(c)
-
-          p3 = 'iosApp/iosApp/Info.plist'
-          with open(p3, 'r', encoding='utf-8') as f: c = f.read()
-          c = re.sub(r'(<key>CFBundleVersion</key>\\s*<string>)\\d+(</string>)', rf'\\g<1>{num}\\g<2>', c)
-          with open(p3, 'w', encoding='utf-8') as f: f.write(c)
-          "
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -101,35 +96,12 @@ jobs:
           if-no-files-found: error
 
   build_ipa:
-    name: 🍏 Build iOS Unsigned IPA
+    name: 🍏 Test Build iOS Unsigned IPA
     runs-on: macos-15
     if: github.event_name != 'workflow_dispatch' || inputs.build_ipa
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
-
-      - name: 🔢 Sync Build Number with GitHub Actions Run
-        env:
-          BUILD_NUM: ${{ github.run_number }}
-        run: |
-          python3 -c "
-          import re, os
-          num = os.environ.get('BUILD_NUM', '30')
-          p1 = 'shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt'
-          with open(p1, 'r', encoding='utf-8') as f: c = f.read()
-          c = re.sub(r'const val BUILD_NUMBER = \\d+', f'const val BUILD_NUMBER = {num}', c)
-          with open(p1, 'w', encoding='utf-8') as f: f.write(c)
-
-          p2 = 'androidApp/build.gradle.kts'
-          with open(p2, 'r', encoding='utf-8') as f: c = f.read()
-          c = re.sub(r'versionCode = .*?\\n', f'versionCode = {num}\\n', c)
-          with open(p2, 'w', encoding='utf-8') as f: f.write(c)
-
-          p3 = 'iosApp/iosApp/Info.plist'
-          with open(p3, 'r', encoding='utf-8') as f: c = f.read()
-          c = re.sub(r'(<key>CFBundleVersion</key>\\s*<string>)\\d+(</string>)', rf'\\g<1>{num}\\g<2>', c)
-          with open(p3, 'w', encoding='utf-8') as f: f.write(c)
-          "
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -195,64 +167,21 @@ jobs:
           path: Schedule-MIREA.ipa
           if-no-files-found: error
 
-  update_version_feed:
-    name: 📡 Update Version Feed (gh-pages)
+  test_summary:
+    name: 📋 Test Build Summary
     runs-on: ubuntu-latest
     needs: [build_apk, build_ipa]
     if: always() && (needs.build_apk.result == 'success' || needs.build_ipa.result == 'success')
     steps:
-      - name: 📚 Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: 🐍 Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: 📝 Generate version.json
-        env:
-          BUILD_NUM: ${{ github.run_number }}
+      - name: 📝 Post Step Summary
         run: |
-          python tools/update_version_feed.py --build-number ${{ github.run_number }} --out-dir dist_version
-
-      - name: 🚀 Deploy version.json to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist_version
-          publish_branch: gh-pages
-          keep_files: true
-
-  publish_release:
-    name: 🚀 Publish GitHub Release & Archive
-    runs-on: ubuntu-latest
-    needs: [build_apk, build_ipa]
-    if: always() && (needs.build_apk.result == 'success' || needs.build_ipa.result == 'success')
-    steps:
-      - name: 📚 Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: 📥 Download APK Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: Schedule-MIREA-APK
-          path: download_apk
-        continue-on-error: true
-
-      - name: 📥 Download IPA Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: Schedule-MIREA-IPA
-          path: download_ipa
-        continue-on-error: true
-
-      - name: 🐍 Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: 🚀 Publish Release & Update Archive
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python tools/publish_release.py --build-number ${{ github.run_number }}\n
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          echo "### 🧪 Тестовая сборка для ветки \`$BRANCH_NAME\` готова!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Эта тестовая сборка предназначена для проверки работы на физическом устройстве." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Статус Android APK:** ${{ needs.build_apk.result == 'success' && '✅ Собран' || '⏭️ Пропущен/Ошибка' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Статус iOS IPA:** ${{ needs.build_ipa.result == 'success' && '✅ Собран' || '⏭️ Пропущен/Ошибка' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **Где скачать:** Файлы установки находятся в секции **Artifacts** в самом низу страницы этого запуска (\`Schedule-MIREA-APK\` и \`Schedule-MIREA-IPA\`)." >> $GITHUB_STEP_SUMMARY
+          echo "> ⚠️ Релизы и номер сборки не изменялись — официальный релиз произойдёт при слиянии в \`main\`." >> $GITHUB_STEP_SUMMARY\n
