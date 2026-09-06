@@ -1,0 +1,9 @@
+{
+  "version": "26.9.0",
+  "build": 34,
+  "critical": false,
+  "min_supported_build": 1,
+  "changelog": "Официальные карты корпусов МИРЭА (В-78, В-86, С-20), стабилизация и исправление работы на iOS",
+  "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
+  "updated_at": "2026-09-06T10:57:38.309529+00:00"
+}
