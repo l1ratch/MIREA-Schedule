@@ -1,9 +1,9 @@
 {
   "version": "26.9.0",
-  "build": 42,
+  "build": 43,
   "critical": false,
   "min_supported_build": 1,
-  "changelog": "Карты: устранение слипания номеров аудиторий на В-78, гармоничные размеры подписей",
+  "changelog": "Исправление пустого экрана карт на Android, надежная инициализация и исправление масштабирования",
   "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
-  "updated_at": "2026-09-06T13:46:58.866677+00:00"
+  "updated_at": "2026-09-06T15:32:19.903030+00:00"
 }
