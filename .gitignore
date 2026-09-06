@@ -40,6 +40,12 @@ env/
 dist_free_rooms/
 dist_version/
 dist/
+dist_latest/
+dist_archive/
+download_apk/
+download_ipa/
+archive_notes.md
+release_notes.md
 
 # Application packages
 *.apk

@@ -205,3 +205,38 @@ jobs:
           publish_dir: ./dist_version
           publish_branch: gh-pages
           keep_files: true
+
+  publish_release:
+    name: 🚀 Publish GitHub Release & Archive
+    runs-on: ubuntu-latest
+    needs: [build_apk, build_ipa]
+    if: always() && (needs.build_apk.result == 'success' || needs.build_ipa.result == 'success') && github.ref == 'refs/heads/main'
+    steps:
+      - name: 📚 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Schedule-MIREA-APK
+          path: download_apk
+        continue-on-error: true
+
+      - name: 📥 Download IPA Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Schedule-MIREA-IPA
+          path: download_ipa
+        continue-on-error: true
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 🚀 Publish Release & Update Archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python tools/publish_release.py --build-number ${{ github.run_number }}
+

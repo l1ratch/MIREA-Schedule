@@ -11,7 +11,17 @@
 **Современный, быстрый и автономный мобильный клиент для студентов и преподавателей РТУ МИРЭА.**  
 *Расписание занятий, интерактивные векторные карты корпусов, трекер академических задач и мониторинг свободных аудиторий.*
 
-[Скачать последний релиз (.apk / .ipa)](https://github.com/l1ratch/MIREA-Schedule/releases/latest) • [Документация API аудиторий](FREE_ROOMS_API.md)
+<p align="center">
+  <a href="https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk">
+    <img src="https://img.shields.io/badge/Скачать-APK%20(Android)-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Скачать APK" />
+  </a>
+  &nbsp;
+  <a href="https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa">
+    <img src="https://img.shields.io/badge/Скачать-IPA%20(iOS)-007AFF?style=for-the-badge&logo=apple&logoColor=white" alt="Скачать IPA" />
+  </a>
+</p>
+
+[📦 Все стабильные релизы](https://github.com/l1ratch/MIREA-Schedule/releases) • [🗄️ Архив сборок (Pre-release)](https://github.com/l1ratch/MIREA-Schedule/releases/tag/build-archive) • [Документация API аудиторий](FREE_ROOMS_API.md)
 
 </div>
 
@@ -67,6 +77,24 @@
 * **Кэширование изображений**: [Coil 3](https://github.com/coil-kt/coil)
 * **Картография**: Оптимизированный векторный движок на базе WebView (WKWebView на iOS / Android WebView)
 * **Хранилище**: Кроссплатформенное абстрагированное локальное хранилище (`PlatformStorage`)
+
+---
+
+## 📲 Установка приложения
+
+### 🤖 Android
+1. Скачайте [**Schedule-MIREA.apk**](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk).
+2. Откройте скачанный файл на устройстве и разрешите установку при запросе системы.
+3. Приложение оснащено встроенным авто-обновлением: при появлении новой версии в разделе «Другое» появится уведомление.
+
+### 🍏 iOS
+Пакет [**Schedule-MIREA.ipa**](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) собирается в CI без цифровой подписи (Unsigned). Для установки на iPhone/iPad используйте любой привычный способ:
+* **Без компьютера**: [SideStore](https://sidestore.io), [TrollStore](https://github.com/opa334/TrollStore) (если поддерживается вашей версией iOS) или [Scarlet](https://usescarlet.com).
+* **С компьютера (Mac/PC)**: [AltStore](https://altstore.io) или [Sideloadly](https://sideloadly.io).
+
+> 🛠️ **Для разработчиков и тестировщиков**:
+> * Все промежуточные сборки с номерами билдов сохраняются в [Архиве сборок (Pre-release)](https://github.com/l1ratch/MIREA-Schedule/releases/tag/build-archive).
+> * Артефакты самых свежих запусков CI доступны на вкладке [GitHub Actions](https://github.com/l1ratch/MIREA-Schedule/actions) (требуется авторизация на GitHub).
 
 ---
 
