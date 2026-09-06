@@ -3,6 +3,11 @@ name: 🧪 Contributor Test Build (APK & IPA)
 on:
   workflow_dispatch:
     inputs:
+      branch:
+        description: 'Ветка для сборки (например: fix_p_m). Если пусто — берётся ветка из меню выше'
+        required: false
+        default: ''
+        type: string
       build_apk:
         description: 'Build Android APK'
         required: true
@@ -25,6 +30,8 @@ jobs:
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch != '' && inputs.branch || github.ref }}
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -62,6 +69,8 @@ jobs:
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch != '' && inputs.branch || github.ref }}
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -135,7 +144,7 @@ jobs:
     steps:
       - name: 📝 Post Step Summary
         run: |
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${{ inputs.branch != '' && inputs.branch || github.head_ref || github.ref_name }}"
           echo "### 🧪 Тестовая сборка для ветки \`$BRANCH_NAME\` готова!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Эта тестовая сборка предназначена для проверки работы на физическом устройстве." >> $GITHUB_STEP_SUMMARY
