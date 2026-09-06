@@ -270,7 +270,7 @@ jobs:
               labelsToAdd.add("tasks");
             }
 
-            if (fullText.includes("аудитор") || fullText.includes("свободн") || fullText.includes("этаж") || fullText.includes("корпус") || fullText.includes("кампус")) {
+            if (fullText.includes("аудитор") || fullText.includes("свободн") || fullText.includes("этаж") || fullText.includes("корпус") || fullText.includes("кампус") || fullText.includes("карт")) {
               labelsToAdd.add("rooms");
             }
 
@@ -300,6 +300,14 @@ jobs:
 
             if (missingInfo.length > 0) {
               labelsToAdd.add("needs-info");
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  name: 'needs-triage'
+                });
+              } catch (_) {}
             } else {
               labelsToAdd.add("needs-triage");
             }
@@ -371,7 +379,7 @@ jobs:
             } else if (isBug) {
               reply += "✅ **Отчёт об ошибке зарегистрирован.** Все ключевые поля заполнены. Мы изучим проблему и вернёмся с обратной связью.\n\n";
               if (labelsToAdd.has("crash")) {
-                reply += "> 💡 **Совет:** Если приложение аварийно завершилось, убедитесь, что у вас установлена самая свежая сборка из [Релизов](https://github.com/l1ratch/MIREA-Schedule/releases). В Сборке 21 исправлены основные причины вылетов при запуске.\n\n";
+                reply += "> 💡 **Совет:** Если приложение аварийно завершилось, убедитесь, что у вас установлена самая свежая сборка из [Релизов](https://github.com/l1ratch/MIREA-Schedule/releases). В последних версиях и сборках исправлены основные причины вылетов при запуске.\n\n";
               }
             } else if (isFeature) {
               reply += "✨ **Спасибо за предложение!** Новые идеи помогают сделать приложение удобнее для всех студентов и преподавателей. Предложение передано на обсуждение в план развития проекта.\n\n";

@@ -1,4 +1,4 @@
-﻿name: "🐛 Отчёт об ошибке (Bug Report)"
+name: "🐛 Отчёт об ошибке (Bug Report)"
 description: "Сообщите о сбое, вылете, некорректном поведении или графическом баге приложения."
 title: "[Баг]: "
 labels: ["bug", "needs-triage"]
@@ -34,7 +34,7 @@ body:
     id: device_os
     attributes:
       label: Модель устройства и версия ОС
-      description: Например: Google Pixel 7, Android 14 или iPhone 14 Pro, iOS 18.0
+      description: "Например: Google Pixel 7, Android 14 или iPhone 14 Pro, iOS 18.0"
       placeholder: "Xiaomi Redmi Note 12, Android 13 / HyperOS"
     validations:
       required: true
