@@ -5,7 +5,7 @@ object AppVersion {
     const val BUILD_NUMBER = 30
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1
-    const val CHANGELOG = "Официальные карты корпусов МИРЭА (В-78, В-86, С-20), стабилизация и исправление работы на iOS"
+    const val CHANGELOG = "Векторный движок карт: плавный зум жестами без сброса, устранение замыливания на iOS, крупные номера аудиторий и адаптивный масштаб"
 
     const val APPLICATION_ID = "ru.l1ratch.mireaschedule"
     const val DISPLAY_VERSION = "Версия $VERSION_NAME (сборка $BUILD_NUMBER)"
