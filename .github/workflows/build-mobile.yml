@@ -4,23 +4,17 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.gitattributes'
-      - '.editorconfig'
-      - 'renovate.json'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/workflows/issue-triage.yml'
-      - '.github/workflows/stale.yml'
-      - '.github/workflows/sync-free-rooms.yml'
-      - '.github/workflows/review-branch.yml'
-      - '.github/workflows/build-test-branch.yml'
-      - 'tools/branch_reviewer.py'
-      - '.github/copilot-instructions.md'
-      - '.github/PULL_REQUEST_TEMPLATE.md'
-      - 'docs/**'
+    paths:
+      - 'shared/**'
+      - 'androidApp/**'
+      - 'iosApp/**'
+      - 'maps/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
     tags:
       - 'v*'
   workflow_dispatch:
