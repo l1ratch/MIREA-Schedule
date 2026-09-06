@@ -1,9 +1,9 @@
 {
   "version": "26.9.0",
-  "build": 39,
+  "build": 40,
   "critical": false,
   "min_supported_build": 1,
   "changelog": "Векторный движок карт: плавный зум жестами без сброса, устранение замыливания на iOS, крупные номера аудиторий и адаптивный масштаб",
   "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
-  "updated_at": "2026-09-06T12:25:14.671645+00:00"
+  "updated_at": "2026-09-06T12:53:50.090956+00:00"
 }
