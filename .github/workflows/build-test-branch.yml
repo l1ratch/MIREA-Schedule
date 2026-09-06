@@ -1,37 +1,6 @@
-name: 🧪 Build Test Branch (Artifacts)
+name: 🧪 Contributor Test Build (APK & IPA)
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - gh-pages
-    paths:
-      - 'shared/**'
-      - 'androidApp/**'
-      - 'iosApp/**'
-      - 'maps/**'
-      - 'gradle/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'gradlew'
-      - 'gradlew.bat'
-      - '.github/workflows/build-test-branch.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'shared/**'
-      - 'androidApp/**'
-      - 'iosApp/**'
-      - 'maps/**'
-      - 'gradle/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'gradlew'
-      - 'gradlew.bat'
-      - '.github/workflows/build-test-branch.yml'
   workflow_dispatch:
     inputs:
       build_apk:
@@ -52,7 +21,7 @@ jobs:
   build_apk:
     name: 🤖 Test Build Android APK
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_dispatch' || inputs.build_apk
+    if: inputs.build_apk
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
@@ -89,7 +58,7 @@ jobs:
   build_ipa:
     name: 🍏 Test Build iOS Unsigned IPA
     runs-on: macos-15
-    if: github.event_name != 'workflow_dispatch' || inputs.build_ipa
+    if: inputs.build_ipa
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
