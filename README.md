@@ -5,7 +5,6 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84.svg?logo=android&logoColor=white)](https://github.com/l1ratch/MIREA-Schedule)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.7.1-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
-[![Build Mobile](https://github.com/l1ratch/MIREA-Schedule/actions/workflows/build-mobile.yml/badge.svg)](https://github.com/l1ratch/MIREA-Schedule/actions/workflows/build-mobile.yml)
 [![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
 
 **Современный, быстрый и автономный мобильный клиент для студентов и преподавателей РТУ МИРЭА.**  
