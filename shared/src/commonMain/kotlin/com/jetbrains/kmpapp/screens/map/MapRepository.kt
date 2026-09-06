@@ -22,6 +22,7 @@ object MapRepository {
         val path = when (campusId) {
             "s-20" -> "files/maps/s-20/floor_$floor.svg"
             "v-78" -> "files/maps/v-78/floor_$floor.svg"
+            "v-86" -> "files/maps/v-86/floor_$floor.svg"
             "mp-1" -> if (floor == -1) "files/maps/mp-1/floor_m1.svg" else "files/maps/mp-1/floor_$floor.svg"
             else -> return@withContext null
         }

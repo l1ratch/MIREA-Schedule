@@ -303,8 +303,8 @@ fun AboutScreen(
                     // 1. Map credit
                     AcknowledgmentItem(
                         title = "Схемы и карты корпусов",
-                        description = "На основе проекта university-app (0niel)",
-                        onClick = { uriHandler.openUri("https://github.com/0niel/university-app") }
+                        description = "pulse.mirea.ru и проект university-app (0niel)",
+                        onClick = { uriHandler.openUri("https://pulse.mirea.ru/services/maps") }
                     )
 
                     androidx.compose.material3.HorizontalDivider(

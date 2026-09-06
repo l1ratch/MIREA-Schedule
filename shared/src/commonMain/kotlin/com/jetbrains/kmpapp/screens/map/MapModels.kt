@@ -51,6 +51,14 @@ val CAMPUSES = listOf(
         defaultFloor = 1
     ),
     Campus(
+        id = "v-86",
+        name = "Вернадского 86",
+        shortName = "В-86",
+        address = "проспект Вернадского, 86",
+        floors = listOf(7, 6, 5, 4, 3, 2, 1, 0),
+        defaultFloor = 1
+    ),
+    Campus(
         id = "mp-1",
         name = "Малая Пироговская 1",
         shortName = "МП-1",

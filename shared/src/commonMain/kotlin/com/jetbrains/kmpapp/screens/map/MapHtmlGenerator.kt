@@ -8,17 +8,107 @@ object MapHtmlGenerator {
     ): String {
         val themeStyles = if (isDark) {
             """
-            /* Dark theme overrides */
-            .BigAreaPath { fill: #151b26 !important; stroke: #2d3748 !important; }
-            rect[fill="#F8F8F8"] { fill: #151b26 !important; stroke: #2d3748 !important; }
-            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #1e2638 !important; stroke: #2d3748 !important; }
-            path[fill="#262A34"] { fill: #e2e8f0 !important; }
+            /* Official pulse maps - Dark theme */
+            g[role="button"] path {
+              fill: #161b22 !important;
+              stroke: #484f58 !important;
+              stroke-width: 6px !important;
+              cursor: pointer;
+              transition: fill 0.15s ease, stroke 0.15s ease;
+            }
+            g[style*="pointer-events: none"] > path {
+              fill: #0d1117 !important;
+              stroke: #30363d !important;
+              stroke-width: 6px !important;
+            }
+            .room-label {
+              fill: #f0f6fc !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+              font-weight: 600 !important;
+              letter-spacing: 0.5px;
+              stroke: #0d1117 !important;
+              stroke-width: 4.5px !important;
+              paint-order: stroke fill !important;
+              pointer-events: none;
+            }
+            #markers text {
+              fill: #58a6ff !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+              stroke: #0d1117 !important;
+              stroke-width: 5px !important;
+              paint-order: stroke fill !important;
+              font-weight: 700 !important;
+              pointer-events: none;
+            }
+            #markers rect {
+              fill: #15325b !important;
+              stroke: #58a6ff !important;
+            }
+            #markers path {
+              stroke: #58a6ff !important;
+            }
+            .selected-room > path {
+              fill: #1f6feb !important;
+              stroke: #58a6ff !important;
+              stroke-width: 10px !important;
+            }
+
+            /* Legacy MP-1 dark theme */
+            .BigAreaPath { fill: #0d1117 !important; stroke: #30363d !important; }
+            rect[fill="#F8F8F8"] { fill: #0d1117 !important; stroke: #30363d !important; }
+            rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #161b22 !important; stroke: #484f58 !important; }
+            path[fill="#262A34"] { fill: #e6edf3 !important; }
             path[fill="#000"], path[fill="#000000"] { fill: #cbd5e1 !important; }
-            .Room:hover rect, .Room:active rect { fill: #3b82f6 !important; }
+            .Room:hover rect, .Room:active rect { fill: #1f6feb !important; }
             """
         } else {
             """
-            /* Light theme styles */
+            /* Official pulse maps - Light theme */
+            g[role="button"] path {
+              fill: #ffffff !important;
+              stroke: #94a3b8 !important;
+              stroke-width: 6px !important;
+              cursor: pointer;
+              transition: fill 0.15s ease, stroke 0.15s ease;
+            }
+            g[style*="pointer-events: none"] > path {
+              fill: #f1f5f9 !important;
+              stroke: #cbd5e1 !important;
+              stroke-width: 6px !important;
+            }
+            .room-label {
+              fill: #0f172a !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+              font-weight: 600 !important;
+              letter-spacing: 0.5px;
+              stroke: #ffffff !important;
+              stroke-width: 4.5px !important;
+              paint-order: stroke fill !important;
+              pointer-events: none;
+            }
+            #markers text {
+              fill: #2563eb !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+              stroke: #ffffff !important;
+              stroke-width: 5px !important;
+              paint-order: stroke fill !important;
+              font-weight: 700 !important;
+              pointer-events: none;
+            }
+            #markers rect {
+              fill: #eff6ff !important;
+              stroke: #2563eb !important;
+            }
+            #markers path {
+              stroke: #2563eb !important;
+            }
+            .selected-room > path {
+              fill: #bfdbfe !important;
+              stroke: #2563eb !important;
+              stroke-width: 10px !important;
+            }
+
+            /* Legacy MP-1 light theme */
             .BigAreaPath { fill: #f1f5f9 !important; stroke: #cbd5e1 !important; }
             rect[fill="#F8F8F8"] { fill: #f8fafc !important; stroke: #cbd5e1 !important; }
             rect[fill="#fff"], rect[fill="#FFFFFF"] { fill: #ffffff !important; stroke: #cbd5e1 !important; }
@@ -27,6 +117,11 @@ object MapHtmlGenerator {
             .Room:hover rect, .Room:active rect { fill: #60a5fa !important; }
             """
         }
+
+        val cardBg = if (isDark) "rgba(22, 27, 34, 0.92)" else "rgba(255, 255, 255, 0.94)"
+        val cardBorder = if (isDark) "rgba(255, 255, 255, 0.12)" else "rgba(0, 0, 0, 0.08)"
+        val cardTitleColor = if (isDark) "#f0f6fc" else "#0f172a"
+        val cardSubColor = if (isDark) "#8b949e" else "#64748b"
 
         return """
 <!DOCTYPE html>
@@ -65,10 +160,89 @@ object MapHtmlGenerator {
     cursor: pointer;
     transition: fill 0.15s ease, stroke 0.15s ease;
   }
+
+  /* Floating Info Card */
+  .room-card {
+    position: absolute;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: $cardBg;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid $cardBorder;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+    border-radius: 18px;
+    padding: 10px 16px;
+    z-index: 1000;
+    transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1), transform 0.22s cubic-bezier(0.2, 0, 0, 1);
+    pointer-events: auto;
+    max-width: 88%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .room-card.hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-14px);
+    pointer-events: none;
+  }
+  .room-card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .room-card-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .room-card-text {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .room-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: $cardTitleColor;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .room-card-subtitle {
+    font-size: 12px;
+    color: $cardSubColor;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .room-card-close {
+    background: transparent;
+    border: none;
+    color: $cardSubColor;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 4px 6px;
+    margin-left: 6px;
+    border-radius: 8px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
 <div id="viewport">
+  <div id="room-card" class="room-card hidden">
+    <div class="room-card-content">
+      <div class="room-card-icon" id="room-card-icon">📍</div>
+      <div class="room-card-text">
+        <div class="room-card-title" id="room-card-title"></div>
+        <div class="room-card-subtitle" id="room-card-subtitle"></div>
+      </div>
+      <button class="room-card-close" id="room-card-close">✕</button>
+    </div>
+  </div>
   <div id="svg-container">
     $svgContent
   </div>
@@ -76,15 +250,82 @@ object MapHtmlGenerator {
 <script>
   const viewport = document.getElementById('viewport');
   const container = document.getElementById('svg-container');
+  const roomCard = document.getElementById('room-card');
+  const roomTitle = document.getElementById('room-card-title');
+  const roomSubtitle = document.getElementById('room-card-subtitle');
+  const roomIcon = document.getElementById('room-card-icon');
+  const roomClose = document.getElementById('room-card-close');
   
   let scale = 1;
   let translateX = 0;
   let translateY = 0;
 
+  let selectedElement = null;
+
+  function hideCard() {
+    roomCard.classList.add('hidden');
+    if (selectedElement) {
+      selectedElement.classList.remove('selected-room');
+      selectedElement = null;
+    }
+  }
+
+  roomClose.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideCard();
+  });
+
+  function selectRoom(el) {
+    if (selectedElement) {
+      selectedElement.classList.remove('selected-room');
+    }
+    selectedElement = el;
+    el.classList.add('selected-room');
+
+    const label = el.getAttribute('aria-label') || '';
+    let title = label;
+    let subtitle = 'Помещение';
+    let icon = '📍';
+
+    if (label.startsWith('Помещение ')) {
+      title = label.replace('Помещение ', '').trim();
+      if (title.toLowerCase().includes('туалет') || title.toLowerCase().includes('wc')) {
+        icon = '🚻';
+        subtitle = 'Санитарный узел';
+      } else if (title.toLowerCase().includes('столовая') || title.toLowerCase().includes('буфет') || title.toLowerCase().includes('кафе')) {
+        icon = '🍽️';
+        subtitle = 'Питание';
+      } else if (title.toLowerCase().includes('медпункт')) {
+        icon = '🏥';
+        subtitle = 'Медицинский пункт';
+      } else {
+        subtitle = 'Аудитория';
+      }
+    } else if (label.toLowerCase().includes('лестница')) {
+      icon = '🪜';
+      title = label;
+      subtitle = 'Перемещение между этажами';
+    } else if (label.toLowerCase().includes('переход')) {
+      icon = '🚶';
+      title = label;
+      subtitle = 'Переход между корпусами';
+    } else if (label.toLowerCase().includes('лифт')) {
+      icon = '🛗';
+      title = label;
+      subtitle = 'Лифт';
+    }
+
+    roomTitle.textContent = title;
+    roomSubtitle.textContent = subtitle;
+    roomIcon.textContent = icon;
+    roomCard.classList.remove('hidden');
+  }
+
   // Touch state
-  let touchMode = 0; // 0: idle, 1: pan, 2: pinch
+  let touchMode = 0;
   let panStartX = 0, panStartY = 0;
   let panStartTx = 0, panStartTy = 0;
+  let touchMoved = false;
 
   let pinchStartDist = 0;
   let pinchStartScale = 1;
@@ -138,9 +379,9 @@ object MapHtmlGenerator {
     updateTransform(Boolean(smooth));
   }
 
-  // --- Touch event handling (native mobile multi-touch) ---
+  // --- Touch event handling ---
   viewport.addEventListener('touchstart', (e) => {
-    e.preventDefault();
+    touchMoved = false;
     if (e.touches.length === 1) {
       touchMode = 1;
       panStartX = e.touches[0].clientX;
@@ -149,6 +390,7 @@ object MapHtmlGenerator {
       panStartTy = translateY;
     } else if (e.touches.length >= 2) {
       touchMode = 2;
+      touchMoved = true;
       const t0 = e.touches[0];
       const t1 = e.touches[1];
       pinchStartDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
@@ -165,6 +407,9 @@ object MapHtmlGenerator {
     if (touchMode === 1 && e.touches.length === 1) {
       const dx = e.touches[0].clientX - panStartX;
       const dy = e.touches[0].clientY - panStartY;
+      if (Math.hypot(dx, dy) > 8) {
+        touchMoved = true;
+      }
       translateX = panStartTx + dx;
       translateY = panStartTy + dy;
       updateTransform(false);
@@ -197,6 +442,11 @@ object MapHtmlGenerator {
       panStartTx = translateX;
       panStartTy = translateY;
     } else if (e.touches.length === 0) {
+      if (!touchMoved) {
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        handleTapTarget(target);
+      }
       touchMode = 0;
     }
   });
@@ -205,13 +455,27 @@ object MapHtmlGenerator {
     touchMode = 0;
   });
 
+  function handleTapTarget(target) {
+    if (!target) return;
+    if (roomCard.contains(target)) return;
+    const interactive = target.closest('g[role="button"], .Room');
+    if (interactive && interactive.getAttribute('aria-label')) {
+      selectRoom(interactive);
+    } else {
+      hideCard();
+    }
+  }
+
   // --- Mouse events for desktop/emulator ---
   let isMouseDown = false;
   let mouseStartX = 0, mouseStartY = 0;
   let mouseStartTx = 0, mouseStartTy = 0;
+  let mouseMoved = false;
 
   viewport.addEventListener('mousedown', (e) => {
+    if (roomCard.contains(e.target)) return;
     isMouseDown = true;
+    mouseMoved = false;
     mouseStartX = e.clientX;
     mouseStartY = e.clientY;
     mouseStartTx = translateX;
@@ -220,13 +484,22 @@ object MapHtmlGenerator {
 
   window.addEventListener('mousemove', (e) => {
     if (!isMouseDown) return;
-    translateX = mouseStartTx + (e.clientX - mouseStartX);
-    translateY = mouseStartTy + (e.clientY - mouseStartY);
+    const dx = e.clientX - mouseStartX;
+    const dy = e.clientY - mouseStartY;
+    if (Math.hypot(dx, dy) > 5) {
+      mouseMoved = true;
+    }
+    translateX = mouseStartTx + dx;
+    translateY = mouseStartTy + dy;
     updateTransform(false);
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', (e) => {
+    if (!isMouseDown) return;
     isMouseDown = false;
+    if (!mouseMoved) {
+      handleTapTarget(e.target);
+    }
   });
 
   viewport.addEventListener('wheel', (e) => {
@@ -253,7 +526,7 @@ object MapHtmlGenerator {
 
   // Initial fit
   window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(fitToScreen, 50);
+    setTimeout(fitToScreen, 60);
   });
 </script>
 </body>
