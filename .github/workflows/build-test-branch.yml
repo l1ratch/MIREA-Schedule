@@ -144,4 +144,4 @@ jobs:
           echo "- **Статус iOS IPA:** ${{ needs.build_ipa.result == 'success' && '✅ Собран' || '⏭️ Пропущен/Ошибка' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> 💡 **Где скачать:** Файлы установки находятся в секции **Artifacts** в самом низу страницы этого запуска (\`Schedule-MIREA-APK\` и \`Schedule-MIREA-IPA\`)." >> $GITHUB_STEP_SUMMARY
-          echo "> ⚠️ Релизы и номер сборки не изменялись — официальный релиз произойдёт при слиянии в \`main\`." >> $GITHUB_STEP_SUMMARY\n
+          echo "> ⚠️ Релизы и номер сборки не изменялись — официальный релиз произойдёт при слиянии в \`main\`." >> $GITHUB_STEP_SUMMARY

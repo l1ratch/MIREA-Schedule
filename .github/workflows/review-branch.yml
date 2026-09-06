@@ -88,4 +88,4 @@ jobs:
         with:
           name: branch-review-report
           path: branch_review_report.md
-          if-no-files-found: ignore\n
+          if-no-files-found: ignore

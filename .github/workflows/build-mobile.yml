@@ -15,9 +15,6 @@ on:
       - 'gradle.properties'
       - 'gradlew'
       - 'gradlew.bat'
-      - 'tools/publish_release.py'
-      - 'tools/update_version_feed.py'
-      - '.github/workflows/build-mobile.yml'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -252,4 +249,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python tools/publish_release.py --build-number ${{ github.run_number }}\n
+          python tools/publish_release.py --build-number ${{ github.run_number }}
