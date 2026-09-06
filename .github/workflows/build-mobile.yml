@@ -15,6 +15,9 @@ on:
       - 'gradle.properties'
       - 'gradlew'
       - 'gradlew.bat'
+      - 'tools/publish_release.py'
+      - 'tools/update_version_feed.py'
+      - '.github/workflows/build-mobile.yml'
     tags:
       - 'v*'
   workflow_dispatch:

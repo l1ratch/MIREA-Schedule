@@ -17,6 +17,7 @@ on:
       - 'gradle.properties'
       - 'gradlew'
       - 'gradlew.bat'
+      - '.github/workflows/build-test-branch.yml'
   pull_request:
     branches:
       - main
@@ -31,6 +32,7 @@ on:
       - 'gradle.properties'
       - 'gradlew'
       - 'gradlew.bat'
+      - '.github/workflows/build-test-branch.yml'
   workflow_dispatch:
     inputs:
       build_apk:
