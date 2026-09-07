@@ -27,11 +27,127 @@ jobs:
     name: 🤖 Test Build Android APK
     runs-on: ubuntu-latest
     if: inputs.build_apk
+    outputs:
+      artifact_slug: ${{ steps.test_version.outputs.artifact_slug }}
+      display_version: ${{ steps.test_version.outputs.display_version }}
+      iteration: ${{ steps.test_version.outputs.iteration }}
+      commit_sha: ${{ steps.test_version.outputs.commit_sha }}
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch != '' && inputs.branch || github.ref }}
+          fetch-depth: 0
+
+      - name: 🏷️ Configure Test Build Version
+        id: test_version
+        env:
+          TARGET_BRANCH: ${{ inputs.branch != '' && inputs.branch || github.head_ref || github.ref_name }}
+          RUN_NUM: ${{ github.run_number }}
+        run: |
+          python3 - << 'EOF'
+          import os, re, subprocess
+
+          branch = os.environ.get("TARGET_BRANCH", "").strip()
+          if not branch or branch.startswith("refs/heads/"):
+              branch = branch.replace("refs/heads/", "")
+          if not branch:
+              branch = "unknown"
+
+          clean_branch = re.sub(r'[^a-zA-Z0-9._-]', '-', branch)[:32].strip('-')
+          short_branch = branch.split('/')[-1]
+          short_slug = re.sub(r'[^a-zA-Z0-9._-]', '-', short_branch)[:24].strip('-')
+          run_num = os.environ.get("RUN_NUM", "1")
+
+          try:
+              commit_sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+          except Exception:
+              commit_sha = "local"
+
+          iteration = 1
+          try:
+              subprocess.run(["git", "fetch", "origin", "main", "--depth=100"], capture_output=True)
+              count_str = subprocess.check_output(["git", "rev-list", "--count", "origin/main..HEAD"], text=True).strip()
+              iteration = int(count_str)
+              if iteration <= 0:
+                  iteration = int(run_num)
+          except Exception:
+              iteration = int(run_num)
+
+          test_build_num = 990000 + int(iteration)
+          display_version = f"🧪 Тест [{short_slug}] #{iteration} (run {run_num} · {commit_sha})"
+          version_name = f"26.9.0-test.{clean_branch}.iter{iteration}"
+          artifact_slug = f"test-{clean_branch}-iter{iteration}-run{run_num}"
+
+          print("==========================================")
+          print("🔧 TEST BUILD VERSION CONSTRUCTOR")
+          print(f"  Branch:          {branch}")
+          print(f"  Clean Slug:      {clean_branch}")
+          print(f"  Iteration:       #{iteration}")
+          print(f"  Commit:          {commit_sha}")
+          print(f"  Run Number:      {run_num}")
+          print(f"  Internal Build:  {test_build_num}")
+          print(f"  Display Version: {display_version}")
+          print(f"  Version Name:    {version_name}")
+          print(f"  Artifact Slug:   {artifact_slug}")
+          print("==========================================")
+
+          # 1. Update AppVersion.kt
+          app_version_path = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt"
+          if os.path.exists(app_version_path):
+              with open(app_version_path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(r'const val BUILD_NUMBER = \d+', f'const val BUILD_NUMBER = {test_build_num}', content)
+              content = re.sub(r'const val DISPLAY_VERSION = "[^"]+"', f'const val DISPLAY_VERSION = "{display_version}"', content)
+              content = re.sub(r'const val VERSION_NAME = "[^"]+"', f'const val VERSION_NAME = "{version_name}"', content)
+              with open(app_version_path, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("✅ Updated AppVersion.kt")
+
+          # 2. Update androidApp/build.gradle.kts
+          android_gradle = "androidApp/build.gradle.kts"
+          if os.path.exists(android_gradle):
+              with open(android_gradle, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(r'versionName = "[^"]+"', f'versionName = "{version_name}"', content)
+              content = re.sub(r'versionCode = .*?\n(\s*\?\:.*?\n)*', f'versionCode = {test_build_num}\n', content)
+              with open(android_gradle, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("✅ Updated androidApp/build.gradle.kts")
+
+          # 3. Update iosApp/iosApp/Info.plist
+          plist_path = "iosApp/iosApp/Info.plist"
+          if os.path.exists(plist_path):
+              with open(plist_path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(
+                  r'(<key>CFBundleShortVersionString</key>\s*<string>)[^<]+(</string>)',
+                  rf'\g<1>{version_name}\g<2>',
+                  content
+              )
+              content = re.sub(
+                  r'(<key>CFBundleVersion</key>\s*<string>)[^<]+(</string>)',
+                  rf'\g<1>{test_build_num}\g<2>',
+                  content
+              )
+              with open(plist_path, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("✅ Updated iosApp/iosApp/Info.plist")
+
+          env_file = os.environ.get("GITHUB_ENV")
+          if env_file:
+              with open(env_file, "a", encoding="utf-8") as f:
+                  f.write(f"TEST_ARTIFACT_SLUG={artifact_slug}\n")
+
+          output_file = os.environ.get("GITHUB_OUTPUT")
+          if output_file:
+              with open(output_file, "a", encoding="utf-8") as f:
+                  f.write(f"artifact_slug={artifact_slug}\n")
+                  f.write(f"clean_branch={clean_branch}\n")
+                  f.write(f"iteration={iteration}\n")
+                  f.write(f"commit_sha={commit_sha}\n")
+                  f.write(f"display_version={display_version}\n")
+          EOF
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -46,6 +162,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           validate-wrappers: false
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
       - name: 🔨 Build Android APK
         run: ./gradlew assembleDebug --stacktrace
@@ -53,24 +171,142 @@ jobs:
       - name: 🏷️ Prepare APK Artifact
         run: |
           mkdir -p dist
-          cp androidApp/build/outputs/apk/debug/*.apk dist/Schedule-MIREA.apk
+          APK_NAME="Schedule-${{ env.TEST_ARTIFACT_SLUG }}.apk"
+          cp androidApp/build/outputs/apk/debug/*.apk "dist/$APK_NAME"
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Schedule-MIREA-APK
-          path: dist/Schedule-MIREA.apk
+          name: Schedule-${{ env.TEST_ARTIFACT_SLUG }}-APK
+          path: dist/${{ env.APK_NAME }}
           if-no-files-found: error
 
   build_ipa:
     name: 🍏 Test Build iOS Unsigned IPA
     runs-on: macos-15
     if: inputs.build_ipa
+    outputs:
+      artifact_slug: ${{ steps.test_version.outputs.artifact_slug }}
+      display_version: ${{ steps.test_version.outputs.display_version }}
+      iteration: ${{ steps.test_version.outputs.iteration }}
+      commit_sha: ${{ steps.test_version.outputs.commit_sha }}
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch != '' && inputs.branch || github.ref }}
+          fetch-depth: 0
+
+      - name: 🏷️ Configure Test Build Version
+        id: test_version
+        env:
+          TARGET_BRANCH: ${{ inputs.branch != '' && inputs.branch || github.head_ref || github.ref_name }}
+          RUN_NUM: ${{ github.run_number }}
+        run: |
+          python3 - << 'EOF'
+          import os, re, subprocess
+
+          branch = os.environ.get("TARGET_BRANCH", "").strip()
+          if not branch or branch.startswith("refs/heads/"):
+              branch = branch.replace("refs/heads/", "")
+          if not branch:
+              branch = "unknown"
+
+          clean_branch = re.sub(r'[^a-zA-Z0-9._-]', '-', branch)[:32].strip('-')
+          short_branch = branch.split('/')[-1]
+          short_slug = re.sub(r'[^a-zA-Z0-9._-]', '-', short_branch)[:24].strip('-')
+          run_num = os.environ.get("RUN_NUM", "1")
+
+          try:
+              commit_sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+          except Exception:
+              commit_sha = "local"
+
+          iteration = 1
+          try:
+              subprocess.run(["git", "fetch", "origin", "main", "--depth=100"], capture_output=True)
+              count_str = subprocess.check_output(["git", "rev-list", "--count", "origin/main..HEAD"], text=True).strip()
+              iteration = int(count_str)
+              if iteration <= 0:
+                  iteration = int(run_num)
+          except Exception:
+              iteration = int(run_num)
+
+          test_build_num = 990000 + int(iteration)
+          display_version = f"🧪 Тест [{short_slug}] #{iteration} (run {run_num} · {commit_sha})"
+          version_name = f"26.9.0-test.{clean_branch}.iter{iteration}"
+          artifact_slug = f"test-{clean_branch}-iter{iteration}-run{run_num}"
+
+          print("==========================================")
+          print("🔧 TEST BUILD VERSION CONSTRUCTOR")
+          print(f"  Branch:          {branch}")
+          print(f"  Clean Slug:      {clean_branch}")
+          print(f"  Iteration:       #{iteration}")
+          print(f"  Commit:          {commit_sha}")
+          print(f"  Run Number:      {run_num}")
+          print(f"  Internal Build:  {test_build_num}")
+          print(f"  Display Version: {display_version}")
+          print(f"  Version Name:    {version_name}")
+          print(f"  Artifact Slug:   {artifact_slug}")
+          print("==========================================")
+
+          # 1. Update AppVersion.kt
+          app_version_path = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt"
+          if os.path.exists(app_version_path):
+              with open(app_version_path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(r'const val BUILD_NUMBER = \d+', f'const val BUILD_NUMBER = {test_build_num}', content)
+              content = re.sub(r'const val DISPLAY_VERSION = "[^"]+"', f'const val DISPLAY_VERSION = "{display_version}"', content)
+              content = re.sub(r'const val VERSION_NAME = "[^"]+"', f'const val VERSION_NAME = "{version_name}"', content)
+              with open(app_version_path, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("✅ Updated AppVersion.kt")
+
+          # 2. Update androidApp/build.gradle.kts
+          android_gradle = "androidApp/build.gradle.kts"
+          if os.path.exists(android_gradle):
+              with open(android_gradle, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(r'versionName = "[^"]+"', f'versionName = "{version_name}"', content)
+              content = re.sub(r'versionCode = .*?\n(\s*\?\:.*?\n)*', f'versionCode = {test_build_num}\n', content)
+              with open(android_gradle, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("✅ Updated androidApp/build.gradle.kts")
+
+          # 3. Update iosApp/iosApp/Info.plist
+          plist_path = "iosApp/iosApp/Info.plist"
+          if os.path.exists(plist_path):
+              with open(plist_path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(
+                  r'(<key>CFBundleShortVersionString</key>\s*<string>)[^<]+(</string>)',
+                  rf'\g<1>{version_name}\g<2>',
+                  content
+              )
+              content = re.sub(
+                  r'(<key>CFBundleVersion</key>\s*<string>)[^<]+(</string>)',
+                  rf'\g<1>{test_build_num}\g<2>',
+                  content
+              )
+              with open(plist_path, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("✅ Updated iosApp/iosApp/Info.plist")
+
+          env_file = os.environ.get("GITHUB_ENV")
+          if env_file:
+              with open(env_file, "a", encoding="utf-8") as f:
+                  f.write(f"TEST_ARTIFACT_SLUG={artifact_slug}\n")
+
+          output_file = os.environ.get("GITHUB_OUTPUT")
+          if output_file:
+              with open(output_file, "a", encoding="utf-8") as f:
+                  f.write(f"artifact_slug={artifact_slug}\n")
+                  f.write(f"clean_branch={clean_branch}\n")
+                  f.write(f"iteration={iteration}\n")
+                  f.write(f"commit_sha={commit_sha}\n")
+                  f.write(f"display_version={display_version}\n")
+          EOF
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -125,15 +361,17 @@ jobs:
           APP_PATH=$(find build -name "*.app" -type d | head -n 1)
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
-          zip -r ../Schedule-MIREA.ipa Payload
+          IPA_NAME="Schedule-${{ env.TEST_ARTIFACT_SLUG }}.ipa"
+          zip -r "../$IPA_NAME" Payload
           rm -rf Payload
           cd ..
+          echo "IPA_NAME=$IPA_NAME" >> $GITHUB_ENV
 
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Schedule-MIREA-IPA
-          path: Schedule-MIREA.ipa
+          name: Schedule-${{ env.TEST_ARTIFACT_SLUG }}-IPA
+          path: ${{ env.IPA_NAME }}
           if-no-files-found: error
 
   test_summary:
@@ -143,14 +381,53 @@ jobs:
     if: always() && (needs.build_apk.result == 'success' || needs.build_ipa.result == 'success')
     steps:
       - name: 📝 Post Step Summary
+        env:
+          BRANCH_NAME: ${{ inputs.branch != '' && inputs.branch || github.head_ref || github.ref_name }}
+          SLUG: ${{ needs.build_apk.outputs.artifact_slug || needs.build_ipa.outputs.artifact_slug || 'test' }}
+          DISPLAY_VER: ${{ needs.build_apk.outputs.display_version || needs.build_ipa.outputs.display_version || 'Тестовая сборка' }}
+          ITER: ${{ needs.build_apk.outputs.iteration || needs.build_ipa.outputs.iteration || github.run_number }}
+          COMMIT: ${{ needs.build_apk.outputs.commit_sha || needs.build_ipa.outputs.commit_sha || 'HEAD' }}
+          APK_STATUS: ${{ needs.build_apk.result }}
+          IPA_STATUS: ${{ needs.build_ipa.result }}
+          RUN_NUM: ${{ github.run_number }}
         run: |
-          BRANCH_NAME="${{ inputs.branch != '' && inputs.branch || github.head_ref || github.ref_name }}"
-          echo "### 🧪 Тестовая сборка для ветки \`$BRANCH_NAME\` готова!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Эта тестовая сборка предназначена для проверки работы на физическом устройстве." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Статус Android APK:** ${{ needs.build_apk.result == 'success' && '✅ Собран' || '⏭️ Пропущен/Ошибка' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Статус iOS IPA:** ${{ needs.build_ipa.result == 'success' && '✅ Собран' || '⏭️ Пропущен/Ошибка' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **Где скачать:** Файлы установки находятся в секции **Artifacts** в самом низу страницы этого запуска (\`Schedule-MIREA-APK\` и \`Schedule-MIREA-IPA\`)." >> $GITHUB_STEP_SUMMARY
-          echo "> ⚠️ Релизы и номер сборки не изменялись — официальный релиз произойдёт при слиянии в \`main\`." >> $GITHUB_STEP_SUMMARY
+          python3 - << 'EOF'
+          import os, sys
+
+          branch = os.environ.get("BRANCH_NAME", "")
+          slug = os.environ.get("SLUG", "test")
+          display_ver = os.environ.get("DISPLAY_VER", "Тестовая сборка")
+          iteration = os.environ.get("ITER", "1")
+          commit = os.environ.get("COMMIT", "HEAD")
+          apk_status = os.environ.get("APK_STATUS", "")
+          ipa_status = os.environ.get("IPA_STATUS", "")
+          run_num = os.environ.get("RUN_NUM", "1")
+
+          apk_badge = "✅ Готов" if apk_status == "success" else ("⏭️ Пропущен" if apk_status == "skipped" else "❌ Ошибка")
+          ipa_badge = "✅ Готов" if ipa_status == "success" else ("⏭️ Пропущен" if ipa_status == "skipped" else "❌ Ошибка")
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if not summary_path:
+              sys.exit(0)
+
+          with open(summary_path, "a", encoding="utf-8") as f:
+              f.write("### 🧪 Тестовая сборка готова!\n\n")
+              f.write("| Параметр | Значение |\n")
+              f.write("| :--- | :--- |\n")
+              f.write(f"| 🌿 **Ветка** | `{branch}` |\n")
+              f.write(f"| 🔄 **Итерация в ветке** | **#{iteration}** |\n")
+              f.write(f"| 🔢 **Запуск Actions** | #{run_num} |\n")
+              f.write(f"| 📌 **Коммит** | `{commit}` |\n")
+              f.write(f"| 🏷️ **Отображение в приложении** | `{display_ver}` |\n")
+              f.write(f"| 🤖 **Android APK** | {apk_badge} |\n")
+              f.write(f"| 🍏 **iOS Unsigned IPA** | {ipa_badge} |\n\n")
+
+              f.write("#### 📦 Артефакты сборки:\n")
+              if apk_status == "success":
+                  f.write(f"- 🤖 **Android APK:** `Schedule-{slug}-APK` (`Schedule-{slug}.apk`)\n")
+              if ipa_status == "success":
+                  f.write(f"- 🍏 **iOS IPA:** `Schedule-{slug}-IPA` (`Schedule-{slug}.ipa`)\n")
+              f.write("\n")
+              f.write("> 💡 **Где скачать:** Файлы установки находятся в блоке **Artifacts** внизу этой страницы запуска.\n")
+              f.write("> 🛡️ **Изоляция:** Версионирование `main` и официальные релизы не затронуты.\n")
+          EOF
