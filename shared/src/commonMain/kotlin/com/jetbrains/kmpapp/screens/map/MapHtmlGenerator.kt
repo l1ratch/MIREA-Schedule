@@ -512,10 +512,16 @@ object MapHtmlGenerator {
         subtitle = 'Учебный отдел ИКБ';
       } else if (title.toLowerCase().includes('гардероб')) {
         icon = '🧥';
-        subtitle = 'Гардероб';
+        subtitle = 'Гардеробная';
       } else if (title === 'ЗЗУС') {
         icon = '🎓';
         subtitle = 'Зал заседаний Ученого совета';
+      } else if (campusId === 's-20' && title === 'КПП 1') {
+        icon = '🛂';
+        subtitle = 'Вход';
+      } else if (campusId === 's-20' && title === '102') {
+        icon = '🛡️';
+        subtitle = 'Охрана';
       } else {
         subtitle = 'Аудитория';
       }
