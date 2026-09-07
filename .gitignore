@@ -51,3 +51,11 @@ release_notes.md
 *.apk
 *.aab
 *.ipa
+# Local Repowise index and generated local integration files
+.repowise/
+
+# Local AI agent integrations
+.claude/
+.mcp.json
+.vscode/mcp.json
+.vscode/extensions.json
