@@ -1,12 +1,12 @@
 package com.jetbrains.kmpapp.screens.schedule
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -312,35 +311,19 @@ fun MultiLessonCard(
                         )
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    val (headerTypeBg, headerTypeText) = getTypeBadgeColors(lessons[pagerState.currentPage].lessonType)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(headerTypeBg)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
-                        // Page indicator / subgroup indicator
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "${pagerState.currentPage + 1}/${lessons.size}",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            repeat(lessons.size) { index ->
-                                val isCurrent = index == pagerState.currentPage
-                                val dotColor by animateColorAsState(
-                                    if (isCurrent) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outlineVariant
-                                )
-                                Box(
-                                 modifier = Modifier
-                                        .size(if (isCurrent) 6.dp else 4.dp)
-                                        .clip(CircleShape)
-                                        .background(dotColor)
-                                )
-                            }
-                        }
+                        Text(
+                            text = lessons[pagerState.currentPage].lessonType.displayName,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = headerTypeText
+                        )
                     }
                 }
 
@@ -349,10 +332,12 @@ fun MultiLessonCard(
                 // Swipable pager for the subgroup lessons
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(end = 40.dp),
+                    pageSpacing = 12.dp,
+                    beyondViewportPageCount = 1
                 ) { page ->
                     val lesson = lessons[page]
-                    val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
                     Column(
                         modifier = Modifier
@@ -360,35 +345,12 @@ fun MultiLessonCard(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onLessonClick(lesson) }
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = lesson.subject,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(typeBg)
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = lesson.lessonType.displayName,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = typeTextColor
-                                )
-                            }
-                        }
+                        Text(
+                            text = lesson.subject,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
                         Spacer(modifier = Modifier.height(6.dp))
 

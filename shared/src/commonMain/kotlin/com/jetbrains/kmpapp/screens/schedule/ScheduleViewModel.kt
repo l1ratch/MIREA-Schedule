@@ -38,13 +38,13 @@ class ScheduleViewModel(
     val listState = LazyListState()
 
     private var lastAutoScrolledDate: LocalDate? = null
-    private var lastAutoScrolledTargetId: String? = null
+    private var lastAutoScrolledTargetId: Int? = null
 
-    fun canAutoScroll(date: LocalDate, targetId: String?): Boolean {
+    fun canAutoScroll(date: LocalDate, targetId: Int?): Boolean {
         return date != lastAutoScrolledDate || targetId != lastAutoScrolledTargetId
     }
 
-    fun markAutoScrolled(date: LocalDate, targetId: String?) {
+    fun markAutoScrolled(date: LocalDate, targetId: Int?) {
         lastAutoScrolledDate = date
         lastAutoScrolledTargetId = targetId
     }
