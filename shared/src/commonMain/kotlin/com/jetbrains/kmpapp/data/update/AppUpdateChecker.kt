@@ -81,6 +81,20 @@ class AppUpdateChecker(
     }
 
     suspend fun checkForUpdates(): UpdateCheckResult? = withContext(Dispatchers.IO) {
+        if (AppVersion.isTestBuild) {
+            return@withContext UpdateCheckResult(
+                urgency = UpdateUrgency.UP_TO_DATE,
+                latestVersion = AppVersion.VERSION_NAME,
+                latestBuild = AppVersion.BUILD_NUMBER,
+                currentVersion = AppVersion.VERSION_NAME,
+                currentBuild = AppVersion.BUILD_NUMBER,
+                isCritical = false,
+                changelog = null,
+                downloadUrl = "https://github.com/$GITHUB_REPO/releases/latest",
+                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest"
+            )
+        }
+
         // 1. Try fetching our dedicated version.json from the gh-pages branch
         try {
             val response = client.get(AppVersion.VERSION_FEED_URL) {

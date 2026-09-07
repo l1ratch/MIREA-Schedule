@@ -76,7 +76,20 @@ jobs:
 
           test_build_num = 990000 + int(iteration)
           display_version = f"🧪 Тест [{short_slug}] #{iteration} (run {run_num} · {commit_sha})"
-          version_name = f"26.9.0-test.{clean_branch}.iter{iteration}"
+
+          # Detect current base version dynamically from AppVersion.kt
+          base_version = "26.9.2"
+          app_version_path = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt"
+          if os.path.exists(app_version_path):
+              try:
+                  with open(app_version_path, "r", encoding="utf-8") as vf:
+                      m_ver = re.search(r'const val VERSION_NAME = "([^"]+)"', vf.read())
+                      if m_ver:
+                          base_version = m_ver.group(1).split("-")[0].strip()
+              except Exception:
+                  pass
+
+          version_name = f"{base_version}-test.{clean_branch}.iter{iteration}"
           artifact_slug = f"test-{clean_branch}-iter{iteration}-run{run_num}"
 
           print("==========================================")

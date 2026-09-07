@@ -104,9 +104,7 @@ fun AddScheduleBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.88f)
                 .navigationBarsPadding()
-                .imePadding()
                 .padding(horizontal = 20.dp, vertical = 4.dp)
         ) {
             Row(
@@ -189,14 +187,18 @@ fun AddScheduleBottomSheet(
             // Results / Loading
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(36.dp))
                 }
             } else if (filteredResults.isEmpty() && query.trim().isNotEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -206,7 +208,9 @@ fun AddScheduleBottomSheet(
                 }
             } else if (query.trim().isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -219,7 +223,8 @@ fun AddScheduleBottomSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .heightIn(min = 280.dp, max = 460.dp)
+                        .imePadding(),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(filteredResults, key = { "${it.type}_${it.id}" }) { item ->
