@@ -60,6 +60,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,19 +128,27 @@ private fun ScheduleMainContent(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    var hasAutoScrolledToday by remember { mutableStateOf(false) }
+    var lastScrolledKey by remember { mutableStateOf<String?>(null) }
     val isToday = selectedDate == com.jetbrains.kmpapp.data.model.DateUtils.today()
 
     // Magnetic auto-scroll to current ongoing lesson or break
-    LaunchedEffect(selectedDate, daySlots.isNotEmpty(), autoScrollToCurrentLesson) {
-        if (isToday && autoScrollToCurrentLesson && !hasAutoScrolledToday && daySlots.isNotEmpty()) {
-            hasAutoScrolledToday = true
+    LaunchedEffect(selectedDate, selectedTarget?.id, daySlots.isNotEmpty(), autoScrollToCurrentLesson) {
+        val scrollKey = "${selectedTarget?.id}_$selectedDate"
+        if (isToday && autoScrollToCurrentLesson && lastScrolledKey != scrollKey && daySlots.isNotEmpty()) {
             val nowMin = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes()
 
-            // Calculate actual list item index (accounting for break items)
-            var targetItemIndex = 0
-            var cumulativeIndex = 0
-            var found = false
+            // Build an indexed list representing the actual items displayed in LazyColumn
+            data class SlotListItem(
+                val index: Int,
+                val isBreak: Boolean,
+                val slot: ScheduleSlot?,
+                val startMin: Int,
+                val endMin: Int,
+                val isNextSlotActive: Boolean
+            )
+
+            val items = mutableListOf<SlotListItem>()
+            var currentIndex = 0
 
             for (i in daySlots.indices) {
                 if (i > 0) {
@@ -146,34 +158,76 @@ private fun ScheduleMainContent(
                     if (breakMin > 0) {
                         val breakStart = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(prevSlot.endTime) ?: 0
                         val breakEnd = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(currSlot.startTime) ?: 0
-                        if (nowMin in breakStart until breakEnd) {
-                            targetItemIndex = cumulativeIndex // Focus on the break
-                            found = true
-                            break
-                        }
-                        cumulativeIndex++
+                        items.add(
+                            SlotListItem(
+                                index = currentIndex++,
+                                isBreak = true,
+                                slot = null,
+                                startMin = breakStart,
+                                endMin = breakEnd,
+                                isNextSlotActive = currSlot is ScheduleSlot.Active
+                            )
+                        )
                     }
                 }
 
                 val slot = daySlots[i]
                 val slotStart = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(slot.startTime) ?: 0
                 val slotEnd = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(slot.endTime) ?: 0
-
-                if (nowMin in slotStart until slotEnd) {
-                    targetItemIndex = cumulativeIndex // Focus on the ongoing lesson
-                    found = true
-                    break
-                } else if (nowMin < slotStart && !found) {
-                    targetItemIndex = cumulativeIndex // Focus on the upcoming lesson
-                    found = true
-                    break
-                }
-                cumulativeIndex++
+                items.add(
+                    SlotListItem(
+                        index = currentIndex++,
+                        isBreak = false,
+                        slot = slot,
+                        startMin = slotStart,
+                        endMin = slotEnd,
+                        isNextSlotActive = false
+                    )
+                )
             }
 
-            if (found && targetItemIndex > 0) {
-                kotlinx.coroutines.delay(180) // Smooth entrance delay
-                listState.animateScrollToItem(targetItemIndex)
+            // 1. Ongoing active lesson (highest priority)
+            val ongoingActive = items.firstOrNull {
+                !it.isBreak && it.slot is ScheduleSlot.Active && nowMin in it.startMin until it.endMin
+            }
+
+            // 2. Ongoing break before an active lesson
+            val ongoingBreak = items.firstOrNull {
+                it.isBreak && it.isNextSlotActive && nowMin in it.startMin until it.endMin
+            }
+
+            // 3. Next upcoming active lesson today
+            val upcomingActive = items.firstOrNull {
+                !it.isBreak && it.slot is ScheduleSlot.Active && nowMin < it.startMin
+            }
+
+            // 4. Fallback if day has only empty slots
+            val fallback = items.firstOrNull {
+                !it.isBreak && (nowMin in it.startMin until it.endMin || nowMin < it.startMin)
+            }
+
+            val targetItem = ongoingActive
+                ?: ongoingBreak
+                ?: upcomingActive?.let { active ->
+                    val prevItem = if (active.index > 0) items[active.index - 1] else null
+                    if (prevItem != null && prevItem.isBreak && nowMin >= prevItem.startMin) prevItem else active
+                }
+                ?: fallback
+
+            if (targetItem != null && targetItem.index > 0) {
+                lastScrolledKey = scrollKey
+                try {
+                    // Ensure list has laid out the target item before animating scroll
+                    withTimeoutOrNull(800) {
+                        snapshotFlow { listState.layoutInfo.totalItemsCount }
+                            .filter { it > targetItem.index }
+                            .first()
+                    }
+                    kotlinx.coroutines.delay(100)
+                    listState.animateScrollToItem(targetItem.index)
+                } catch (_: Throwable) {}
+            } else if (targetItem != null && targetItem.index == 0) {
+                lastScrolledKey = scrollKey
             }
         }
     }

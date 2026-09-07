@@ -5,8 +5,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
@@ -235,27 +238,32 @@ fun App() {
                     }
                 }
 
-                FloatingDock(
-                    currentTab = currentTab,
-                    onTabSelected = { currentTab = it },
-                    onTabReselected = { tab ->
-                        when (tab) {
-                            AppTab.SCHEDULE -> {
-                                scheduleViewModel.selectLessonForDetail(null)
+                val density = LocalDensity.current
+                val isImeVisible = WindowInsets.ime.getBottom(density) > 0
+
+                if (!isImeVisible) {
+                    FloatingDock(
+                        currentTab = currentTab,
+                        onTabSelected = { currentTab = it },
+                        onTabReselected = { tab ->
+                            when (tab) {
+                                AppTab.SCHEDULE -> {
+                                    scheduleViewModel.selectLessonForDetail(null)
+                                }
+                                AppTab.FREE_ROOMS -> {
+                                    freeRoomsViewModel.selectRoomForDetail(null)
+                                }
+                                AppTab.TASKS -> {}
+                                AppTab.MAP -> {}
+                                AppTab.OTHER -> {
+                                    otherViewModel.resetToRoot()
+                                }
                             }
-                            AppTab.FREE_ROOMS -> {
-                                freeRoomsViewModel.selectRoomForDetail(null)
-                            }
-                            AppTab.TASKS -> {}
-                            AppTab.MAP -> {}
-                            AppTab.OTHER -> {
-                                otherViewModel.resetToRoot()
-                            }
-                        }
-                    },
-                    tabs = dockTabs,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
+                        },
+                        tabs = dockTabs,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
         }
     }

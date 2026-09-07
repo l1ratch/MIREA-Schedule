@@ -99,9 +99,6 @@ fun LessonCard(
     val progress = if (isToday && showLessonProgress) {
         com.jetbrains.kmpapp.data.model.DateUtils.getLessonProgress(lesson.startTime, lesson.endTime, currentMinutes)
     } else null
-    val remainingMinutes = if (isToday && showLessonProgress && progress != null) {
-        com.jetbrains.kmpapp.data.model.DateUtils.getRemainingLessonMinutes(lesson.endTime, currentMinutes)
-    } else null
 
     Card(
         modifier = modifier
@@ -158,22 +155,6 @@ fun LessonCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        if (progress != null) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = if (remainingMinutes != null) "Осталось $remainingMinutes мин" else "Идёт сейчас",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -253,13 +234,13 @@ fun LessonCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(5.dp)
+                        .height(2.5.dp)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(animatedProgress)
-                            .height(5.dp)
+                            .height(2.5.dp)
                             .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = if (animatedProgress >= 0.98f) 20.dp else 0.dp))
                             .background(MaterialTheme.colorScheme.primary)
                     )
@@ -285,9 +266,6 @@ fun MultiLessonCard(
 
     val progress = if (isToday && showLessonProgress) {
         com.jetbrains.kmpapp.data.model.DateUtils.getLessonProgress(startTime, endTime, currentMinutes)
-    } else null
-    val remainingMinutes = if (isToday && showLessonProgress && progress != null) {
-        com.jetbrains.kmpapp.data.model.DateUtils.getRemainingLessonMinutes(endTime, currentMinutes)
     } else null
 
     Card(
@@ -337,22 +315,6 @@ fun MultiLessonCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        if (progress != null) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = if (remainingMinutes != null) "Осталось $remainingMinutes мин" else "Идёт сейчас",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-
                         // Page indicator / subgroup indicator
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -371,7 +333,7 @@ fun MultiLessonCard(
                                     else MaterialTheme.colorScheme.outlineVariant
                                 )
                                 Box(
-                                    modifier = Modifier
+                                 modifier = Modifier
                                         .size(if (isCurrent) 6.dp else 4.dp)
                                         .clip(CircleShape)
                                         .background(dotColor)
@@ -490,13 +452,13 @@ fun MultiLessonCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(5.dp)
+                        .height(2.5.dp)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(animatedProgress)
-                            .height(5.dp)
+                            .height(2.5.dp)
                             .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = if (animatedProgress >= 0.98f) 20.dp else 0.dp))
                             .background(MaterialTheme.colorScheme.primary)
                     )
