@@ -264,170 +264,21 @@ fun MultiLessonCard(
 ) {
     val pagerState = rememberPagerState(pageCount = { lessons.size })
 
-    val progress = if (isToday && showLessonProgress) {
-        com.jetbrains.kmpapp.data.model.DateUtils.getLessonProgress(startTime, endTime, currentMinutes)
-    } else null
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                // Common slot header with indicator for multiple lessons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = "$bellNumber пара",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Text(
-                            text = "$startTime — $endTime",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    val (headerTypeBg, headerTypeText) = getTypeBadgeColors(lessons[pagerState.currentPage].lessonType)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(headerTypeBg)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = lessons[pagerState.currentPage].lessonType.displayName,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = headerTypeText
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Swipable pager for the subgroup lessons
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(end = 40.dp),
-                    pageSpacing = 12.dp,
-                    beyondViewportPageCount = 1
-                ) { page ->
-                    val lesson = lessons[page]
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onLessonClick(lesson) }
-                    ) {
-                        Text(
-                            text = lesson.subject,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        if (lesson.teachers.isNotEmpty()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Преподаватель",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = lesson.teachers.joinToString(", "),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        if (lesson.classrooms.isNotEmpty()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = "Аудитория",
-                                    tint = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = lesson.classrooms.joinToString(", "),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-
-                        if (lesson.groups.isNotEmpty()) {
-                            Text(
-                                text = lesson.groups.joinToString(", "),
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (progress != null) {
-                val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = progress,
-                    animationSpec = androidx.compose.animation.core.tween(500)
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.5.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(animatedProgress)
-                            .height(2.5.dp)
-                            .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = if (animatedProgress >= 0.98f) 20.dp else 0.dp))
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                }
-            }
-        }
+    // Gallery of full lesson blocks: each pair is its own card, the next peeks from the right
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(end = 40.dp),
+        pageSpacing = 12.dp,
+        beyondViewportPageCount = 1
+    ) { page ->
+        LessonCard(
+            lesson = lessons[page],
+            onClick = { onLessonClick(lessons[page]) },
+            isToday = isToday,
+            currentMinutes = currentMinutes,
+            showLessonProgress = showLessonProgress
+        )
     }
 }
 
