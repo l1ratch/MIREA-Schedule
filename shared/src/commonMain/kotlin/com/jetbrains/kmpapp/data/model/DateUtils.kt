@@ -96,5 +96,43 @@ object DateUtils {
             Month.DECEMBER -> "Декабрь"
         }
     }
+
+    fun currentTimeMinutes(): Int {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        return now.hour * 60 + now.minute
+    }
+
+    fun parseTimeToMinutes(timeStr: String): Int? {
+        val parts = timeStr.trim().split(':')
+        if (parts.size != 2) return null
+        val h = parts[0].toIntOrNull() ?: return null
+        val m = parts[1].toIntOrNull() ?: return null
+        return h * 60 + m
+    }
+
+    /**
+     * Calculates lesson progress (0.0f..1.0f) if currently within [startTime, endTime].
+     * Returns null if lesson hasn't started or has already ended.
+     */
+    fun getLessonProgress(startTime: String, endTime: String, currentMinutes: Int = currentTimeMinutes()): Float? {
+        val start = parseTimeToMinutes(startTime) ?: return null
+        val end = parseTimeToMinutes(endTime) ?: return null
+        if (end <= start) return null
+        if (currentMinutes in start until end) {
+            val total = (end - start).toFloat()
+            val passed = (currentMinutes - start).toFloat()
+            return (passed / total).coerceIn(0.01f, 1.0f)
+        }
+        return null
+    }
+
+    /**
+     * Returns remaining minutes for a lesson if it's currently ongoing, or null otherwise.
+     */
+    fun getRemainingLessonMinutes(endTime: String, currentMinutes: Int = currentTimeMinutes()): Int? {
+        val end = parseTimeToMinutes(endTime) ?: return null
+        val remaining = end - currentMinutes
+        return if (remaining > 0) remaining else null
+    }
 }
 

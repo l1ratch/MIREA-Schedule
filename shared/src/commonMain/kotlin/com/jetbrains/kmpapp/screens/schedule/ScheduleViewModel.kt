@@ -31,6 +31,11 @@ class ScheduleViewModel(
     val errorMessage: StateFlow<String?> = repository.errorMessage
     val activeDiff: StateFlow<com.jetbrains.kmpapp.data.model.ScheduleDiff?> = repository.activeDiff
     val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = repository.refreshStatus
+    val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
+    val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
+
+    private val _currentMinutes = MutableStateFlow(DateUtils.currentTimeMinutes())
+    val currentMinutes: StateFlow<Int> = _currentMinutes.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -39,6 +44,18 @@ class ScheduleViewModel(
                     val delayMs = if (status is com.jetbrains.kmpapp.data.model.RefreshStatus.Error) 3500L else 2500L
                     kotlinx.coroutines.delay(delayMs)
                     repository.clearRefreshStatus()
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            while (true) {
+                // Power-saving tick: pause or sleep longer when in background
+                val isForeground = repository.isLowPowerMode.value.let { lowPower ->
+                    // Update current minute
+                    _currentMinutes.value = DateUtils.currentTimeMinutes()
+                    val sleepTime = if (lowPower) 60_000L else 30_000L
+                    kotlinx.coroutines.delay(sleepTime)
                 }
             }
         }

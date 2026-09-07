@@ -1,11 +1,11 @@
 package com.jetbrains.kmpapp.data.model
 
 object AppVersion {
-    const val VERSION_NAME = "26.9.2"
-    const val BUILD_NUMBER = 33
+    const val VERSION_NAME = "26.9.3"
+    const val BUILD_NUMBER = 34
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1
-    const val CHANGELOG = "Интерактивная карта: меню переключения слоев с сохранением настроек, автоскрытие при взаимодействии с картой, прозрачная подложка WebView. Улучшена плавность появления клавиатуры на Android."
+    const val CHANGELOG = "Расписание: индикатор оставшегося времени и прогресса текущей пары, магнитная автопрокрутка к текущему занятию или перемене при открытии, настройки в приложении."
 
     val isTestBuild: Boolean get() = BUILD_NUMBER >= 900000 || VERSION_NAME.contains("-test")
 

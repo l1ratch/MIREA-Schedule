@@ -36,6 +36,12 @@ class ScheduleStorage(
     private val _showEmptyLessons = MutableStateFlow<Boolean>(true)
     val showEmptyLessons: StateFlow<Boolean> = _showEmptyLessons.asStateFlow()
 
+    private val _showLessonProgress = MutableStateFlow<Boolean>(true)
+    val showLessonProgress: StateFlow<Boolean> = _showLessonProgress.asStateFlow()
+
+    private val _autoScrollToCurrentLesson = MutableStateFlow<Boolean>(true)
+    val autoScrollToCurrentLesson: StateFlow<Boolean> = _autoScrollToCurrentLesson.asStateFlow()
+
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
@@ -70,6 +76,22 @@ class ScheduleStorage(
                 val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
                 if (!showEmptyStr.isNullOrBlank()) {
                     _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: true
+                }
+            } catch (_: Throwable) {}
+
+            // Restore show lesson progress setting
+            try {
+                val showProgressStr = platformStorage.getString(KEY_SHOW_LESSON_PROGRESS)
+                if (!showProgressStr.isNullOrBlank()) {
+                    _showLessonProgress.value = showProgressStr.toBooleanStrictOrNull() ?: true
+                }
+            } catch (_: Throwable) {}
+
+            // Restore auto scroll to current lesson setting
+            try {
+                val autoScrollStr = platformStorage.getString(KEY_AUTO_SCROLL_CURRENT_LESSON)
+                if (!autoScrollStr.isNullOrBlank()) {
+                    _autoScrollToCurrentLesson.value = autoScrollStr.toBooleanStrictOrNull() ?: true
                 }
             } catch (_: Throwable) {}
 
@@ -161,6 +183,28 @@ class ScheduleStorage(
                 platformStorage.saveString(KEY_SHOW_EMPTY_LESSONS, enabled.toString())
             } catch (e: Exception) {
                 println("Failed to persist showEmptyLessons: ${e.message}")
+            }
+        }
+    }
+
+    fun setShowLessonProgress(enabled: Boolean) {
+        _showLessonProgress.value = enabled
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_SHOW_LESSON_PROGRESS, enabled.toString())
+            } catch (e: Exception) {
+                println("Failed to persist showLessonProgress: ${e.message}")
+            }
+        }
+    }
+
+    fun setAutoScrollToCurrentLesson(enabled: Boolean) {
+        _autoScrollToCurrentLesson.value = enabled
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_AUTO_SCROLL_CURRENT_LESSON, enabled.toString())
+            } catch (e: Exception) {
+                println("Failed to persist autoScrollToCurrentLesson: ${e.message}")
             }
         }
     }
@@ -339,6 +383,8 @@ class ScheduleStorage(
         private const val KEY_LESSONS_PREFIX = "mirea_lessons_"
         private const val KEY_LAST_SYNC_PREFIX = "mirea_last_sync_"
         private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
+        private const val KEY_SHOW_LESSON_PROGRESS = "mirea_show_lesson_progress"
+        private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "mirea_auto_scroll_current_lesson"
         private const val KEY_APP_THEME = "mirea_app_theme"
         private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"
         private const val KEY_SAKURA_THEME = "mirea_sakura_theme_secret"

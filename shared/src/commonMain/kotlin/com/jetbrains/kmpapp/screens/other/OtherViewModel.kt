@@ -49,9 +49,19 @@ class OtherViewModel(
     val selectedTarget: StateFlow<ScheduleTarget?> = repository.selectedTarget
     val isLoading: StateFlow<Boolean> = repository.isLoading
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
+    val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
+    val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
+
+    fun setShowLessonProgress(enabled: Boolean) {
+        repository.setShowLessonProgress(enabled)
+    }
+
+    fun setAutoScrollToCurrentLesson(enabled: Boolean) {
+        repository.setAutoScrollToCurrentLesson(enabled)
+    }
 
     fun setSakuraTheme(enabled: Boolean) {
         repository.setSakuraTheme(enabled)

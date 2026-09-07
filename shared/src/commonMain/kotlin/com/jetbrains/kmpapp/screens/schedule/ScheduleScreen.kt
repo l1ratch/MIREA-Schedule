@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -44,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -109,6 +111,9 @@ private fun ScheduleMainContent(
     val activeDiff by viewModel.activeDiff.collectAsState()
     val refreshStatus by viewModel.refreshStatus.collectAsState()
     val dayLessonSummaries by viewModel.dayLessonSummaries.collectAsState()
+    val showLessonProgress by viewModel.showLessonProgress.collectAsState()
+    val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
+    val currentMinutes by viewModel.currentMinutes.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -117,6 +122,61 @@ private fun ScheduleMainContent(
     val diffSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    var hasAutoScrolledToday by remember { mutableStateOf(false) }
+    val isToday = selectedDate == com.jetbrains.kmpapp.data.model.DateUtils.today()
+
+    // Magnetic auto-scroll to current ongoing lesson or break
+    LaunchedEffect(selectedDate, daySlots.isNotEmpty(), autoScrollToCurrentLesson) {
+        if (isToday && autoScrollToCurrentLesson && !hasAutoScrolledToday && daySlots.isNotEmpty()) {
+            hasAutoScrolledToday = true
+            val nowMin = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes()
+
+            // Calculate actual list item index (accounting for break items)
+            var targetItemIndex = 0
+            var cumulativeIndex = 0
+            var found = false
+
+            for (i in daySlots.indices) {
+                if (i > 0) {
+                    val prevSlot = daySlots[i - 1]
+                    val currSlot = daySlots[i]
+                    val breakMin = com.jetbrains.kmpapp.data.model.calculateBreakMinutes(prevSlot.endTime, currSlot.startTime)
+                    if (breakMin > 0) {
+                        val breakStart = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(prevSlot.endTime) ?: 0
+                        val breakEnd = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(currSlot.startTime) ?: 0
+                        if (nowMin in breakStart until breakEnd) {
+                            targetItemIndex = cumulativeIndex // Focus on the break
+                            found = true
+                            break
+                        }
+                        cumulativeIndex++
+                    }
+                }
+
+                val slot = daySlots[i]
+                val slotStart = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(slot.startTime) ?: 0
+                val slotEnd = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(slot.endTime) ?: 0
+
+                if (nowMin in slotStart until slotEnd) {
+                    targetItemIndex = cumulativeIndex // Focus on the ongoing lesson
+                    found = true
+                    break
+                } else if (nowMin < slotStart && !found) {
+                    targetItemIndex = cumulativeIndex // Focus on the upcoming lesson
+                    found = true
+                    break
+                }
+                cumulativeIndex++
+            }
+
+            if (found && targetItemIndex > 0) {
+                kotlinx.coroutines.delay(180) // Smooth entrance delay
+                listState.animateScrollToItem(targetItemIndex)
+            }
+        }
+    }
 
     var totalDrag by remember { mutableStateOf(0f) }
 
@@ -282,6 +342,7 @@ private fun ScheduleMainContent(
                             }
                         } else {
                             LazyColumn(
+                                state = listState,
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(top = 4.dp, bottom = 100.dp)
                             ) {
@@ -304,7 +365,10 @@ private fun ScheduleMainContent(
                                             slot = slot,
                                             onLessonClick = { lesson ->
                                                 viewModel.selectLessonForDetail(lesson)
-                                            }
+                                            },
+                                            isToday = isToday,
+                                            currentMinutes = currentMinutes,
+                                            showLessonProgress = showLessonProgress
                                         )
                                     }
                                 }

@@ -23,8 +23,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (project.findProperty("buildNumber") as? String)?.toIntOrNull()
             ?: System.getenv("BUILD_NUMBER")?.toIntOrNull()
-            ?: 33
-        versionName = "26.9.2"
+            ?: 34
+        versionName = "26.9.3"
     }
     signingConfigs {
         create("sharedDebug") {
