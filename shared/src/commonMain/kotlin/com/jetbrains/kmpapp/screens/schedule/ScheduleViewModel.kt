@@ -8,6 +8,7 @@ import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.defaultBells
+import androidx.compose.foundation.lazy.LazyListState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,25 @@ class ScheduleViewModel(
     val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = repository.refreshStatus
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
+
+    val listState = LazyListState()
+
+    private var lastAutoScrolledDate: LocalDate? = null
+    private var lastAutoScrolledTargetId: String? = null
+
+    fun canAutoScroll(date: LocalDate, targetId: String?): Boolean {
+        return date != lastAutoScrolledDate || targetId != lastAutoScrolledTargetId
+    }
+
+    fun markAutoScrolled(date: LocalDate, targetId: String?) {
+        lastAutoScrolledDate = date
+        lastAutoScrolledTargetId = targetId
+    }
+
+    fun resetAutoScroll() {
+        lastAutoScrolledDate = null
+        lastAutoScrolledTargetId = null
+    }
 
     private val _currentMinutes = MutableStateFlow(DateUtils.currentTimeMinutes())
     val currentMinutes: StateFlow<Int> = _currentMinutes.asStateFlow()
@@ -155,15 +175,23 @@ class ScheduleViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectDate(date: LocalDate) {
-        _selectedDate.value = date
+        if (_selectedDate.value != date) {
+            _selectedDate.value = date
+            resetAutoScroll()
+            viewModelScope.launch {
+                try {
+                    listState.scrollToItem(0)
+                } catch (_: Throwable) {}
+            }
+        }
     }
 
     fun nextDay() {
-        _selectedDate.value = _selectedDate.value.plus(DatePeriod(days = 1))
+        selectDate(_selectedDate.value.plus(DatePeriod(days = 1)))
     }
 
     fun previousDay() {
-        _selectedDate.value = _selectedDate.value.minus(DatePeriod(days = 1))
+        selectDate(_selectedDate.value.minus(DatePeriod(days = 1)))
     }
 
     fun selectLessonForDetail(lesson: Lesson?) {
@@ -172,10 +200,22 @@ class ScheduleViewModel(
 
     fun selectTarget(target: ScheduleTarget) {
         repository.selectTarget(target)
+        resetAutoScroll()
+        viewModelScope.launch {
+            try {
+                listState.scrollToItem(0)
+            } catch (_: Throwable) {}
+        }
     }
 
     fun addAndSelectTarget(target: ScheduleTarget) {
         repository.addAndSelectTarget(target)
+        resetAutoScroll()
+        viewModelScope.launch {
+            try {
+                listState.scrollToItem(0)
+            } catch (_: Throwable) {}
+        }
     }
 
     fun refresh() {

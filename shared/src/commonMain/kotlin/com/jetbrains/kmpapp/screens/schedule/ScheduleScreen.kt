@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -126,15 +125,13 @@ private fun ScheduleMainContent(
     val diffSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
+    val listState = viewModel.listState
 
-    var lastScrolledKey by remember { mutableStateOf<String?>(null) }
     val isToday = selectedDate == com.jetbrains.kmpapp.data.model.DateUtils.today()
 
     // Magnetic auto-scroll to current ongoing lesson or break
-    LaunchedEffect(selectedDate, selectedTarget?.id, daySlots.isNotEmpty(), autoScrollToCurrentLesson) {
-        val scrollKey = "${selectedTarget?.id}_$selectedDate"
-        if (isToday && autoScrollToCurrentLesson && lastScrolledKey != scrollKey && daySlots.isNotEmpty()) {
+    LaunchedEffect(selectedDate, selectedTarget?.id, daySlots, autoScrollToCurrentLesson) {
+        if (isToday && autoScrollToCurrentLesson && viewModel.canAutoScroll(selectedDate, selectedTarget?.id) && daySlots.isNotEmpty()) {
             val nowMin = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes()
 
             // Build an indexed list representing the actual items displayed in LazyColumn
@@ -215,7 +212,7 @@ private fun ScheduleMainContent(
                 ?: fallback
 
             if (targetItem != null && targetItem.index > 0) {
-                lastScrolledKey = scrollKey
+                viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
                 try {
                     // Ensure list has laid out the target item before animating scroll
                     withTimeoutOrNull(800) {
@@ -227,7 +224,7 @@ private fun ScheduleMainContent(
                     listState.animateScrollToItem(targetItem.index)
                 } catch (_: Throwable) {}
             } else if (targetItem != null && targetItem.index == 0) {
-                lastScrolledKey = scrollKey
+                viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
             }
         }
     }
