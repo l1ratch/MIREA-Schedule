@@ -1,11 +1,11 @@
 package com.jetbrains.kmpapp.data.model
 
 object AppVersion {
-    const val VERSION_NAME = "26.9.0"
-    const val BUILD_NUMBER = 31
+    const val VERSION_NAME = "26.9.1"
+    const val BUILD_NUMBER = 32
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1
-    const val CHANGELOG = "Обновление карт кампуса С-20 (Стромынка): объединение аудиторий, добавление лестниц между этажами и исправление расположения карточки аудитории"
+    const val CHANGELOG = "Оптимизация энергопотребления на iOS и Android: устранение расхода аккумулятора при выключенном экране, поддержка режима энергосбережения и адаптивные анимации"
 
     const val APPLICATION_ID = "ru.l1ratch.mireaschedule"
     const val DISPLAY_VERSION = "Версия $VERSION_NAME (сборка $BUILD_NUMBER)"
