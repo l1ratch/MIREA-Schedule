@@ -7,6 +7,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -132,7 +134,13 @@ fun MapScreen(
             // 1. Campus Map WebView Canvas
             if (svgContent != null) {
                 val html = remember(svgContent, isDark, selectedCampus.id) {
-                    MapHtmlGenerator.generateHtml(svgContent ?: "", isDark, selectedCampus.id)
+                    MapHtmlGenerator.generateHtml(
+                        svgContent = svgContent ?: "",
+                        isDark = isDark,
+                        campusId = selectedCampus.id,
+                        showStairs = showStairs,
+                        showLabels = showRoomNumbers
+                    )
                 }
                 CampusMapView(
                     htmlContent = html,
@@ -319,7 +327,22 @@ fun MapScreen(
                 }
             }
 
-            // 6. Map Layers Menu (Bottom-Left)
+            // 6. Scrim: auto-hide layers menu on outside tap or map interaction
+            if (mapMenuExpanded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    mapMenuExpanded = false
+                                }
+                            )
+                        }
+                )
+            }
+
+            // 7. Map Layers Menu (Bottom-Left)
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -517,21 +540,28 @@ private fun MapLayerRow(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = if (checked) Icons.Default.Check else Icons.Default.Menu,
-            contentDescription = null,
-            tint = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            modifier = Modifier.size(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (checked) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
+            fontWeight = if (checked) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

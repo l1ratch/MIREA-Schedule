@@ -5,7 +5,9 @@ object MapHtmlGenerator {
     fun generateHtml(
         svgContent: String,
         isDark: Boolean = true,
-        campusId: String = ""
+        campusId: String = "",
+        showStairs: Boolean = true,
+        showLabels: Boolean = true
     ): String {
         // 1. Parse viewBox from SVG content to extract base coordinate space
         val vbRegex = Regex("""viewBox=["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']""")
@@ -454,6 +456,17 @@ object MapHtmlGenerator {
       }
     }
   };
+
+  if (!$showStairs) {
+    const g = document.getElementById('markers');
+    if (g) { g.style.display = 'none'; }
+  }
+  if (!$showLabels) {
+    const labels = document.querySelectorAll('.room-label');
+    for (let i = 0; i < labels.length; i++) {
+      labels[i].style.display = 'none';
+    }
+  }
 
   // --- Room selection and Info Card ---
   let selectedElement = null;
