@@ -41,7 +41,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,12 +69,7 @@ fun LessonDetailScreen(
     val subjects by taskRepository.subjects.collectAsState()
     val isAlreadyAdded = subjects.any { it.name.trim().equals(lesson.subject.trim(), ignoreCase = true) }
 
-    val (typeBg, typeTextColor) = when (lesson.lessonType) {
-        LessonType.LECTURE -> Color(0xFFE0F2FE) to Color(0xFF0369A1)
-        LessonType.PRACTICE -> Color(0xFFDCFCE7) to Color(0xFF15803D)
-        LessonType.LAB -> Color(0xFFFFEDD5) to Color(0xFFC2410C)
-        LessonType.OTHER -> Color(0xFFF3E8FF) to Color(0xFF7E22CE)
-    }
+    val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
     val weekInfo = DateUtils.getWeekInfo(lesson.date)
     val parityStr = if (weekInfo.isEven) "Чётная неделя" else "Нечётная неделя"
