@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
@@ -34,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.Lesson
@@ -92,7 +95,9 @@ fun LessonCard(
     isToday: Boolean = false,
     currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
     showLessonProgress: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pageIndicator: Pair<Int, Int>? = null,
+    horizontalMargin: androidx.compose.ui.unit.Dp = 16.dp
 ) {
     val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
@@ -103,7 +108,7 @@ fun LessonCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = horizontalMargin, vertical = 6.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -204,24 +209,74 @@ fun LessonCard(
                     }
                 }
 
-                if (lesson.classrooms.isNotEmpty()) {
+                if (lesson.classrooms.isNotEmpty() || lesson.groups.size > 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (lesson.classrooms.isNotEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Аудитория",
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = lesson.classrooms.joinToString(", "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+
+                        if (lesson.groups.size > 1) {
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Icon(
+                                imageVector = Icons.Default.Group,
+                                contentDescription = "Группы",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = lesson.groups.joinToString(", "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                pageIndicator?.let { (total, current) ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        modifier = Modifier.padding(top = 10.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Аудитория",
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = lesson.classrooms.joinToString(", "),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "$total ${if (total in 2..4) "пары" else "пар"} в это время",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        repeat(total) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(if (index == current) 6.dp else 4.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (index == current) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.outlineVariant
+                                    )
+                            )
+                        }
                     }
                 }
             }
@@ -268,8 +323,8 @@ fun MultiLessonCard(
     HorizontalPager(
         state = pagerState,
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(end = 40.dp),
-        pageSpacing = 12.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        pageSpacing = 0.dp,
         beyondViewportPageCount = 1
     ) { page ->
         LessonCard(
@@ -277,7 +332,9 @@ fun MultiLessonCard(
             onClick = { onLessonClick(lessons[page]) },
             isToday = isToday,
             currentMinutes = currentMinutes,
-            showLessonProgress = showLessonProgress
+            showLessonProgress = showLessonProgress,
+            pageIndicator = lessons.size to pagerState.currentPage,
+            horizontalMargin = 0.dp
         )
     }
 }
