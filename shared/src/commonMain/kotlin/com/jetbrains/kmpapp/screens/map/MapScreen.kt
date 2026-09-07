@@ -3,6 +3,8 @@ package com.jetbrains.kmpapp.screens.map
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,8 +30,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CenterFocusStrong
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -107,6 +111,9 @@ fun MapScreen(
     var svgContent by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var campusDropdownExpanded by remember { mutableStateOf(false) }
+    var mapMenuExpanded by remember { mutableStateOf(false) }
+    var showStairs by remember { mutableStateOf(true) }
+    var showRoomNumbers by remember { mutableStateOf(true) }
 
     // Load SVG whenever campus or floor changes
     LaunchedEffect(selectedCampus, selectedFloor) {
@@ -124,8 +131,8 @@ fun MapScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             // 1. Campus Map WebView Canvas
             if (svgContent != null) {
-                val html = remember(svgContent, isDark) {
-                    MapHtmlGenerator.generateHtml(svgContent ?: "", isDark)
+                val html = remember(svgContent, isDark, selectedCampus.id) {
+                    MapHtmlGenerator.generateHtml(svgContent ?: "", isDark, selectedCampus.id)
                 }
                 CampusMapView(
                     htmlContent = html,
@@ -312,7 +319,76 @@ fun MapScreen(
                 }
             }
 
-            // 6. Smooth In-Layout Disclaimer Modal (No window freeze!)
+            // 6. Map Layers Menu (Bottom-Left)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, bottom = 140.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(20.dp),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    IconButton(
+                        onClick = { mapMenuExpanded = !mapMenuExpanded },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Слои карты",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            // 7. Layers Panel (slides in from the left edge, above the menu button)
+            AnimatedVisibility(
+                visible = mapMenuExpanded,
+                enter = slideInHorizontally(
+                    animationSpec = tween(220),
+                    initialOffsetX = { -it }
+                ) + fadeIn(tween(160)),
+                exit = slideOutHorizontally(
+                    animationSpec = tween(180),
+                    targetOffsetX = { -it }
+                ) + fadeOut(tween(120)),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, bottom = 204.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.width(240.dp)
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        MapLayerRow(
+                            title = "Лестницы",
+                            checked = showStairs,
+                            onClick = {
+                                showStairs = !showStairs
+                                controller.toggleLayer("stairs", showStairs)
+                            }
+                        )
+                        MapLayerRow(
+                            title = "Номера аудиторий",
+                            checked = showRoomNumbers,
+                            onClick = {
+                                showRoomNumbers = !showRoomNumbers
+                                controller.toggleLayer("labels", showRoomNumbers)
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 8. Smooth In-Layout Disclaimer Modal (No window freeze!)
             AnimatedVisibility(
                 visible = showDisclaimerDialog,
                 enter = fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.95f),
@@ -425,5 +501,37 @@ fun MapScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MapLayerRow(
+    title: String,
+    checked: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (checked) Icons.Default.Check else Icons.Default.Menu,
+            contentDescription = null,
+            tint = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
 import platform.CoreGraphics.CGRectZero
+import platform.UIKit.UIColor
 import platform.WebKit.WKWebView
 import platform.WebKit.WKWebViewConfiguration
 
@@ -36,7 +37,9 @@ actual fun CampusMapView(
         factory = {
             val config = WKWebViewConfiguration()
             WKWebView(frame = CGRectZero.readValue(), configuration = config).apply {
-                opaque = true
+                opaque = false
+                backgroundColor = UIColor.clearColor
+                scrollView.backgroundColor = UIColor.clearColor
                 scrollView.scrollEnabled = false
                 scrollView.bounces = false
 
@@ -44,6 +47,9 @@ actual fun CampusMapView(
                     ctrl.onZoomIn = { evaluateJavaScript("window.zoomIn && window.zoomIn();", null) }
                     ctrl.onZoomOut = { evaluateJavaScript("window.zoomOut && window.zoomOut();", null) }
                     ctrl.onResetView = { evaluateJavaScript("window.resetView && window.resetView();", null) }
+                    ctrl.onToggleLayer = { section, show ->
+                        evaluateJavaScript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
+                    }
                 }
                 webViewRef = this
             }
@@ -53,6 +59,9 @@ actual fun CampusMapView(
                 ctrl.onZoomIn = { webView.evaluateJavaScript("window.zoomIn && window.zoomIn();", null) }
                 ctrl.onZoomOut = { webView.evaluateJavaScript("window.zoomOut && window.zoomOut();", null) }
                 ctrl.onResetView = { webView.evaluateJavaScript("window.resetView && window.resetView();", null) }
+                ctrl.onToggleLayer = { section, show ->
+                    webView.evaluateJavaScript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
+                }
             }
             // CRITICAL FIX: Only reload HTML when it actually changes, preventing 100% CPU loops on recompositions
             if (loadedHtml != htmlContent) {

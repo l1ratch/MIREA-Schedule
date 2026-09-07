@@ -67,6 +67,9 @@ actual fun CampusMapView(
                 settings.loadWithOverviewMode = false
                 settings.useWideViewPort = false
 
+                // Avoid white flash: keep the WebView transparent until the page paints
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
                 webViewClient = object : WebViewClient() {
                     override fun onReceivedError(
                         view: WebView?,
@@ -88,6 +91,9 @@ actual fun CampusMapView(
                     ctrl.onZoomIn = { evaluateJavascript("window.zoomIn && window.zoomIn();", null) }
                     ctrl.onZoomOut = { evaluateJavascript("window.zoomOut && window.zoomOut();", null) }
                     ctrl.onResetView = { evaluateJavascript("window.resetView && window.resetView();", null) }
+                    ctrl.onToggleLayer = { section, show ->
+                        evaluateJavascript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
+                    }
                 }
                 webViewRef = this
             }
@@ -97,6 +103,9 @@ actual fun CampusMapView(
                 ctrl.onZoomIn = { webView.evaluateJavascript("window.zoomIn && window.zoomIn();", null) }
                 ctrl.onZoomOut = { webView.evaluateJavascript("window.zoomOut && window.zoomOut();", null) }
                 ctrl.onResetView = { webView.evaluateJavascript("window.resetView && window.resetView();", null) }
+                ctrl.onToggleLayer = { section, show ->
+                    webView.evaluateJavascript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
+                }
             }
             if (loadedHtml != htmlContent) {
                 loadedHtml = htmlContent

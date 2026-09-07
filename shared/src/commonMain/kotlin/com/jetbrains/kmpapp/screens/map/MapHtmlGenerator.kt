@@ -4,7 +4,8 @@ object MapHtmlGenerator {
 
     fun generateHtml(
         svgContent: String,
-        isDark: Boolean = true
+        isDark: Boolean = true,
+        campusId: String = ""
     ): String {
         // 1. Parse viewBox from SVG content to extract base coordinate space
         val vbRegex = Regex("""viewBox=["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']""")
@@ -233,6 +234,8 @@ object MapHtmlGenerator {
     font-size: 20px;
     line-height: 1;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
   }
   .room-card-text {
     display: flex;
@@ -292,6 +295,8 @@ object MapHtmlGenerator {
   const roomSubtitle = document.getElementById('room-card-subtitle');
   const roomIcon = document.getElementById('room-card-icon');
   const roomClose = document.getElementById('room-card-close');
+
+  const campusId = "$campusId";
 
   const origX = $origX;
   const origY = $origY;
@@ -438,6 +443,17 @@ object MapHtmlGenerator {
   window.resetView = function() {
     fitToScreen(true);
   };
+  window.setLayerVisibility = function(section, show) {
+    if (section === 'stairs') {
+      const g = document.getElementById('markers');
+      if (g) { g.style.display = show ? '' : 'none'; }
+    } else if (section === 'labels') {
+      const labels = document.querySelectorAll('.room-label');
+      for (let i = 0; i < labels.length; i++) {
+        labels[i].style.display = show ? '' : 'none';
+      }
+    }
+  };
 
   // --- Room selection and Info Card ---
   let selectedElement = null;
@@ -478,6 +494,15 @@ object MapHtmlGenerator {
       } else if (title.toLowerCase().includes('медпункт')) {
         icon = '🏥';
         subtitle = 'Медицинский пункт';
+      } else if (campusId === 's-20' && title === '300') {
+        icon = '❓';
+        subtitle = 'Учебный отдел ИКБ';
+      } else if (title.toLowerCase().includes('гардероб')) {
+        icon = '🧥';
+        subtitle = 'Гардероб';
+      } else if (title === 'ЗЗУС') {
+        icon = '🎓';
+        subtitle = 'Зал заседаний Ученого совета';
       } else {
         subtitle = 'Аудитория';
       }
@@ -497,7 +522,11 @@ object MapHtmlGenerator {
 
     roomTitle.textContent = title;
     roomSubtitle.textContent = subtitle;
-    roomIcon.textContent = icon;
+    if (icon.indexOf('<') === 0) {
+      roomIcon.innerHTML = icon;
+    } else {
+      roomIcon.textContent = icon;
+    }
     roomCard.classList.remove('hidden');
   }
 
