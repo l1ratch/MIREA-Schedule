@@ -521,8 +521,8 @@ object MapHtmlGenerator {
       }
     } else if (label.toLowerCase().includes('лестница')) {
       icon = '🪜';
-      title = label;
-      subtitle = 'Перемещение между этажами';
+      title = el.getAttribute('data-name') || label;
+      subtitle = el.getAttribute('data-comment') || 'Перемещение между этажами';
     } else if (label.toLowerCase().includes('переход')) {
       icon = '🚶';
       title = label;
