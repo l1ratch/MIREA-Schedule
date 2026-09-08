@@ -1,6 +1,8 @@
 package com.jetbrains.kmpapp.screens.schedule
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -53,6 +55,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -253,6 +256,12 @@ private fun ScheduleMainContent(
     }
 
     var totalDrag by remember { mutableStateOf(0f) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+    val animatedDragOffset by animateFloatAsState(
+        targetValue = if (isDragging) dragOffset else 0f,
+        animationSpec = tween(durationMillis = 180)
+    )
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -341,7 +350,11 @@ private fun ScheduleMainContent(
                             .fillMaxSize()
                             .pointerInput(selectedDate) {
                                 detectHorizontalDragGestures(
-                                    onDragStart = { totalDrag = 0f },
+                                    onDragStart = {
+                                        totalDrag = 0f
+                                        dragOffset = 0f
+                                        isDragging = true
+                                    },
                                     onDragEnd = {
                                         if (!isDayTransitionRunning && totalDrag < -90f) {
                                             viewModel.nextDay()
@@ -349,13 +362,20 @@ private fun ScheduleMainContent(
                                             viewModel.previousDay()
                                         }
                                         totalDrag = 0f
+                                        dragOffset = 0f
+                                        isDragging = false
                                     },
-                                    onDragCancel = { totalDrag = 0f },
+                                    onDragCancel = {
+                                        totalDrag = 0f
+                                        dragOffset = 0f
+                                        isDragging = false
+                                    },
                                     onHorizontalDrag = { change, dragAmount ->
                                         if (kotlin.math.abs(dragAmount) > 2f) {
                                             change.consume()
                                         }
                                         totalDrag += dragAmount
+                                        dragOffset = (dragOffset + dragAmount).coerceIn(-180f, 180f)
                                     }
                                 )
                             }
@@ -373,7 +393,9 @@ private fun ScheduleMainContent(
                                 )
                             }
                         },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { translationX = animatedDragOffset }
                     ) { _ ->
                         if (daySlots.isEmpty()) {
                             Box(
