@@ -212,17 +212,33 @@ private fun ScheduleMainContent(
                 ?: fallback
 
             if (targetItem != null && targetItem.index > 0) {
-                viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
-                try {
-                    // Ensure list has laid out the target item before animating scroll
-                    withTimeoutOrNull(800) {
-                        snapshotFlow { listState.layoutInfo.totalItemsCount }
-                            .filter { it > targetItem.index }
-                            .first()
+                var scrolled = false
+
+                // On cold start the list may need more than one frame to measure.
+                repeat(4) {
+                    if (!scrolled) {
+                        val layoutReady = withTimeoutOrNull(800) {
+                            snapshotFlow { listState.layoutInfo.totalItemsCount }
+                                .filter { it > targetItem.index }
+                                .first()
+                            true
+                        } == true
+
+                        if (layoutReady) {
+                            try {
+                                kotlinx.coroutines.delay(100)
+                                listState.animateScrollToItem(targetItem.index)
+                                scrolled = true
+                            } catch (_: Throwable) {}
+                        } else {
+                            kotlinx.coroutines.delay(100)
+                        }
                     }
-                    kotlinx.coroutines.delay(100)
-                    listState.animateScrollToItem(targetItem.index)
-                } catch (_: Throwable) {}
+                }
+
+                if (scrolled) {
+                    viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
+                }
             } else if (targetItem != null && targetItem.index == 0) {
                 viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
             }
