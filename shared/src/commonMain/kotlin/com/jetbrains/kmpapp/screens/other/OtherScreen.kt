@@ -265,21 +265,21 @@ private fun OtherMainContent(
                     }
                 }
             }
-            // 1. My schedules card
+            // 1. University resources card
+            OtherNavCard(
+                title = "Ресурсы университета",
+                subtitle = "Личный кабинет, СДО, Пульс и сервисы",
+                icon = Icons.Default.School,
+                onClick = { onNavigate(OtherSubScreen.RESOURCES) }
+            )
+
+            // 2. My schedules card
             OtherNavCard(
                 title = "Мои расписания",
                 subtitle = if (savedTargets.isEmpty()) "Нет сохранённых расписаний"
                 else "Сохранено: ${savedTargets.size}",
                 icon = Icons.AutoMirrored.Filled.EventNote,
                 onClick = { onNavigate(OtherSubScreen.MANAGE_SCHEDULES) }
-            )
-
-            // 2. University resources card
-            OtherNavCard(
-                title = "Ресурсы университета",
-                subtitle = "Личный кабинет, СДО, Пульс и сервисы",
-                icon = Icons.Default.School,
-                onClick = { onNavigate(OtherSubScreen.RESOURCES) }
             )
 
             // 3. Settings card
