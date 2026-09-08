@@ -214,8 +214,6 @@ fun LessonDetailScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Button(
                 onClick = {
                     if (!isAlreadyAdded) {
@@ -269,7 +267,7 @@ fun LessonDetailScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }
