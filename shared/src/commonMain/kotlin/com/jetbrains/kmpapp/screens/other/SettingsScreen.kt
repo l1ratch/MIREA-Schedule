@@ -69,6 +69,7 @@ fun SettingsScreen(
     val showEmptyLessons by viewModel.showEmptyLessons.collectAsState()
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
+    val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val isSakuraTheme by viewModel.isSakuraTheme.collectAsState()
 
@@ -266,6 +267,36 @@ fun SettingsScreen(
                     Switch(
                         checked = showEmptyLessons,
                         onCheckedChange = { viewModel.setShowEmptyLessons(it) }
+                    )
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Сокращенные названия",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Сокращать по первым буквам названия предметов в расписании",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = showAbbreviatedNames,
+                        onCheckedChange = { viewModel.setShowAbbreviatedNames(it) }
                     )
                 }
 

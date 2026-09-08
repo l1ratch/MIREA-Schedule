@@ -65,6 +65,12 @@ class ScheduleRepository(
         storage.setShowEmptyLessons(enabled)
     }
 
+    val showAbbreviatedNames: StateFlow<Boolean> = storage.showAbbreviatedNames
+
+    fun setShowAbbreviatedNames(enabled: Boolean) {
+        storage.setShowAbbreviatedNames(enabled)
+    }
+
     val showLessonProgress: StateFlow<Boolean> = storage.showLessonProgress
 
     fun setShowLessonProgress(enabled: Boolean) {

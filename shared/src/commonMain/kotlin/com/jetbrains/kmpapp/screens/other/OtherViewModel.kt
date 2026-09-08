@@ -51,6 +51,7 @@ class OtherViewModel(
     val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
+    val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
@@ -242,6 +243,10 @@ class OtherViewModel(
 
     fun setShowEmptyLessons(enabled: Boolean) {
         repository.setShowEmptyLessons(enabled)
+    }
+
+    fun setShowAbbreviatedNames(enabled: Boolean) {
+        repository.setShowAbbreviatedNames(enabled)
     }
 
     fun selectTarget(target: ScheduleTarget) {

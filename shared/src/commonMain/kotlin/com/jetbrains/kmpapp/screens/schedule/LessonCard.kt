@@ -51,6 +51,7 @@ fun ScheduleSlotCard(
     isToday: Boolean = false,
     currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
     showLessonProgress: Boolean = true,
+    showAbbreviatedNames: Boolean = false,
     scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
     modifier: Modifier = Modifier
 ) {
@@ -63,6 +64,7 @@ fun ScheduleSlotCard(
                     isToday = isToday,
                     currentMinutes = currentMinutes,
                     showLessonProgress = showLessonProgress,
+                    showAbbreviatedNames = showAbbreviatedNames,
                     scheduleTargetType = scheduleTargetType,
                     modifier = modifier
                 )
@@ -76,6 +78,7 @@ fun ScheduleSlotCard(
                     isToday = isToday,
                     currentMinutes = currentMinutes,
                     showLessonProgress = showLessonProgress,
+                    showAbbreviatedNames = showAbbreviatedNames,
                     scheduleTargetType = scheduleTargetType,
                     modifier = modifier
                 )
@@ -99,6 +102,7 @@ fun LessonCard(
     isToday: Boolean = false,
     currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
     showLessonProgress: Boolean = true,
+    showAbbreviatedNames: Boolean = false,
     scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
     modifier: Modifier = Modifier,
     pageIndicator: Pair<Int, Int>? = null,
@@ -185,7 +189,7 @@ fun LessonCard(
 
                 // Subject name
                 Text(
-                    text = lesson.subject,
+                    text = if (showAbbreviatedNames) abbreviateSubjectName(lesson.subject) else lesson.subject,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -362,6 +366,7 @@ fun MultiLessonCard(
     isToday: Boolean = false,
     currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
     showLessonProgress: Boolean = true,
+    showAbbreviatedNames: Boolean = false,
     scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
     modifier: Modifier = Modifier
 ) {
@@ -381,6 +386,7 @@ fun MultiLessonCard(
             isToday = isToday,
             currentMinutes = currentMinutes,
             showLessonProgress = showLessonProgress,
+            showAbbreviatedNames = showAbbreviatedNames,
             scheduleTargetType = scheduleTargetType,
             pageIndicator = lessons.size to pagerState.currentPage,
             horizontalMargin = 0.dp

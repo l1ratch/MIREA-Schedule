@@ -116,6 +116,7 @@ private fun ScheduleMainContent(
     val dayLessonSummaries by viewModel.dayLessonSummaries.collectAsState()
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
+    val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val currentMinutes by viewModel.currentMinutes.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
@@ -436,6 +437,7 @@ private fun ScheduleMainContent(
                                             isToday = isToday,
                                             currentMinutes = currentMinutes,
                                             showLessonProgress = showLessonProgress,
+                                             showAbbreviatedNames = showAbbreviatedNames,
                                              scheduleTargetType = selectedTarget?.type ?: com.jetbrains.kmpapp.data.model.ScheduleTargetType.GROUP
                                         )
                                     }

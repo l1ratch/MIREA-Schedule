@@ -34,6 +34,7 @@ class ScheduleViewModel(
     val refreshStatus: StateFlow<com.jetbrains.kmpapp.data.model.RefreshStatus?> = repository.refreshStatus
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
+    val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
 
     val listState = LazyListState()
 

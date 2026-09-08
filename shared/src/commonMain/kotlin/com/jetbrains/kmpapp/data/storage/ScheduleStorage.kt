@@ -42,6 +42,9 @@ class ScheduleStorage(
     private val _autoScrollToCurrentLesson = MutableStateFlow<Boolean>(true)
     val autoScrollToCurrentLesson: StateFlow<Boolean> = _autoScrollToCurrentLesson.asStateFlow()
 
+    private val _showAbbreviatedNames = MutableStateFlow<Boolean>(false)
+    val showAbbreviatedNames: StateFlow<Boolean> = _showAbbreviatedNames.asStateFlow()
+
     private val _themeMode = MutableStateFlow<ThemeMode>(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
@@ -92,6 +95,14 @@ class ScheduleStorage(
                 val autoScrollStr = platformStorage.getString(KEY_AUTO_SCROLL_CURRENT_LESSON)
                 if (!autoScrollStr.isNullOrBlank()) {
                     _autoScrollToCurrentLesson.value = autoScrollStr.toBooleanStrictOrNull() ?: true
+                }
+            } catch (_: Throwable) {}
+
+            // Restore show abbreviated names setting
+            try {
+                val showAbbreviatedStr = platformStorage.getString(KEY_SHOW_ABBREVIATED_NAMES)
+                if (!showAbbreviatedStr.isNullOrBlank()) {
+                    _showAbbreviatedNames.value = showAbbreviatedStr.toBooleanStrictOrNull() ?: false
                 }
             } catch (_: Throwable) {}
 
@@ -205,6 +216,17 @@ class ScheduleStorage(
                 platformStorage.saveString(KEY_AUTO_SCROLL_CURRENT_LESSON, enabled.toString())
             } catch (e: Exception) {
                 println("Failed to persist autoScrollToCurrentLesson: ${e.message}")
+            }
+        }
+    }
+
+    fun setShowAbbreviatedNames(enabled: Boolean) {
+        _showAbbreviatedNames.value = enabled
+        scope.launch {
+            try {
+                platformStorage.saveString(KEY_SHOW_ABBREVIATED_NAMES, enabled.toString())
+            } catch (e: Exception) {
+                println("Failed to persist showAbbreviatedNames: ${e.message}")
             }
         }
     }
@@ -385,6 +407,7 @@ class ScheduleStorage(
         private const val KEY_SHOW_EMPTY_LESSONS = "mirea_show_empty_lessons"
         private const val KEY_SHOW_LESSON_PROGRESS = "mirea_show_lesson_progress"
         private const val KEY_AUTO_SCROLL_CURRENT_LESSON = "mirea_auto_scroll_current_lesson"
+        private const val KEY_SHOW_ABBREVIATED_NAMES = "mirea_show_abbreviated_names"
         private const val KEY_APP_THEME = "mirea_app_theme"
         private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"
         private const val KEY_SAKURA_THEME = "mirea_sakura_theme_secret"
