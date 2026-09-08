@@ -59,7 +59,7 @@ fun ExperimentalSettingsScreen(
     var showDisappointment by remember { mutableStateOf(false) }
     var showNoSecondChance by remember { mutableStateOf(false) }
 
-    val cheatsChecked = cheatsAgreed != null && !cheatsBlocked
+    val cheatsChecked = false
     val matrixSwitchVisible = cheatsAgreed == true && !cheatsBlocked
 
     Scaffold(
@@ -126,7 +126,7 @@ fun ExperimentalSettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Switch(
                             checked = cheatsChecked,
-                            enabled = !cheatsBlocked,
+                            enabled = true,
                             onCheckedChange = { turnOn ->
                                 if (cheatsAgreed == null) {
                                     if (turnOn) showDisclaimer = true

@@ -422,14 +422,12 @@ private fun OtherMainContent(
 
             // 5. GitHub Issues Feedback Card
             Card(
+                onClick = { uriHandler.openUri(com.jetbrains.kmpapp.data.model.AppVersion.GITHUB_ISSUES_URL) },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable {
-                        uriHandler.openUri(com.jetbrains.kmpapp.data.model.AppVersion.GITHUB_ISSUES_URL)
-                    }
             ) {
                 Row(
                     modifier = Modifier
@@ -495,11 +493,10 @@ private fun OtherNavCard(
     onClick: () -> Unit
 ) {
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier

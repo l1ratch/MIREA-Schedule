@@ -357,8 +357,10 @@ private fun ScheduleMainContent(
                                     },
                                     onDragEnd = {
                                         if (!isDayTransitionRunning && totalDrag < -90f) {
+                                            isDayTransitionRunning = true
                                             viewModel.nextDay()
                                         } else if (!isDayTransitionRunning && totalDrag > 90f) {
+                                            isDayTransitionRunning = true
                                             viewModel.previousDay()
                                         }
                                         totalDrag = 0f
@@ -380,23 +382,12 @@ private fun ScheduleMainContent(
                                 )
                             }
                     ) {
-                        AnimatedContent(
-                        targetState = selectedDate,
-                        transitionSpec = {
-                            if (targetState > initialState) {
-                                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                                    slideOutHorizontally { width -> -width } + fadeOut()
-                                )
-                            } else {
-                                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                                    slideOutHorizontally { width -> width } + fadeOut()
-                                )
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { translationX = animatedDragOffset }
-                    ) { _ ->
+                        // One LazyColumn owns the shared listState; do not overlap it during day transitions.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { translationX = animatedDragOffset }
+                        ) {
                         if (daySlots.isEmpty()) {
                             Box(
                                 modifier = Modifier

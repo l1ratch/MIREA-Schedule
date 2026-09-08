@@ -47,7 +47,6 @@ import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -425,11 +424,7 @@ private fun SettingsSectionCard(
                         .size(22.dp)
                         .then(
                             if (onIconClick != null) {
-                                Modifier.clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = onIconClick
-                                )
+                                Modifier.clickable(onClick = onIconClick)
                             } else Modifier
                         )
                 )
