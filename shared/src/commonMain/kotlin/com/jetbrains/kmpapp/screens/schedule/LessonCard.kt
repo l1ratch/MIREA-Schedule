@@ -200,7 +200,6 @@ fun LessonCard(
                 // Details: show the useful entity for the selected schedule target.
                 val groupsText = lesson.groups.joinToString(", ")
                 val showGroupsAsTeacherReplacement = scheduleTargetType == ScheduleTargetType.TEACHER && lesson.groups.isNotEmpty()
-                val showGroupsAsRoomReplacement = scheduleTargetType == ScheduleTargetType.AUDITORIUM && lesson.groups.isNotEmpty()
 
                 if (showGroupsAsTeacherReplacement) {
                     Row(
