@@ -195,9 +195,10 @@ fun LessonCard(
 
                 // Details: show the useful entity for the selected schedule target.
                 val groupsText = lesson.groups.joinToString(", ")
-                val showGroupsAsPrimary = scheduleTargetType != ScheduleTargetType.GROUP && lesson.groups.isNotEmpty()
+                val showGroupsAsTeacherReplacement = scheduleTargetType == ScheduleTargetType.TEACHER && lesson.groups.isNotEmpty()
+                val showGroupsAsRoomReplacement = scheduleTargetType == ScheduleTargetType.AUDITORIUM && lesson.groups.isNotEmpty()
 
-                if (showGroupsAsPrimary) {
+                if (showGroupsAsTeacherReplacement) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = 2.dp)
@@ -239,12 +240,28 @@ fun LessonCard(
                     }
                 }
 
-                if (!showGroupsAsPrimary && (lesson.classrooms.isNotEmpty() || lesson.groups.size > 1)) {
+                if (lesson.classrooms.isNotEmpty() || lesson.groups.size > 1) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (lesson.classrooms.isNotEmpty()) {
+                        if (scheduleTargetType == ScheduleTargetType.AUDITORIUM && lesson.groups.isNotEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.Group,
+                                contentDescription = "Группы",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = groupsText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        } else if (lesson.classrooms.isNotEmpty()) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = "Аудитория",
