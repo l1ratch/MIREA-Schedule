@@ -5,6 +5,6 @@ internal fun abbreviateSubjectName(subject: String): String {
     if (words.size <= 2) return subject
     return words.joinToString("") { word ->
         val first = word.first()
-        if (word.length > 2) first.uppercaseChar() else first
+        if (word.length > 2) first.uppercaseChar().toString() else first.toString()
     }
 }
