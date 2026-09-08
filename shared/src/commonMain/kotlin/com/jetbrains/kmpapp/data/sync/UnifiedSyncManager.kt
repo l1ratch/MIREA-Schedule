@@ -9,7 +9,6 @@ import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -88,11 +87,6 @@ class UnifiedSyncManager(
                     message = "Симуляция отсутствия сети (кеш пуст)"
                 )
             }
-        }
-
-        val simulatedDelay = DebugConfig.networkDelayMs.value
-        if (simulatedDelay > 0) {
-            delay(simulatedDelay)
         }
 
         val hasValidCache = !forceRefresh && isCacheValid(cacheKey, ttl)
