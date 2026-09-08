@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.jetbrains.kmpapp.data.storage.AndroidContextProvider
 import java.io.File
@@ -25,10 +27,11 @@ actual fun startPlatformUpdate(browserUrl: String, apkUrl: String?) {
         .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "mirea-schedule-update.apk")
 
     val downloadId = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-    context.registerReceiver(
+    ContextCompat.registerReceiver(
+        context,
         UpdateDownloadReceiver(downloadId),
         android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-        Context.RECEIVER_NOT_EXPORTED
+        ContextCompat.RECEIVER_NOT_EXPORTED
     )
 }
 
@@ -45,10 +48,18 @@ private class UpdateDownloadReceiver(private val expectedId: Long) : android.con
                 uri
             }
         }
-        val installIntent = Intent(Intent.ACTION_VIEW, installUri)
-            .setDataAndType(installUri, "application/vnd.android.package-archive")
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        context.startActivity(installIntent)
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            context.startActivity(
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                    .setData(Uri.parse("package:${context.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } else {
+            val installIntent = Intent(Intent.ACTION_VIEW, installUri)
+                .setDataAndType(installUri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            context.startActivity(installIntent)
+        }
         runCatching { context.unregisterReceiver(this) }
     }
 }
