@@ -127,8 +127,14 @@ private fun ScheduleMainContent(
 
     val scope = rememberCoroutineScope()
     val listState = viewModel.listState
+    var isDayTransitionRunning by remember { mutableStateOf(false) }
 
     val isToday = selectedDate == com.jetbrains.kmpapp.data.model.DateUtils.today()
+
+    LaunchedEffect(selectedDate) {
+        kotlinx.coroutines.delay(350)
+        isDayTransitionRunning = false
+    }
 
     // Magnetic auto-scroll to current ongoing lesson or break
     LaunchedEffect(selectedDate, selectedTarget?.id, daySlots, autoScrollToCurrentLesson) {
@@ -337,9 +343,9 @@ private fun ScheduleMainContent(
                                 detectHorizontalDragGestures(
                                     onDragStart = { totalDrag = 0f },
                                     onDragEnd = {
-                                        if (totalDrag < -90f) {
+                                        if (!isDayTransitionRunning && totalDrag < -90f) {
                                             viewModel.nextDay()
-                                        } else if (totalDrag > 90f) {
+                                        } else if (!isDayTransitionRunning && totalDrag > 90f) {
                                             viewModel.previousDay()
                                         }
                                         totalDrag = 0f
