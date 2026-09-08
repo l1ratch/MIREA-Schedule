@@ -1,4 +1,4 @@
-﻿# GitHub Copilot Instructions for MIREA-Schedule
+# GitHub Copilot Instructions for MIREA-Schedule
 
 ## О проекте
 **MIREA-Schedule** — кроссплатформенное мобильное приложение расписания для студентов и преподавателей РТУ МИРЭА на базе **Kotlin Multiplatform (KMP)** и **Compose Multiplatform** для Android и iOS.
@@ -25,6 +25,18 @@
     - `components/`: Плавающий док (`FloatingDock`), свайп назад (`PlatformBackHandler`).
 - `androidApp/`: Точка входа Android (`ScheduleApp.kt`, `MainActivity.kt`), конфигурация сборки и подписи.
 - `iosApp/`: Xcode-проект и запуск iOS-приложения.
+
+## Протокол AI-агента
+
+Перед заметной правкой агент должен:
+
+1. Прочитать `AGENTS.md` и релевантные `.agents/*.md`.
+2. Проверить доступные плагины и навыки среды; для разработки использовать **Ponytail** (YAGNI, минимальный diff, переиспользование).
+3. Использовать **Repowise MCP** до массового чтения: `get_overview`, затем `get_context`/`get_answer`/`search_codebase`; для риска — `get_risk`/`get_change_risk`.
+4. Сначала изучить и спланировать изменение, затем менять код; после — выполнить подходящую проверку и сообщить результат.
+5. Не добавлять секреты, временные файлы, артефакты Repowise/агентов и незапланированные изменения.
+
+Если инструмент или навык недоступен, агент должен явно отметить это и сверять Repowise с живым исходником при stale-индексе.
 
 ## Правила разработки и решения Issue
 1. **Безопасность потоков и старта**:

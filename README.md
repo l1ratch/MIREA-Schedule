@@ -99,7 +99,7 @@
 * **JDK**: 21 (рекомендуется Azul Zulu или Eclipse Temurin)
 * **Android SDK**: API level 35, Build Tools 35.0.0
 * **Xcode**: 16.0+ (для сборки iOS)
-* **Gradle**: 8.11+ (поставляется через `gradlew`)
+* **Gradle**: 9.6.1 (поставляется через `gradlew`)
 
 ### Сборка Android приложения
 ```bash
