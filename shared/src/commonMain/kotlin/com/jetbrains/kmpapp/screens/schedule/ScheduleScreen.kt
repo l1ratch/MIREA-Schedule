@@ -435,7 +435,8 @@ private fun ScheduleMainContent(
                                             },
                                             isToday = isToday,
                                             currentMinutes = currentMinutes,
-                                            showLessonProgress = showLessonProgress
+                                            showLessonProgress = showLessonProgress,
+                                             scheduleTargetType = selectedTarget?.type ?: com.jetbrains.kmpapp.data.model.ScheduleTargetType.GROUP
                                         )
                                     }
                                 }
