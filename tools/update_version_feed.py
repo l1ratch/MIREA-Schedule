@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 tools/update_version_feed.py
 Extracts version metadata from AppVersion.kt and generates version.json
@@ -61,6 +61,7 @@ def main():
 
     repo = meta.pop("repo")
     meta["download_url"] = f"https://github.com/{repo}/releases/latest"
+    meta["apk_url"] = f"https://github.com/{repo}/releases/latest/download/Schedule-MIREA.apk"
     meta["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     os.makedirs(args.out_dir, exist_ok=True)

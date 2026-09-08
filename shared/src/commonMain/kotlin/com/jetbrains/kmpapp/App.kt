@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.update.startPlatformUpdate
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
 import com.jetbrains.kmpapp.screens.components.FloatingDock
@@ -51,7 +52,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.data.update.UpdateUrgency
@@ -135,7 +135,6 @@ fun App() {
             }
 
             val updateResult by otherViewModel.updateResult.collectAsState()
-            val uriHandler = LocalUriHandler.current
             var dismissedUpdateKey by rememberSaveable { mutableStateOf<String?>(null) }
 
             val activeUpdate = updateResult
@@ -187,7 +186,10 @@ fun App() {
                         confirmButton = {
                             Button(
                                 onClick = {
-                                    uriHandler.openUri(activeUpdate.downloadUrl)
+                                    startPlatformUpdate(
+                                        browserUrl = activeUpdate.downloadUrl,
+                                        apkUrl = activeUpdate.apkUrl
+                                    )
                                     dismissedUpdateKey = updateKey
                                 },
                                 colors = if (isCritical) {

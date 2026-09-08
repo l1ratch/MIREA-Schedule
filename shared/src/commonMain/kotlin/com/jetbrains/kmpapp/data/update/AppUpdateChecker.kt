@@ -62,7 +62,8 @@ data class UpdateCheckResult(
     val isCritical: Boolean = false,
     val changelog: String? = null,
     val downloadUrl: String,
-    val releaseUrl: String
+    val releaseUrl: String,
+    val apkUrl: String? = null
 ) {
     val hasUpdate: Boolean get() = urgency != UpdateUrgency.UP_TO_DATE
 }
@@ -91,7 +92,8 @@ class AppUpdateChecker(
                 isCritical = false,
                 changelog = null,
                 downloadUrl = "https://github.com/$GITHUB_REPO/releases/latest",
-                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest"
+                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest",
+                apkUrl = null
             )
         }
 
@@ -129,7 +131,8 @@ class AppUpdateChecker(
                     isCritical = isCritical,
                     changelog = feed.changelog,
                     downloadUrl = downloadUrl,
-                    releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest"
+                    releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest",
+                    apkUrl = feed.apkUrl ?: feed.downloadUrl
                 )
             }
         } catch (e: Throwable) {
@@ -165,7 +168,8 @@ class AppUpdateChecker(
                 isCritical = false,
                 changelog = release.body,
                 downloadUrl = downloadUrl,
-                releaseUrl = release.htmlUrl
+                releaseUrl = release.htmlUrl,
+                apkUrl = apkAsset?.browserDownloadUrl
             )
         } catch (t: Throwable) {
             println("GitHub API update check error: ${t.message}")
