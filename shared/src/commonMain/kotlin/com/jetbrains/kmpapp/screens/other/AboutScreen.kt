@@ -315,8 +315,7 @@ fun AboutScreen(
                     // 2. Schedule API credit
                     AcknowledgmentItem(
                         title = "Данные расписания занятий",
-                        description = "Mirea API, Mirea Ninja",
-                        onClick = { uriHandler.openUri("https://mirea.ninja") }
+                        description = "РТУ МИРЭА Schedule API"
                     )
 
                     androidx.compose.material3.HorizontalDivider(
@@ -351,13 +350,13 @@ fun AboutScreen(
 private fun AcknowledgmentItem(
     title: String,
     description: String,
-    onClick: () -> Unit
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick)
+            .then(onClick?.let { Modifier.clickable(onClick = it) } ?: Modifier)
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -376,12 +375,14 @@ private fun AcknowledgmentItem(
                 fontSize = 11.5.sp
             )
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-            contentDescription = "Открыть",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.size(16.dp)
-        )
+        if (onClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = "Открыть",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 

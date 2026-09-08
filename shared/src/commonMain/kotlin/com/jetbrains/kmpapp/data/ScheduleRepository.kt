@@ -88,9 +88,14 @@ class ScheduleRepository(
     }
 
     val isSakuraTheme: StateFlow<Boolean> = storage.isSakuraTheme
+    val isCyberpunkTheme: StateFlow<Boolean> = storage.isCyberpunkTheme
 
     fun setSakuraTheme(enabled: Boolean) {
-        storage.setSakuraTheme(enabled)
+        storage.setSakuraThemeExclusive(enabled)
+    }
+
+    fun setCyberpunkTheme(enabled: Boolean) {
+        storage.setCyberpunkTheme(enabled)
     }
 
     val currentLessons: StateFlow<List<Lesson>> = combine(

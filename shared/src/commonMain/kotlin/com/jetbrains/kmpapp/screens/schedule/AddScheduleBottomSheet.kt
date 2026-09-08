@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -36,8 +37,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
+import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.focus.FocusRequester
@@ -73,6 +77,7 @@ fun AddScheduleBottomSheet(
     var results by remember { mutableStateOf<List<ScheduleTarget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<ScheduleTargetType?>(null) }
+    var showCyberpunkDialog by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(query) {
@@ -133,7 +138,13 @@ fun AddScheduleBottomSheet(
             // Search input with auto-focus and compact placeholder
             OutlinedTextField(
                 value = query,
-                onValueChange = { query = it },
+                onValueChange = {
+                    query = it
+                    if (it.trim().equals("CP77", ignoreCase = true)) {
+                        showCyberpunkDialog = true
+                        query = ""
+                    }
+                },
                 placeholder = {
                     Text(
                         text = "Группа, преподаватель, аудитория",
@@ -279,4 +290,42 @@ fun AddScheduleBottomSheet(
             }
         }
     }
+
+    if (showCyberpunkDialog) {
+        CyberpunkThemeDialog(
+            onDismiss = { showCyberpunkDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun CyberpunkThemeDialog(onDismiss: () -> Unit) {
+    val viewModel: OtherViewModel = org.koin.compose.viewmodel.koinViewModel()
+    val enabled by viewModel.isCyberpunkTheme.collectAsState()
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.Bolt, contentDescription = null) },
+        title = { Text("CP77 // NIGHT CITY", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text("Секретный протокол найден. Включить неоновый режим интерфейса?", textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Cyberpunk theme", fontWeight = FontWeight.SemiBold)
+                    androidx.compose.material3.Switch(
+                        checked = enabled,
+                        onCheckedChange = { viewModel.setCyberpunkTheme(it) }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Подключить") }
+        }
+    )
 }

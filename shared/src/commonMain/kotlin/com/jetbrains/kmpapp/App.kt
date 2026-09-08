@@ -37,6 +37,8 @@ import com.jetbrains.kmpapp.screens.schedule.ScheduleScreen
 import com.jetbrains.kmpapp.screens.schedule.ScheduleViewModel
 import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
+import com.jetbrains.kmpapp.theme.CyberpunkDarkColors
+import com.jetbrains.kmpapp.theme.CyberpunkLightColors
 import com.jetbrains.kmpapp.theme.SakuraDarkColors
 import com.jetbrains.kmpapp.theme.SakuraLightColors
 import androidx.compose.material3.AlertDialog
@@ -95,6 +97,7 @@ fun App() {
     val repository: ScheduleRepository = koinInject()
     val themeMode by repository.themeMode.collectAsState()
     val isSakuraTheme by repository.isSakuraTheme.collectAsState()
+    val isCyberpunkTheme by repository.isCyberpunkTheme.collectAsState()
     val dockTabs by repository.dockTabs.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
@@ -109,10 +112,10 @@ fun App() {
         ThemeMode.DARK -> true
     }
 
-    val colors = if (isSakuraTheme) {
-        if (isDark) SakuraDarkColors else SakuraLightColors
-    } else {
-        if (isDark) DarkColors else LightColors
+    val colors = when {
+        isCyberpunkTheme -> if (isDark) CyberpunkDarkColors else CyberpunkLightColors
+        isSakuraTheme -> if (isDark) SakuraDarkColors else SakuraLightColors
+        else -> if (isDark) DarkColors else LightColors
     }
 
     MaterialTheme(colorScheme = colors) {

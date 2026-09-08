@@ -54,6 +54,7 @@ class OtherViewModel(
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
+    val isCyberpunkTheme: StateFlow<Boolean> = repository.isCyberpunkTheme
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
 
     fun setShowLessonProgress(enabled: Boolean) {
@@ -66,6 +67,10 @@ class OtherViewModel(
 
     fun setSakuraTheme(enabled: Boolean) {
         repository.setSakuraTheme(enabled)
+    }
+
+    fun setCyberpunkTheme(enabled: Boolean) {
+        repository.setCyberpunkTheme(enabled)
     }
 
     fun setDockTabs(tabs: List<AppTab>) {
@@ -102,7 +107,7 @@ class OtherViewModel(
             com.jetbrains.kmpapp.data.model.GitHubContributor(
                 login = "prosto-max",
                 htmlUrl = "https://github.com/prosto-max",
-                avatarUrl = "https://github.com/prosto-max.png",
+                avatarUrl = "https://avatars.githubusercontent.com/u/151039381?v=4",
                 contributions = 5,
                 role = "Соавтор и тестировщик"
             )
