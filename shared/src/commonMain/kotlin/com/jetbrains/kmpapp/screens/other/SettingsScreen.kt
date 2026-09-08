@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -171,7 +172,7 @@ fun SettingsScreen(
             // Section: Navigation & Dock
             SettingsSectionCard(
                 title = "Интерфейс и навигация",
-                icon = Icons.Default.Palette
+                icon = Icons.Default.Tune
             ) {
                 Row(
                     modifier = Modifier

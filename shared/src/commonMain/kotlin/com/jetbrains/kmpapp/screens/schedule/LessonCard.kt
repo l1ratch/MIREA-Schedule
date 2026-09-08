@@ -127,6 +127,7 @@ fun LessonCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
                 .clickable(onClick = onClick)
         ) {
             Column(
