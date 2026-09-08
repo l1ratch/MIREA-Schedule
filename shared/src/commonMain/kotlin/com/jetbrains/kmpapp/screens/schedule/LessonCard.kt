@@ -324,7 +324,7 @@ fun MultiLessonCard(
         state = pagerState,
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp),
-        pageSpacing = 0.dp,
+        pageSpacing = 12.dp,
         beyondViewportPageCount = 1
     ) { page ->
         LessonCard(
