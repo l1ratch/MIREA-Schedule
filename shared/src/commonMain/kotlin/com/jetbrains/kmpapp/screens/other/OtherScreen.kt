@@ -142,7 +142,14 @@ fun OtherScreen(
             OtherSubScreen.DEBUG_SETTINGS -> {
                 DebugSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.ABOUT) }
+                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.ABOUT) },
+                    onOpenExperimentalSettings = { viewModel.navigateToSubScreen(OtherSubScreen.EXPERIMENTAL_SETTINGS) }
+                )
+            }
+            OtherSubScreen.EXPERIMENTAL_SETTINGS -> {
+                ExperimentalSettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.DEBUG_SETTINGS) }
                 )
             }
         }
