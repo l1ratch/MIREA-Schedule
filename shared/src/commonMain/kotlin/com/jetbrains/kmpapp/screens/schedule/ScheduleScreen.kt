@@ -65,6 +65,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -131,23 +132,21 @@ private fun ScheduleMainContent(
     val scope = rememberCoroutineScope()
     val isToday = selectedDate == com.jetbrains.kmpapp.data.model.DateUtils.today()
     val basePage = 1000
-    var pagerBaseDate by remember { mutableStateOf(selectedDate) }
-    val pagerState = rememberPagerState(initialPage = basePage, pageCount = { 2001 })
+    val today = com.jetbrains.kmpapp.data.model.DateUtils.today()
+    val selectedPage = basePage + today.daysUntil(selectedDate)
+    val pagerState = rememberPagerState(initialPage = selectedPage, pageCount = { 2001 })
 
     LaunchedEffect(selectedDate) {
-        if (!pagerState.isScrollInProgress && pagerState.currentPage == basePage) {
-            pagerBaseDate = selectedDate
+        val targetPage = basePage + today.daysUntil(selectedDate)
+        if (pagerState.currentPage != targetPage && !pagerState.isScrollInProgress) {
+            pagerState.animateScrollToPage(targetPage)
         }
     }
 
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
-            if (page != basePage) {
-                val targetDate = pagerBaseDate.plus(DatePeriod(days = page - basePage))
-                pagerBaseDate = targetDate
-                viewModel.selectDate(targetDate)
-                pagerState.animateScrollToPage(basePage)
-            }
+            val date = today.plus(DatePeriod(days = page - basePage))
+            if (date != selectedDate) viewModel.selectDate(date)
         }
     }
 
@@ -235,7 +234,7 @@ private fun ScheduleMainContent(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
-                        val pageDate = pagerBaseDate.plus(DatePeriod(days = page - basePage))
+                        val pageDate = today.plus(DatePeriod(days = page - basePage))
                         val pageSlots = viewModel.slotsForDate(pageDate, currentLessons, showEmptyLessons)
                         key(pageDate) {
                             DaySchedulePage(
