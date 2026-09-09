@@ -345,7 +345,7 @@ fun MapScreen(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .navigationBarsPadding()
-                    .padding(start = 16.dp, bottom = 24.dp)
+                    .padding(start = 16.dp, bottom = 72.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(4.dp),

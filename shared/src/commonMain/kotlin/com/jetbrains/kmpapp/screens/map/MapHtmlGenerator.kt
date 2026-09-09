@@ -518,7 +518,10 @@ object MapHtmlGenerator {
         subtitle = 'Зал заседаний Ученого совета';
       } else if (campusId === 's-20' && title === 'КПП 1') {
         icon = '🛂';
-        subtitle = 'Вход';
+        subtitle = 'Вход/выход';
+      } else if (campusId === 's-20' && title === 'КПП 3') {
+        icon = '🛂';
+        subtitle = 'Выход';
       } else if (campusId === 's-20' && title === '102') {
         icon = '🛡️';
         subtitle = 'Охрана';
