@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
+import com.jetbrains.kmpapp.theme.ThemeOverlay
 import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 
 @Composable
@@ -51,16 +52,13 @@ fun ExperimentalSettingsScreen(
 
     val cheatsAgreed by viewModel.cheatsAgreed.collectAsState()
     val cheatsBlocked by viewModel.cheatsBlocked.collectAsState()
-    val isMatrixTheme by viewModel.isMatrixTheme.collectAsState()
+    val themeOverlay by viewModel.themeOverlay.collectAsState()
 
     var showDisclaimer by remember { mutableStateOf(false) }
     var showReward by remember { mutableStateOf(false) }
     var showRefusal by remember { mutableStateOf(false) }
     var showDisappointment by remember { mutableStateOf(false) }
     var showNoSecondChance by remember { mutableStateOf(false) }
-
-    val cheatsChecked = false
-    val matrixSwitchVisible = cheatsAgreed == true && !cheatsBlocked
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -74,10 +72,7 @@ fun ExperimentalSettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Назад"
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -91,223 +86,213 @@ fun ExperimentalSettingsScreen(
             .fillMaxSize()
             .swipeToDismissBack(requireEdge = true, onBack = onBack)
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ExperimentalSettingsContent(
+            modifier = Modifier.padding(innerPadding),
+            showMatrix = cheatsAgreed == true && !cheatsBlocked,
+            isMatrixTheme = themeOverlay == ThemeOverlay.MATRIX,
+            onCheatsClick = { turnOn ->
+                if (turnOn) {
+                    when (cheatsAgreed) {
+                        null -> showDisclaimer = true
+                        true -> showDisappointment = true
+                        false -> showNoSecondChance = true
+                    }
+                }
+            },
+            onMatrixChanged = viewModel::setMatrixTheme
+        )
+    }
+
+    DisclaimerDialog(
+        visible = showDisclaimer,
+        onDismiss = { showDisclaimer = false },
+        onAgree = {
+            viewModel.setCheatsAgreed(true)
+            showDisclaimer = false
+            showReward = true
+        },
+        onRefuse = {
+            viewModel.setCheatsAgreed(false)
+            showDisclaimer = false
+            showRefusal = true
+        }
+    )
+    RewardDialog(visible = showReward, onDismiss = { showReward = false })
+    RefusalDialog(visible = showRefusal, onDismiss = { showRefusal = false })
+    DisappointmentDialog(
+        visible = showDisappointment,
+        onDismiss = { showDisappointment = false },
+        onConfirm = {
+            viewModel.setCheatsBlocked(true)
+            viewModel.setMatrixTheme(false)
+            showDisappointment = false
+        }
+    )
+    NoSecondChanceDialog(
+        visible = showNoSecondChance,
+        onDismiss = { showNoSecondChance = false },
+        onConfirm = {
+            viewModel.setCheatsBlocked(true)
+            showNoSecondChance = false
+        }
+    )
+}
+
+@Composable
+private fun ExperimentalSettingsContent(
+    showMatrix: Boolean,
+    isMatrixTheme: Boolean,
+    onCheatsClick: (Boolean) -> Unit,
+    onMatrixChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Читы",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "активирует читы",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Switch(
-                            checked = cheatsChecked,
-                            enabled = true,
-                            onCheckedChange = { turnOn ->
-                                if (cheatsAgreed == null) {
-                                    if (turnOn) showDisclaimer = true
-                                } else {
-                                    if (cheatsAgreed == true) {
-                                        showDisappointment = true
-                                    } else {
-                                        showNoSecondChance = true
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    if (matrixSwitchVisible) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Хочешь в матрицу?",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Перенесем в матрицу",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Switch(
-                                checked = isMatrixTheme,
-                                onCheckedChange = { viewModel.setMatrixTheme(it) }
-                            )
-                        }
-                    }
+            Column(modifier = Modifier.padding(18.dp)) {
+                CheatsRow(onCheckedChange = onCheatsClick)
+                if (showMatrix) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    MatrixThemeRow(
+                        checked = isMatrixTheme,
+                        onCheckedChange = onMatrixChanged
+                    )
                 }
             }
         }
     }
+}
 
-    if (showDisclaimer) {
-        AlertDialog(
-            onDismissRequest = { showDisclaimer = false },
-            title = { Text("Дисклеймер", fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text(
-                        text = "так, кто у нас тут пытается включить читы? 😏",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "разработчики категорически против использования таких функций. Обещаешь ли ты больше никогда не использовать эту функцию?",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.setCheatsAgreed(true)
-                        showDisclaimer = false
-                        showReward = true
-                    }
-                ) {
-                    Text("да, обещаю")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.setCheatsAgreed(false)
-                        showDisclaimer = false
-                        showRefusal = true
-                    }
-                ) {
-                    Text("нет, включить читы")
-                }
-            }
-        )
+@Composable
+private fun CheatsRow(onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Читы", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                "активирует читы",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = false, onCheckedChange = onCheckedChange)
     }
+}
 
-    if (showReward) {
-        AlertDialog(
-            onDismissRequest = { showReward = false },
-            title = { Text("Награда 🎁", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    text = "Хм... Хорошо, мы следим за тобой, держи авансом награду.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showReward = false }) {
-                    Text("Готово")
-                }
-            }
-        )
+@Composable
+private fun MatrixThemeRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Хочешь в матрицу?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                "Перенесем в матрицу",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
+}
 
-    if (showRefusal) {
-        AlertDialog(
-            onDismissRequest = { showRefusal = false },
-            text = {
-                Text(
-                    text = "Очень жаль... Мы врятли сможем договориться.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showRefusal = false }) {
-                    Text("Готово")
-                }
+@Composable
+private fun DisclaimerDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onAgree: () -> Unit,
+    onRefuse: () -> Unit
+) {
+    if (!visible) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Дисклеймер", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text("так, кто у нас тут пытается включить читы? 😏", fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("разработчики категорически против использования таких функций. Обещаешь ли ты больше никогда не использовать эту функцию?")
             }
-        )
-    }
+        },
+        confirmButton = { Button(onClick = onAgree) { Text("да, обещаю") } },
+        dismissButton = { TextButton(onClick = onRefuse) { Text("нет, включить читы") } }
+    )
+}
 
-    if (showDisappointment) {
-        AlertDialog(
-            onDismissRequest = { showDisappointment = false },
-            title = { Text("Мы разочарованы в тебе", fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text(
-                        text = "Мы думали, что у нас договор...",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Печально, больше не обращайся к нам по этому вопросу 😢",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.setCheatsBlocked(true)
-                        viewModel.setMatrixTheme(false)
-                        showDisappointment = false
-                    }
-                ) {
-                    Text("Готово")
-                }
-            }
-        )
-    }
+@Composable
+private fun RewardDialog(visible: Boolean, onDismiss: () -> Unit) {
+    if (!visible) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Награда 🎁", fontWeight = FontWeight.Bold) },
+        text = { Text("Хм... Хорошо, мы следим за тобой, держи авансом награду.") },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Готово") } }
+    )
+}
 
-    if (showNoSecondChance) {
-        AlertDialog(
-            onDismissRequest = { showNoSecondChance = false },
-            title = { Text("Ты сделал свой выбор", fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text(
-                        text = "к сожалению, мы не можем дать тебе второй шанс 😔",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.setCheatsBlocked(true)
-                        showNoSecondChance = false
-                    }
-                ) {
-                    Text("Готово")
-                }
+@Composable
+private fun RefusalDialog(visible: Boolean, onDismiss: () -> Unit) {
+    if (!visible) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = { Text("Очень жаль... Мы врятли сможем договориться.") },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Готово") } }
+    )
+}
+
+@Composable
+private fun DisappointmentDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    if (!visible) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Мы разочарованы в тебе", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text("Мы думали, что у нас договор...")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Печально, больше не обращайся к нам по этому вопросу 😢")
             }
-        )
-    }
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Готово") } }
+    )
+}
+
+@Composable
+private fun NoSecondChanceDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    if (!visible) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Ты сделал свой выбор", fontWeight = FontWeight.Bold) },
+        text = { Text("к сожалению, мы не можем дать тебе второй шанс 😔") },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Готово") } }
+    )
 }

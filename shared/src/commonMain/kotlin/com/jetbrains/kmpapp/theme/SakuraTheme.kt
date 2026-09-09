@@ -84,12 +84,3 @@ val MatrixDarkColors = darkColorScheme(
     surface = Color(0xFF030505), onSurface = Color(0xFFD8F5E0),
     surfaceContainer = Color(0xFF0E1612), surfaceContainerHigh = Color(0xFF18241D)
 )
-
-val MatrixSakuraLightColors = MatrixLightColors.copy(
-    secondary = Color(0xFFAD4A6E), onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFDDE6), onSecondaryContainer = Color(0xFF3E1323)
-)
-val MatrixSakuraDarkColors = MatrixDarkColors.copy(
-    secondary = Color(0xFFFFA9BE), onSecondary = Color(0xFF4A1020),
-    secondaryContainer = Color(0xFF7E2442), onSecondaryContainer = Color(0xFFFFDDE6)
-)

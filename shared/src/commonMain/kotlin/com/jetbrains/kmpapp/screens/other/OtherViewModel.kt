@@ -9,6 +9,7 @@ import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
 import com.jetbrains.kmpapp.data.model.StorageStats
 import com.jetbrains.kmpapp.data.model.ThemeMode
+import com.jetbrains.kmpapp.theme.ThemeOverlay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +58,7 @@ class OtherViewModel(
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
+    val themeOverlay: StateFlow<ThemeOverlay> = repository.themeOverlay
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
     val isCyberpunkTheme: StateFlow<Boolean> = repository.isCyberpunkTheme
     val isMatrixTheme: StateFlow<Boolean> = repository.isMatrixTheme
@@ -70,6 +72,10 @@ class OtherViewModel(
 
     fun setAutoScrollToCurrentLesson(enabled: Boolean) {
         repository.setAutoScrollToCurrentLesson(enabled)
+    }
+
+    fun setThemeOverlay(overlay: ThemeOverlay) {
+        repository.setThemeOverlay(overlay)
     }
 
     fun setSakuraTheme(enabled: Boolean) {

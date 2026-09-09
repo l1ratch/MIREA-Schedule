@@ -9,6 +9,7 @@ import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.data.parser.MireaICalParser
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
+import com.jetbrains.kmpapp.theme.ThemeOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -87,12 +88,14 @@ class ScheduleRepository(
         storage.setThemeMode(mode)
     }
 
+    val themeOverlay: StateFlow<ThemeOverlay> = storage.themeOverlay
     val isSakuraTheme: StateFlow<Boolean> = storage.isSakuraTheme
     val isCyberpunkTheme: StateFlow<Boolean> = storage.isCyberpunkTheme
     val isMatrixTheme: StateFlow<Boolean> = storage.isMatrixTheme
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
 
+    fun setThemeOverlay(overlay: ThemeOverlay) = storage.setThemeOverlay(overlay)
     fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
     fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)

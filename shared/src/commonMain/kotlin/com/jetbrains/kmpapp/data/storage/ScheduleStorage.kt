@@ -4,12 +4,16 @@ import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
+import com.jetbrains.kmpapp.theme.ThemeOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -51,13 +55,15 @@ class ScheduleStorage(
     private val _dockTabs = MutableStateFlow<List<AppTab>>(DEFAULT_DOCK_TABS)
     val dockTabs: StateFlow<List<AppTab>> = _dockTabs.asStateFlow()
 
-    private val _isSakuraTheme = MutableStateFlow<Boolean>(false)
-    val isSakuraTheme: StateFlow<Boolean> = _isSakuraTheme.asStateFlow()
+    private val _themeOverlay = MutableStateFlow(ThemeOverlay.NONE)
+    val themeOverlay: StateFlow<ThemeOverlay> = _themeOverlay.asStateFlow()
 
-    private val _isCyberpunkTheme = MutableStateFlow<Boolean>(false)
-    val isCyberpunkTheme: StateFlow<Boolean> = _isCyberpunkTheme.asStateFlow()
-    private val _isMatrixTheme = MutableStateFlow(false)
-    val isMatrixTheme: StateFlow<Boolean> = _isMatrixTheme.asStateFlow()
+    val isSakuraTheme: StateFlow<Boolean> = themeOverlay.map { it == ThemeOverlay.SAKURA }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+    val isCyberpunkTheme: StateFlow<Boolean> = themeOverlay.map { it == ThemeOverlay.CYBERPUNK }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+    val isMatrixTheme: StateFlow<Boolean> = themeOverlay.map { it == ThemeOverlay.MATRIX }
+        .stateIn(scope, SharingStarted.Eagerly, false)
     private val _cheatsAgreed = MutableStateFlow<Boolean?>(null)
     val cheatsAgreed: StateFlow<Boolean?> = _cheatsAgreed.asStateFlow()
     private val _cheatsBlocked = MutableStateFlow(false)
@@ -136,30 +142,9 @@ class ScheduleStorage(
                 _dockTabs.value = DEFAULT_DOCK_TABS
             }
 
-            // Restore sakura theme
-            try {
-                val sakuraStr = platformStorage.getString(KEY_SAKURA_THEME)
-                if (!sakuraStr.isNullOrBlank()) {
-                    _isSakuraTheme.value = sakuraStr.toBooleanStrictOrNull() ?: false
-                }
-            } catch (_: Throwable) {}
-
-            // Restore cyberpunk theme
-            try {
-                val cyberpunkStr = platformStorage.getString(KEY_CYBERPUNK_THEME)
-                if (!cyberpunkStr.isNullOrBlank()) {
-                    _isCyberpunkTheme.value = cyberpunkStr.toBooleanStrictOrNull() ?: false
-                }
-            } catch (_: Throwable) {}
-
-            if (_isCyberpunkTheme.value) {
-                _isSakuraTheme.value = false
-            }
-
-            _isMatrixTheme.value = platformStorage.getString(KEY_MATRIX_THEME)?.toBooleanStrictOrNull() ?: false
+            _themeOverlay.value = loadThemeOverlay()
             _cheatsAgreed.value = platformStorage.getString(KEY_CHEATS_AGREED)?.toBooleanStrictOrNull()
             _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
-            if (_isCyberpunkTheme.value) _isMatrixTheme.value = false
 
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
@@ -258,29 +243,26 @@ class ScheduleStorage(
         }
     }
 
-    fun setCyberpunkTheme(enabled: Boolean) {
-        _isCyberpunkTheme.value = enabled
-        if (enabled) {
-            _isSakuraTheme.value = false
-            _isMatrixTheme.value = false
-        }
+    fun setThemeOverlay(overlay: ThemeOverlay) {
+        _themeOverlay.value = overlay
         scope.launch {
             try {
-                platformStorage.saveString(KEY_CYBERPUNK_THEME, enabled.toString())
-                if (enabled) platformStorage.saveString(KEY_SAKURA_THEME, "false")
+                platformStorage.saveString(KEY_THEME_OVERLAY, overlay.name)
+                platformStorage.saveString(KEY_SAKURA_THEME, (overlay == ThemeOverlay.SAKURA).toString())
+                platformStorage.saveString(KEY_CYBERPUNK_THEME, (overlay == ThemeOverlay.CYBERPUNK).toString())
+                platformStorage.saveString(KEY_MATRIX_THEME, (overlay == ThemeOverlay.MATRIX).toString())
             } catch (e: Exception) {
-                println("Failed to persist cyberpunk theme: ${e.message}")
+                println("Failed to persist theme overlay: ${e.message}")
             }
         }
     }
 
+    fun setCyberpunkTheme(enabled: Boolean) {
+        setThemeOverlay(if (enabled) ThemeOverlay.CYBERPUNK else ThemeOverlay.NONE)
+    }
+
     fun setMatrixTheme(enabled: Boolean) {
-        _isMatrixTheme.value = enabled
-        if (enabled) _isCyberpunkTheme.value = false
-        scope.launch {
-            platformStorage.saveString(KEY_MATRIX_THEME, enabled.toString())
-            if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
-        }
+        setThemeOverlay(if (enabled) ThemeOverlay.MATRIX else ThemeOverlay.NONE)
     }
 
     fun setCheatsAgreed(agreed: Boolean?) {
@@ -297,15 +279,18 @@ class ScheduleStorage(
     }
 
     fun setSakuraThemeExclusive(enabled: Boolean) {
-        _isSakuraTheme.value = enabled
-        if (enabled) _isCyberpunkTheme.value = false
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_SAKURA_THEME, enabled.toString())
-                if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
-            } catch (e: Exception) {
-                println("Failed to persist sakura theme: ${e.message}")
-            }
+        setThemeOverlay(if (enabled) ThemeOverlay.SAKURA else ThemeOverlay.NONE)
+    }
+
+    private fun loadThemeOverlay(): ThemeOverlay {
+        val stored = platformStorage.getString(KEY_THEME_OVERLAY)
+            ?.let { runCatching { ThemeOverlay.valueOf(it) }.getOrNull() }
+        if (stored != null) return stored
+        return when {
+            platformStorage.getString(KEY_MATRIX_THEME)?.toBooleanStrictOrNull() == true -> ThemeOverlay.MATRIX
+            platformStorage.getString(KEY_CYBERPUNK_THEME)?.toBooleanStrictOrNull() == true -> ThemeOverlay.CYBERPUNK
+            platformStorage.getString(KEY_SAKURA_THEME)?.toBooleanStrictOrNull() == true -> ThemeOverlay.SAKURA
+            else -> ThemeOverlay.NONE
         }
     }
 
@@ -425,9 +410,7 @@ class ScheduleStorage(
         _showAbbreviatedNames.value = false
         _themeMode.value = ThemeMode.SYSTEM
         _dockTabs.value = DEFAULT_DOCK_TABS
-        _isSakuraTheme.value = false
-        _isCyberpunkTheme.value = false
-        _isMatrixTheme.value = false
+        _themeOverlay.value = ThemeOverlay.NONE
         _cheatsAgreed.value = cheatsAgreedBefore
         _cheatsBlocked.value = cheatsBlockedBefore
         lastSyncTimes.clear()
@@ -510,6 +493,7 @@ class ScheduleStorage(
         private const val KEY_SAKURA_THEME = "mirea_sakura_theme_secret"
         private const val KEY_CYBERPUNK_THEME = "mirea_cyberpunk_theme_secret"
         private const val KEY_MATRIX_THEME = "mirea_matrix_theme_secret"
+        private const val KEY_THEME_OVERLAY = "mirea_theme_overlay"
         private const val KEY_CHEATS_AGREED = "mirea_cheats_agreed"
         private const val KEY_CHEATS_BLOCKED = "mirea_cheats_blocked"
         val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
