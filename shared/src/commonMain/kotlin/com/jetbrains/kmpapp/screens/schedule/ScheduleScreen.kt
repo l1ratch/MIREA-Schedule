@@ -18,8 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -242,7 +241,7 @@ private fun ScheduleMainContent(
                             DaySchedulePage(
                                 date = pageDate,
                                 slots = pageSlots,
-                                listState = LazyListState(),
+                                listState = rememberLazyListState(),
                                 errorMessage = errorMessage,
                                 currentMinutes = currentMinutes,
                                 showLessonProgress = showLessonProgress,
