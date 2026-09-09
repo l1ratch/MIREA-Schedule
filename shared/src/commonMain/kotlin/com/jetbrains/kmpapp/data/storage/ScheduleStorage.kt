@@ -56,6 +56,12 @@ class ScheduleStorage(
 
     private val _isCyberpunkTheme = MutableStateFlow<Boolean>(false)
     val isCyberpunkTheme: StateFlow<Boolean> = _isCyberpunkTheme.asStateFlow()
+    private val _isMatrixTheme = MutableStateFlow(false)
+    val isMatrixTheme: StateFlow<Boolean> = _isMatrixTheme.asStateFlow()
+    private val _cheatsAgreed = MutableStateFlow<Boolean?>(null)
+    val cheatsAgreed: StateFlow<Boolean?> = _cheatsAgreed.asStateFlow()
+    private val _cheatsBlocked = MutableStateFlow(false)
+    val cheatsBlocked: StateFlow<Boolean> = _cheatsBlocked.asStateFlow()
 
     private val lastSyncTimes = mutableMapOf<Int, Long>()
 
@@ -149,6 +155,11 @@ class ScheduleStorage(
             if (_isCyberpunkTheme.value) {
                 _isSakuraTheme.value = false
             }
+
+            _isMatrixTheme.value = platformStorage.getString(KEY_MATRIX_THEME)?.toBooleanStrictOrNull() ?: false
+            _cheatsAgreed.value = platformStorage.getString(KEY_CHEATS_AGREED)?.toBooleanStrictOrNull()
+            _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
+            if (_isCyberpunkTheme.value) _isMatrixTheme.value = false
 
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
@@ -249,7 +260,10 @@ class ScheduleStorage(
 
     fun setCyberpunkTheme(enabled: Boolean) {
         _isCyberpunkTheme.value = enabled
-        if (enabled) _isSakuraTheme.value = false
+        if (enabled) {
+            _isSakuraTheme.value = false
+            _isMatrixTheme.value = false
+        }
         scope.launch {
             try {
                 platformStorage.saveString(KEY_CYBERPUNK_THEME, enabled.toString())
@@ -258,6 +272,28 @@ class ScheduleStorage(
                 println("Failed to persist cyberpunk theme: ${e.message}")
             }
         }
+    }
+
+    fun setMatrixTheme(enabled: Boolean) {
+        _isMatrixTheme.value = enabled
+        if (enabled) _isCyberpunkTheme.value = false
+        scope.launch {
+            platformStorage.saveString(KEY_MATRIX_THEME, enabled.toString())
+            if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
+        }
+    }
+
+    fun setCheatsAgreed(agreed: Boolean?) {
+        _cheatsAgreed.value = agreed
+        scope.launch {
+            if (agreed == null) platformStorage.remove(KEY_CHEATS_AGREED)
+            else platformStorage.saveString(KEY_CHEATS_AGREED, agreed.toString())
+        }
+    }
+
+    fun setCheatsBlocked(blocked: Boolean) {
+        _cheatsBlocked.value = blocked
+        scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
     fun setSakuraThemeExclusive(enabled: Boolean) {
@@ -447,6 +483,9 @@ class ScheduleStorage(
         private const val KEY_DOCK_TABS = "mirea_dock_tabs_order"
         private const val KEY_SAKURA_THEME = "mirea_sakura_theme_secret"
         private const val KEY_CYBERPUNK_THEME = "mirea_cyberpunk_theme_secret"
+        private const val KEY_MATRIX_THEME = "mirea_matrix_theme_secret"
+        private const val KEY_CHEATS_AGREED = "mirea_cheats_agreed"
+        private const val KEY_CHEATS_BLOCKED = "mirea_cheats_blocked"
         val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
     }
 }

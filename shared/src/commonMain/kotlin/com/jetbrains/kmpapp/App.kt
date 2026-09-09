@@ -40,6 +40,10 @@ import com.jetbrains.kmpapp.screens.tasks.TasksScreen
 import com.jetbrains.kmpapp.screens.tasks.TasksViewModel
 import com.jetbrains.kmpapp.theme.CyberpunkDarkColors
 import com.jetbrains.kmpapp.theme.CyberpunkLightColors
+import com.jetbrains.kmpapp.theme.MatrixDarkColors
+import com.jetbrains.kmpapp.theme.MatrixLightColors
+import com.jetbrains.kmpapp.theme.MatrixSakuraDarkColors
+import com.jetbrains.kmpapp.theme.MatrixSakuraLightColors
 import com.jetbrains.kmpapp.theme.SakuraDarkColors
 import com.jetbrains.kmpapp.theme.SakuraLightColors
 import androidx.compose.material3.AlertDialog
@@ -98,6 +102,7 @@ fun App() {
     val themeMode by repository.themeMode.collectAsState()
     val isSakuraTheme by repository.isSakuraTheme.collectAsState()
     val isCyberpunkTheme by repository.isCyberpunkTheme.collectAsState()
+    val isMatrixTheme by repository.isMatrixTheme.collectAsState()
     val dockTabs by repository.dockTabs.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
@@ -113,6 +118,8 @@ fun App() {
     }
 
     val colors = when {
+        isMatrixTheme && isSakuraTheme -> if (isDark) MatrixSakuraDarkColors else MatrixSakuraLightColors
+        isMatrixTheme -> if (isDark) MatrixDarkColors else MatrixLightColors
         isCyberpunkTheme -> if (isDark) CyberpunkDarkColors else CyberpunkLightColors
         isSakuraTheme -> if (isDark) SakuraDarkColors else SakuraLightColors
         else -> if (isDark) DarkColors else LightColors

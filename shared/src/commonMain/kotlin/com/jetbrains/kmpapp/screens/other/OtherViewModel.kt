@@ -37,7 +37,8 @@ enum class OtherSubScreen(val depth: Int) {
     TASK_SETTINGS(2),
     RESOURCES(1),
     ABOUT(1),
-    DEBUG_SETTINGS(2)
+    DEBUG_SETTINGS(2),
+    EXPERIMENTAL_SETTINGS(3)
 }
 
 class OtherViewModel(
@@ -55,6 +56,9 @@ class OtherViewModel(
     val themeMode: StateFlow<ThemeMode> = repository.themeMode
     val isSakuraTheme: StateFlow<Boolean> = repository.isSakuraTheme
     val isCyberpunkTheme: StateFlow<Boolean> = repository.isCyberpunkTheme
+    val isMatrixTheme: StateFlow<Boolean> = repository.isMatrixTheme
+    val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
+    val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
 
     fun setShowLessonProgress(enabled: Boolean) {
@@ -72,6 +76,10 @@ class OtherViewModel(
     fun setCyberpunkTheme(enabled: Boolean) {
         repository.setCyberpunkTheme(enabled)
     }
+
+    fun setMatrixTheme(enabled: Boolean) = repository.setMatrixTheme(enabled)
+    fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
+    fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
 
     fun setDockTabs(tabs: List<AppTab>) {
         repository.setDockTabs(tabs)

@@ -1,5 +1,6 @@
 package com.jetbrains.kmpapp.screens.other
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +47,7 @@ import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
 fun DebugSettingsScreen(
     viewModel: OtherViewModel,
     onBack: () -> Unit,
+    onOpenExperimentalSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PlatformBackHandler(onBack = onBack)
@@ -131,8 +135,20 @@ fun DebugSettingsScreen(
             OutlinedButton(
                 onClick = { showClearCacheDialog = true },
                 modifier = Modifier.fillMaxWidth()
+            ) { Text("Очистить кэш расписаний") }
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenExperimentalSettings)
             ) {
-                Text("Очистить кэш расписаний")
+                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Экспериментальные параметры", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                        Text("Скрытые возможности и секреты", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Icon(Icons.Default.Science, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Открыть")
+                }
             }
         }
     }
