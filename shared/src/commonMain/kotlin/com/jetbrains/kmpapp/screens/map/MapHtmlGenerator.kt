@@ -284,8 +284,8 @@ object MapHtmlGenerator {
   /* Coordinate Plane HUD */
   .coord-hud {
     position: absolute;
-    top: 64px;
-    left: 14px;
+    bottom: 92px;
+    right: 14px;
     z-index: 900;
     background: $cardBg;
     backdrop-filter: blur(16px);
