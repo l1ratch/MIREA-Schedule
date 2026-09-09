@@ -54,6 +54,7 @@ fun DebugSettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
     val simulateOffline by DebugConfig.isOfflineSimulated.collectAsState()
+    val mapCoordinatePlane by DebugConfig.isMapCoordinatePlaneEnabled.collectAsState()
     val storageStats by viewModel.storageStats.collectAsState()
     var showClearCacheDialog by remember { mutableStateOf(false) }
 
@@ -125,6 +126,37 @@ fun DebugSettingsScreen(
                     Switch(
                         checked = simulateOffline,
                         onCheckedChange = DebugConfig::setOfflineSimulated
+                    )
+                }
+            }
+Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Координатная плоскость на картах",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Сетка координат поверх карт для отладки геометрии",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = mapCoordinatePlane,
+                        onCheckedChange = DebugConfig::setMapCoordinatePlaneEnabled
                     )
                 }
             }

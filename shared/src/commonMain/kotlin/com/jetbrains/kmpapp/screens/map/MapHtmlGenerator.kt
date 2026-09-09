@@ -7,7 +7,8 @@ object MapHtmlGenerator {
         isDark: Boolean = true,
         campusId: String = "",
         showStairs: Boolean = true,
-        showLabels: Boolean = true
+        showLabels: Boolean = true,
+        showCoordinatePlane: Boolean = false
     ): String {
         // 1. Parse viewBox from SVG content to extract base coordinate space
         val vbRegex = Regex("""viewBox=["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']""")
@@ -162,6 +163,11 @@ object MapHtmlGenerator {
         val cardBorder = if (isDark) "rgba(255, 255, 255, 0.12)" else "rgba(0, 0, 0, 0.08)"
         val cardTitleColor = if (isDark) "#f0f6fc" else "#0f172a"
         val cardSubColor = if (isDark) "#8b949e" else "#64748b"
+
+        // Coordinate plane (debug grid) themed colors
+        val gridLineStroke = if (isDark) "rgba(96, 165, 250, 0.35)" else "rgba(37, 99, 235, 0.35)"
+        val gridAxisStroke = if (isDark) "rgba(96, 165, 250, 0.95)" else "rgba(37, 99, 235, 0.9)"
+        val gridLabelFill = if (isDark) "#93c5fd" else "#1d4ed8"
 
         return """
 <!DOCTYPE html>
@@ -319,9 +325,14 @@ object MapHtmlGenerator {
   let minVw = 200;
   let maxVw = origW * 2.0;
 
+  let coordPlaneEnabled = $showCoordinatePlane;
+  const GRID_TARGET_PX = 110;
+  const GRID_LABEL_PX = 12;
+
   function applyViewBox() {
     if (!svg) return;
     svg.setAttribute('viewBox', curVx.toFixed(2) + ' ' + curVy.toFixed(2) + ' ' + curVw.toFixed(2) + ' ' + curVh.toFixed(2));
+    if (coordPlaneEnabled) renderGrid();
   }
 
   function calcInitialView() {
@@ -465,6 +476,114 @@ object MapHtmlGenerator {
     const labels = document.querySelectorAll('.room-label');
     for (let i = 0; i < labels.length; i++) {
       labels[i].style.display = 'none';
+    }
+  }
+
+  window.setCoordinatePlane = function(show) {
+    coordPlaneEnabled = !!show;
+    const g = document.getElementById('coord-plane');
+    if (g) { g.style.display = coordPlaneEnabled ? '' : 'none'; }
+    if (coordPlaneEnabled) renderGrid();
+  };
+
+  function coordStep(raw) {
+    if (!(raw > 0)) return 1;
+    const exp = Math.floor(Math.log(raw) / Math.LN10);
+    const base = Math.pow(10, exp);
+    const f = raw / base;
+    let nf;
+    if (f <= 1) nf = 1;
+    else if (f <= 2) nf = 2;
+    else if (f <= 5) nf = 5;
+    else nf = 10;
+    return nf * base;
+  }
+
+  function fmtCoord(v) {
+    if (v === 0) return '0';
+    const av = Math.abs(v);
+    if (av >= 100) return Math.round(v).toString();
+    if (av >= 10) return (Math.round(v * 10) / 10).toString();
+    return (Math.round(v * 100) / 100).toString();
+  }
+
+  function svgElNS(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const key in attrs) {
+      if (Object.prototype.hasOwnProperty.call(attrs, key)) { el.setAttribute(key, attrs[key]); }
+    }
+    return el;
+  }
+
+  function renderGrid() {
+    if (!svg || !viewport) return;
+    let g = document.getElementById('coord-plane');
+    if (!g) {
+      g = svgElNS('g', { 'id': 'coord-plane', 'pointer-events': 'none' });
+      svg.appendChild(g);
+    }
+    g.innerHTML = '';
+    if (!coordPlaneEnabled) { g.style.display = 'none'; return; }
+    g.style.display = '';
+
+    const vW = viewport.clientWidth || window.innerWidth;
+    const vH = viewport.clientHeight || window.innerHeight;
+    if (!vW || !vH) return;
+
+    const step = coordStep(curVw / GRID_TARGET_PX);
+    const fontSvg = step * (GRID_LABEL_PX / GRID_TARGET_PX);
+    const labelPad = fontSvg * 0.45;
+
+    const x0 = Math.floor(curVx / step) * step;
+    const x1 = Math.ceil((curVx + curVw) / step) * step;
+    for (let x = x0; x <= x1; x = +(x + step).toFixed(6)) {
+      const isAxis = (x === 0);
+      g.appendChild(svgElNS('line', {
+        'x1': x, 'y1': curVy, 'x2': x, 'y2': curVy + curVh,
+        'stroke': isAxis ? '$gridAxisStroke' : '$gridLineStroke',
+        'stroke-width': isAxis ? 1.4 : 1,
+        'vector-effect': 'non-scaling-stroke'
+      }));
+      if (x >= curVx - step * 0.001 && x <= curVx + curVw + step * 0.001) {
+        const txTop = svgElNS('text', {
+          'x': x + labelPad, 'y': curVy + fontSvg * 1.15,
+          'font-size': fontSvg, 'fill': '$gridLabelFill',
+          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          'font-weight': '700'
+        });
+        txTop.textContent = fmtCoord(x);
+        g.appendChild(txTop);
+        const txBottom = svgElNS('text', {
+          'x': x + labelPad, 'y': curVy + curVh - fontSvg * 0.4,
+          'font-size': fontSvg, 'fill': '$gridLabelFill',
+          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          'font-weight': '700'
+        });
+        txBottom.textContent = fmtCoord(x);
+        g.appendChild(txBottom);
+      }
+    }
+
+    const y0 = Math.floor(curVy / step) * step;
+    const y1 = Math.ceil((curVy + curVh) / step) * step;
+    for (let y = y0; y <= y1; y = +(y + step).toFixed(6)) {
+      const isAxis = (y === 0);
+      g.appendChild(svgElNS('line', {
+        'x1': curVx, 'y1': y, 'x2': curVx + curVw, 'y2': y,
+        'stroke': isAxis ? '$gridAxisStroke' : '$gridLineStroke',
+        'stroke-width': isAxis ? 1.4 : 1,
+        'vector-effect': 'non-scaling-stroke'
+      }));
+      if (y >= curVy - step * 0.001 && y <= curVy + curVh + step * 0.001) {
+        const tLeft = svgElNS('text', {
+          'x': curVx + labelPad, 'y': y - labelPad,
+          'font-size': fontSvg, 'fill': '$gridLabelFill',
+          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          'font-weight': '700'
+        });
+        tLeft.textContent = fmtCoord(y);
+        g.appendChild(tLeft);
+      }
     }
   }
 

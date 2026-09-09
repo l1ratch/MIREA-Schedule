@@ -73,6 +73,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.model.ThemeMode
 
@@ -111,6 +112,11 @@ fun MapScreen(
     var showVending by remember { mutableStateOf(false) }
     var showCopiers by remember { mutableStateOf(false) }
     var showChillZones by remember { mutableStateOf(false) }
+    val mapCoordinatePlane by DebugConfig.isMapCoordinatePlaneEnabled.collectAsState()
+
+    LaunchedEffect(mapCoordinatePlane) {
+        controller.setCoordinatePlane(mapCoordinatePlane)
+    }
 
     // Load SVG whenever campus or floor changes
     LaunchedEffect(selectedCampus, selectedFloor) {
@@ -128,13 +134,14 @@ fun MapScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             // 1. Campus Map WebView Canvas
             if (svgContent != null) {
-                val html = remember(svgContent, isDark, selectedCampus.id) {
+                val html = remember(svgContent, isDark, selectedCampus.id, showStairs, showRoomNumbers, mapCoordinatePlane) {
                     MapHtmlGenerator.generateHtml(
                         svgContent = svgContent ?: "",
                         isDark = isDark,
                         campusId = selectedCampus.id,
                         showStairs = showStairs,
-                        showLabels = showRoomNumbers
+                        showLabels = showRoomNumbers,
+                        showCoordinatePlane = mapCoordinatePlane
                     )
                 }
                 CampusMapView(

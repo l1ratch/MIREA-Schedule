@@ -94,6 +94,9 @@ actual fun CampusMapView(
                     ctrl.onToggleLayer = { section, show ->
                         evaluateJavascript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
                     }
+                    ctrl.onSetCoordinatePlane = { show ->
+                        evaluateJavascript("window.setCoordinatePlane && window.setCoordinatePlane($show);", null)
+                    }
                 }
                 webViewRef = this
             }
@@ -105,6 +108,9 @@ actual fun CampusMapView(
                 ctrl.onResetView = { webView.evaluateJavascript("window.resetView && window.resetView();", null) }
                 ctrl.onToggleLayer = { section, show ->
                     webView.evaluateJavascript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
+                }
+                ctrl.onSetCoordinatePlane = { show ->
+                    webView.evaluateJavascript("window.setCoordinatePlane && window.setCoordinatePlane($show);", null)
                 }
             }
             if (loadedHtml != htmlContent) {
