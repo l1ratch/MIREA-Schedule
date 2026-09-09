@@ -48,5 +48,12 @@ actual class PlatformStorage actual constructor() {
         }
     }
 
+    actual fun clearAll() {
+        prefs?.edit()?.clear()?.apply()
+        try {
+            fallbackDir.listFiles()?.forEach { it.delete() }
+        } catch (_: Exception) {}
+    }
+
     private fun sanitizeKey(key: String): String = key.replace(Regex("[^a-zA-Z0-9._-]"), "_")
 }

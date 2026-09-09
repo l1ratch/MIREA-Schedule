@@ -18,4 +18,8 @@ object DebugConfig {
     fun setMapCoordinatePlaneEnabled(enabled: Boolean) {
         _isMapCoordinatePlaneEnabled.value = enabled
     }
+
+    fun reset() {
+        _isOfflineSimulated.value = false
+    }
 }

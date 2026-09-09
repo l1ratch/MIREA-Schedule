@@ -56,86 +56,40 @@ val CyberpunkDarkColors = darkColorScheme(
 )
 
 val SakuraDarkColors = darkColorScheme(
-    primary = Color(0xFFFFB1C3),
-    onPrimary = Color(0xFF5B112B),
-    primaryContainer = Color(0xFF7E2442),
-    onPrimaryContainer = Color(0xFFFFDDE6),
-    secondary = Color(0xFFE3BDC7),
-    onSecondary = Color(0xFF422830),
-    secondaryContainer = Color(0xFF5B3D46),
-    onSecondaryContainer = Color(0xFFFFDDE6),
-    background = Color(0xFF1B1114),
-    onBackground = Color(0xFFF0DFE2),
-    surface = Color(0xFF1B1114),
-    onSurface = Color(0xFFF0DFE2),
-    surfaceContainer = Color(0xFF281C20),
-    surfaceContainerHigh = Color(0xFF33242A)
+    primary = Color(0xFFFFB1C3), onPrimary = Color(0xFF5B112B),
+    primaryContainer = Color(0xFF7E2442), onPrimaryContainer = Color(0xFFFFDDE6),
+    secondary = Color(0xFFE3BDC7), onSecondary = Color(0xFF422830),
+    secondaryContainer = Color(0xFF5B3D46), onSecondaryContainer = Color(0xFFFFDDE6),
+    background = Color(0xFF1B1114), onBackground = Color(0xFFF0DFE2),
+    surface = Color(0xFF1B1114), onSurface = Color(0xFFF0DFE2),
+    surfaceContainer = Color(0xFF281C20), surfaceContainerHigh = Color(0xFF33242A)
 )
 
 val MatrixLightColors = lightColorScheme(
-    primary = Color(0xFF006E2E),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFF9FF2AC),
-    onPrimaryContainer = Color(0xFF003914),
-    secondary = Color(0xFF276F57),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFABF2D7),
-    onSecondaryContainer = Color(0xFF002117),
-    background = Color(0xFFF7FCF3),
-    onBackground = Color(0xFF161E18),
-    surface = Color(0xFFF7FCF3),
-    onSurface = Color(0xFF161E18),
-    surfaceContainer = Color(0xFFEBF4E7),
-    surfaceContainerHigh = Color(0xFFE2EDDF)
+    primary = Color(0xFF006E2E), onPrimary = Color.White,
+    primaryContainer = Color(0xFF9FF2AC), onPrimaryContainer = Color(0xFF003914),
+    secondary = Color(0xFF276F57), onSecondary = Color.White,
+    secondaryContainer = Color(0xFFABF2D7), onSecondaryContainer = Color(0xFF002117),
+    background = Color(0xFFF7FCF3), onBackground = Color(0xFF161E18),
+    surface = Color(0xFFF7FCF3), onSurface = Color(0xFF161E18),
+    surfaceContainer = Color(0xFFEBF4E7), surfaceContainerHigh = Color(0xFFE2EDDF)
 )
 
 val MatrixDarkColors = darkColorScheme(
-    primary = Color(0xFF00E676),
-    onPrimary = Color(0xFF003A00),
-    primaryContainer = Color(0xFF00521D),
-    onPrimaryContainer = Color(0xFF8DFFAC),
-    secondary = Color(0xFF2EB88F),
-    onSecondary = Color(0xFF00382A),
-    secondaryContainer = Color(0xFF00513F),
-    onSecondaryContainer = Color(0xFFA8F5DE),
-    background = Color(0xFF030505),
-    onBackground = Color(0xFFD8F5E0),
-    surface = Color(0xFF030505),
-    onSurface = Color(0xFFD8F5E0),
-    surfaceContainer = Color(0xFF0E1612),
-    surfaceContainerHigh = Color(0xFF18241D)
+    primary = Color(0xFF00E676), onPrimary = Color(0xFF003A00),
+    primaryContainer = Color(0xFF00521D), onPrimaryContainer = Color(0xFF8DFFAC),
+    secondary = Color(0xFF2EB88F), onSecondary = Color(0xFF00382A),
+    secondaryContainer = Color(0xFF00513F), onSecondaryContainer = Color(0xFFA8F5DE),
+    background = Color(0xFF030505), onBackground = Color(0xFFD8F5E0),
+    surface = Color(0xFF030505), onSurface = Color(0xFFD8F5E0),
+    surfaceContainer = Color(0xFF0E1612), surfaceContainerHigh = Color(0xFF18241D)
 )
 
-val MatrixSakuraLightColors = lightColorScheme(
-    primary = Color(0xFF006E2E),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFF9FF2AC),
-    onPrimaryContainer = Color(0xFF003914),
-    secondary = Color(0xFFAD4A6E),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFDDE6),
-    onSecondaryContainer = Color(0xFF3E1323),
-    background = Color(0xFFF6FBF4),
-    onBackground = Color(0xFF161E18),
-    surface = Color(0xFFF6FBF4),
-    onSurface = Color(0xFF161E18),
-    surfaceContainer = Color(0xFFEAF3E6),
-    surfaceContainerHigh = Color(0xFFE1ECE0)
+val MatrixSakuraLightColors = MatrixLightColors.copy(
+    secondary = Color(0xFFAD4A6E), onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFDDE6), onSecondaryContainer = Color(0xFF3E1323)
 )
-
-val MatrixSakuraDarkColors = darkColorScheme(
-    primary = Color(0xFF00E676),
-    onPrimary = Color(0xFF003A00),
-    primaryContainer = Color(0xFF00521D),
-    onPrimaryContainer = Color(0xFF8DFFAC),
-    secondary = Color(0xFFFFA9BE),
-    onSecondary = Color(0xFF4A1020),
-    secondaryContainer = Color(0xFF7E2442),
-    onSecondaryContainer = Color(0xFFFFDDE6),
-    background = Color(0xFF050A07),
-    onBackground = Color(0xFFE4F5E6),
-    surface = Color(0xFF050A07),
-    onSurface = Color(0xFFE4F5E6),
-    surfaceContainer = Color(0xFF111C15),
-    surfaceContainerHigh = Color(0xFF1A291F)
+val MatrixSakuraDarkColors = MatrixDarkColors.copy(
+    secondary = Color(0xFFFFA9BE), onSecondary = Color(0xFF4A1020),
+    secondaryContainer = Color(0xFF7E2442), onSecondaryContainer = Color(0xFFFFDDE6)
 )

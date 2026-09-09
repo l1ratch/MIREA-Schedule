@@ -56,14 +56,11 @@ class ScheduleStorage(
 
     private val _isCyberpunkTheme = MutableStateFlow<Boolean>(false)
     val isCyberpunkTheme: StateFlow<Boolean> = _isCyberpunkTheme.asStateFlow()
-
-    private val _isMatrixTheme = MutableStateFlow<Boolean>(false)
+    private val _isMatrixTheme = MutableStateFlow(false)
     val isMatrixTheme: StateFlow<Boolean> = _isMatrixTheme.asStateFlow()
-
     private val _cheatsAgreed = MutableStateFlow<Boolean?>(null)
     val cheatsAgreed: StateFlow<Boolean?> = _cheatsAgreed.asStateFlow()
-
-    private val _cheatsBlocked = MutableStateFlow<Boolean>(false)
+    private val _cheatsBlocked = MutableStateFlow(false)
     val cheatsBlocked: StateFlow<Boolean> = _cheatsBlocked.asStateFlow()
 
     private val lastSyncTimes = mutableMapOf<Int, Long>()
@@ -155,34 +152,14 @@ class ScheduleStorage(
                 }
             } catch (_: Throwable) {}
 
-            // Restore matrix theme
-            try {
-                val matrixStr = platformStorage.getString(KEY_MATRIX_THEME)
-                if (!matrixStr.isNullOrBlank()) {
-                    _isMatrixTheme.value = matrixStr.toBooleanStrictOrNull() ?: false
-                }
-            } catch (_: Throwable) {}
-
-            // Restore cheats agreement state
-            try {
-                val agreedStr = platformStorage.getString(KEY_CHEATS_AGREED)
-                if (!agreedStr.isNullOrBlank()) {
-                    _cheatsAgreed.value = agreedStr.toBooleanStrictOrNull()
-                }
-            } catch (_: Throwable) {}
-
-            // Restore cheats blocked state
-            try {
-                val blockedStr = platformStorage.getString(KEY_CHEATS_BLOCKED)
-                if (!blockedStr.isNullOrBlank()) {
-                    _cheatsBlocked.value = blockedStr.toBooleanStrictOrNull() ?: false
-                }
-            } catch (_: Throwable) {}
-
             if (_isCyberpunkTheme.value) {
                 _isSakuraTheme.value = false
-                _isMatrixTheme.value = false
             }
+
+            _isMatrixTheme.value = platformStorage.getString(KEY_MATRIX_THEME)?.toBooleanStrictOrNull() ?: false
+            _cheatsAgreed.value = platformStorage.getString(KEY_CHEATS_AGREED)?.toBooleanStrictOrNull()
+            _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
+            if (_isCyberpunkTheme.value) _isMatrixTheme.value = false
 
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
@@ -290,14 +267,33 @@ class ScheduleStorage(
         scope.launch {
             try {
                 platformStorage.saveString(KEY_CYBERPUNK_THEME, enabled.toString())
-                if (enabled) {
-                    platformStorage.saveString(KEY_SAKURA_THEME, "false")
-                    platformStorage.saveString(KEY_MATRIX_THEME, "false")
-                }
+                if (enabled) platformStorage.saveString(KEY_SAKURA_THEME, "false")
             } catch (e: Exception) {
                 println("Failed to persist cyberpunk theme: ${e.message}")
             }
         }
+    }
+
+    fun setMatrixTheme(enabled: Boolean) {
+        _isMatrixTheme.value = enabled
+        if (enabled) _isCyberpunkTheme.value = false
+        scope.launch {
+            platformStorage.saveString(KEY_MATRIX_THEME, enabled.toString())
+            if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
+        }
+    }
+
+    fun setCheatsAgreed(agreed: Boolean?) {
+        _cheatsAgreed.value = agreed
+        scope.launch {
+            if (agreed == null) platformStorage.remove(KEY_CHEATS_AGREED)
+            else platformStorage.saveString(KEY_CHEATS_AGREED, agreed.toString())
+        }
+    }
+
+    fun setCheatsBlocked(blocked: Boolean) {
+        _cheatsBlocked.value = blocked
+        scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
     fun setSakuraThemeExclusive(enabled: Boolean) {
@@ -309,45 +305,6 @@ class ScheduleStorage(
                 if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
             } catch (e: Exception) {
                 println("Failed to persist sakura theme: ${e.message}")
-            }
-        }
-    }
-
-    fun setMatrixTheme(enabled: Boolean) {
-        _isMatrixTheme.value = enabled
-        if (enabled) _isCyberpunkTheme.value = false
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_MATRIX_THEME, enabled.toString())
-                if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
-            } catch (e: Exception) {
-                println("Failed to persist matrix theme: ${e.message}")
-            }
-        }
-    }
-
-    fun setCheatsAgreed(agreed: Boolean?) {
-        _cheatsAgreed.value = agreed
-        scope.launch {
-            try {
-                if (agreed != null) {
-                    platformStorage.saveString(KEY_CHEATS_AGREED, agreed.toString())
-                } else {
-                    platformStorage.remove(KEY_CHEATS_AGREED)
-                }
-            } catch (e: Exception) {
-                println("Failed to persist cheats agreed: ${e.message}")
-            }
-        }
-    }
-
-    fun setCheatsBlocked(blocked: Boolean) {
-        _cheatsBlocked.value = blocked
-        scope.launch {
-            try {
-                platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString())
-            } catch (e: Exception) {
-                println("Failed to persist cheats blocked: ${e.message}")
             }
         }
     }
@@ -452,6 +409,32 @@ class ScheduleStorage(
         for (target in _savedTargets.value) {
             platformStorage.remove(KEY_LESSONS_PREFIX + target.id)
             platformStorage.remove(KEY_LAST_SYNC_PREFIX + target.id)
+        }
+    }
+
+    fun resetAllData() {
+        val cheatsAgreedBefore = _cheatsAgreed.value
+        val cheatsBlockedBefore = _cheatsBlocked.value
+        platformStorage.clearAll()
+        _savedTargets.value = emptyList()
+        _selectedTarget.value = null
+        _cachedLessons.value = emptyMap()
+        _showEmptyLessons.value = true
+        _showLessonProgress.value = true
+        _autoScrollToCurrentLesson.value = true
+        _showAbbreviatedNames.value = false
+        _themeMode.value = ThemeMode.SYSTEM
+        _dockTabs.value = DEFAULT_DOCK_TABS
+        _isSakuraTheme.value = false
+        _isCyberpunkTheme.value = false
+        _isMatrixTheme.value = false
+        _cheatsAgreed.value = cheatsAgreedBefore
+        _cheatsBlocked.value = cheatsBlockedBefore
+        lastSyncTimes.clear()
+        scope.launch {
+            if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
+            else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
+            platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
         }
     }
 
