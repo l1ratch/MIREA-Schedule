@@ -136,7 +136,7 @@ private fun ScheduleMainContent(
     val pagerState = rememberPagerState(initialPage = basePage, pageCount = { 2001 })
 
     LaunchedEffect(selectedDate) {
-        if (pagerState.currentPage == basePage) {
+        if (!pagerState.isScrollInProgress && pagerState.currentPage == basePage) {
             pagerBaseDate = selectedDate
         }
     }
@@ -145,131 +145,12 @@ private fun ScheduleMainContent(
         snapshotFlow { pagerState.settledPage }.collect { page ->
             if (page != basePage) {
                 val targetDate = pagerBaseDate.plus(DatePeriod(days = page - basePage))
-                viewModel.selectDate(targetDate)
-                pagerState.scrollToPage(basePage)
                 pagerBaseDate = targetDate
+                viewModel.selectDate(targetDate)
+                pagerState.animateScrollToPage(basePage)
             }
         }
     }
-
-    // Magnetic auto-scroll to current ongoing lesson or break
-    val daySlots = viewModel.slotsForDate(selectedDate)
-    val listState = rememberLazyListState()
-    LaunchedEffect(selectedDate, selectedTarget?.id, daySlots, autoScrollToCurrentLesson) {
-        if (isToday && autoScrollToCurrentLesson && viewModel.canAutoScroll(selectedDate, selectedTarget?.id) && daySlots.isNotEmpty()) {
-            val nowMin = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes()
-
-            // Build an indexed list representing the actual items displayed in LazyColumn
-            data class SlotListItem(
-                val index: Int,
-                val isBreak: Boolean,
-                val slot: ScheduleSlot?,
-                val startMin: Int,
-                val endMin: Int,
-                val isNextSlotActive: Boolean
-            )
-
-            val items = mutableListOf<SlotListItem>()
-            var currentIndex = 0
-
-            for (i in daySlots.indices) {
-                if (i > 0) {
-                    val prevSlot = daySlots[i - 1]
-                    val currSlot = daySlots[i]
-                    val breakMin = com.jetbrains.kmpapp.data.model.calculateBreakMinutes(prevSlot.endTime, currSlot.startTime)
-                    if (breakMin > 0) {
-                        val breakStart = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(prevSlot.endTime) ?: 0
-                        val breakEnd = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(currSlot.startTime) ?: 0
-                        items.add(
-                            SlotListItem(
-                                index = currentIndex++,
-                                isBreak = true,
-                                slot = null,
-                                startMin = breakStart,
-                                endMin = breakEnd,
-                                isNextSlotActive = currSlot is ScheduleSlot.Active
-                            )
-                        )
-                    }
-                }
-
-                val slot = daySlots[i]
-                val slotStart = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(slot.startTime) ?: 0
-                val slotEnd = com.jetbrains.kmpapp.data.model.DateUtils.parseTimeToMinutes(slot.endTime) ?: 0
-                items.add(
-                    SlotListItem(
-                        index = currentIndex++,
-                        isBreak = false,
-                        slot = slot,
-                        startMin = slotStart,
-                        endMin = slotEnd,
-                        isNextSlotActive = false
-                    )
-                )
-            }
-
-            // 1. Ongoing active lesson (highest priority)
-            val ongoingActive = items.firstOrNull {
-                !it.isBreak && it.slot is ScheduleSlot.Active && nowMin in it.startMin until it.endMin
-            }
-
-            // 2. Ongoing break before an active lesson
-            val ongoingBreak = items.firstOrNull {
-                it.isBreak && it.isNextSlotActive && nowMin in it.startMin until it.endMin
-            }
-
-            // 3. Next upcoming active lesson today
-            val upcomingActive = items.firstOrNull {
-                !it.isBreak && it.slot is ScheduleSlot.Active && nowMin < it.startMin
-            }
-
-            // 4. Fallback if day has only empty slots
-            val fallback = items.firstOrNull {
-                !it.isBreak && (nowMin in it.startMin until it.endMin || nowMin < it.startMin)
-            }
-
-            val targetItem = ongoingActive
-                ?: ongoingBreak
-                ?: upcomingActive?.let { active ->
-                    val prevItem = if (active.index > 0) items[active.index - 1] else null
-                    if (prevItem != null && prevItem.isBreak && nowMin >= prevItem.startMin) prevItem else active
-                }
-                ?: fallback
-
-            if (targetItem != null && targetItem.index > 0) {
-                var scrolled = false
-
-                // On cold start the list may need more than one frame to measure.
-                repeat(4) {
-                    if (!scrolled) {
-                        val layoutReady = withTimeoutOrNull(800) {
-                            snapshotFlow { listState.layoutInfo.totalItemsCount }
-                                .filter { it > targetItem.index }
-                                .first()
-                            true
-                        } == true
-
-                        if (layoutReady) {
-                            try {
-                                kotlinx.coroutines.delay(100)
-                                listState.animateScrollToItem(targetItem.index)
-                                scrolled = true
-                            } catch (_: Throwable) {}
-                        } else {
-                            kotlinx.coroutines.delay(100)
-                        }
-                    }
-                }
-
-                if (scrolled) {
-                    viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
-                }
-            } else if (targetItem != null && targetItem.index == 0) {
-                viewModel.markAutoScrolled(selectedDate, selectedTarget?.id)
-            }
-        }
-    }
-
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -355,7 +236,7 @@ private fun ScheduleMainContent(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
-                        val pageDate = selectedDate.plus(DatePeriod(days = page - basePage))
+                        val pageDate = pagerBaseDate.plus(DatePeriod(days = page - basePage))
                         val pageSlots = viewModel.slotsForDate(pageDate, currentLessons, showEmptyLessons)
                         key(pageDate) {
                             DaySchedulePage(
@@ -367,6 +248,9 @@ private fun ScheduleMainContent(
                                 showLessonProgress = showLessonProgress,
                                 showAbbreviatedNames = showAbbreviatedNames,
                                 scheduleTargetType = selectedTarget?.type ?: com.jetbrains.kmpapp.data.model.ScheduleTargetType.GROUP,
+                                autoScrollToCurrentLesson = autoScrollToCurrentLesson,
+                                canAutoScroll = { viewModel.canAutoScroll(it, selectedTarget?.id) },
+                                markAutoScrolled = { viewModel.markAutoScrolled(it, selectedTarget?.id) },
                                 onRetry = { viewModel.refresh() },
                                 onLessonClick = { viewModel.selectLessonForDetail(it) },
                                 modifier = Modifier.fillMaxSize()
