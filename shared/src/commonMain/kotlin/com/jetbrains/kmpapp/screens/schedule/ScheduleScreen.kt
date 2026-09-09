@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -259,17 +260,11 @@ private fun ScheduleMainContent(
     var dragOffset by remember { mutableStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
     var swipeDirection by remember { mutableStateOf(0f) }
+    var contentWidth by remember { mutableStateOf(0) }
     val animatedDragOffset by animateFloatAsState(
         targetValue = if (isDragging) dragOffset else swipeDirection,
         animationSpec = tween(durationMillis = 180)
     )
-
-    LaunchedEffect(selectedDate) {
-        if (swipeDirection != 0f) {
-            kotlinx.coroutines.delay(180)
-            swipeDirection = 0f
-        }
-    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -364,17 +359,21 @@ private fun ScheduleMainContent(
                                         isDragging = true
                                     },
                                     onDragEnd = {
-                                        swipeDirection = when {
-                                            !isDayTransitionRunning && totalDrag < -90f -> -180f
-                                            !isDayTransitionRunning && totalDrag > 90f -> 180f
+                                        val direction = when {
+                                            !isDayTransitionRunning && totalDrag < -90f -> -1f
+                                            !isDayTransitionRunning && totalDrag > 90f -> 1f
                                             else -> 0f
                                         }
-                                        if (swipeDirection < 0f) {
+                                        if (direction != 0f && contentWidth > 0) {
+                                            swipeDirection = direction * contentWidth
                                             isDayTransitionRunning = true
-                                            viewModel.nextDay()
-                                        } else if (swipeDirection > 0f) {
-                                            isDayTransitionRunning = true
-                                            viewModel.previousDay()
+                                            scope.launch {
+                                                kotlinx.coroutines.delay(180)
+                                                if (direction < 0f) viewModel.nextDay() else viewModel.previousDay()
+                                                swipeDirection = 0f
+                                            }
+                                        } else {
+                                            swipeDirection = 0f
                                         }
                                         totalDrag = 0f
                                         dragOffset = 0f
@@ -399,6 +398,7 @@ private fun ScheduleMainContent(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .onSizeChanged { contentWidth = it.width }
                                 .graphicsLayer { translationX = animatedDragOffset }
                         ) {
                         if (daySlots.isEmpty()) {
