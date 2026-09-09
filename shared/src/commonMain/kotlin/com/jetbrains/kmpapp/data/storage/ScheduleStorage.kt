@@ -413,6 +413,8 @@ class ScheduleStorage(
     }
 
     fun resetAllData() {
+        val cheatsAgreedBefore = _cheatsAgreed.value
+        val cheatsBlockedBefore = _cheatsBlocked.value
         platformStorage.clearAll()
         _savedTargets.value = emptyList()
         _selectedTarget.value = null
@@ -426,9 +428,14 @@ class ScheduleStorage(
         _isSakuraTheme.value = false
         _isCyberpunkTheme.value = false
         _isMatrixTheme.value = false
-        _cheatsAgreed.value = null
-        _cheatsBlocked.value = false
+        _cheatsAgreed.value = cheatsAgreedBefore
+        _cheatsBlocked.value = cheatsBlockedBefore
         lastSyncTimes.clear()
+        scope.launch {
+            if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
+            else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
+            platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
+        }
     }
 
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats {
