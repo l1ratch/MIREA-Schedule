@@ -56,6 +56,12 @@ class ScheduleStorage(
 
     private val _isCyberpunkTheme = MutableStateFlow<Boolean>(false)
     val isCyberpunkTheme: StateFlow<Boolean> = _isCyberpunkTheme.asStateFlow()
+    private val _isMatrixTheme = MutableStateFlow(false)
+    val isMatrixTheme: StateFlow<Boolean> = _isMatrixTheme.asStateFlow()
+    private val _cheatsAgreed = MutableStateFlow<Boolean?>(null)
+    val cheatsAgreed: StateFlow<Boolean?> = _cheatsAgreed.asStateFlow()
+    private val _cheatsBlocked = MutableStateFlow(false)
+    val cheatsBlocked: StateFlow<Boolean> = _cheatsBlocked.asStateFlow()
 
     private val _isMatrixTheme = MutableStateFlow<Boolean>(false)
     val isMatrixTheme: StateFlow<Boolean> = _isMatrixTheme.asStateFlow()
@@ -184,6 +190,11 @@ class ScheduleStorage(
                 _isMatrixTheme.value = false
             }
 
+            _isMatrixTheme.value = platformStorage.getString(KEY_MATRIX_THEME)?.toBooleanStrictOrNull() ?: false
+            _cheatsAgreed.value = platformStorage.getString(KEY_CHEATS_AGREED)?.toBooleanStrictOrNull()
+            _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
+            if (_isCyberpunkTheme.value) _isMatrixTheme.value = false
+
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
                 val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
@@ -298,6 +309,28 @@ class ScheduleStorage(
                 println("Failed to persist cyberpunk theme: ${e.message}")
             }
         }
+    }
+
+    fun setMatrixTheme(enabled: Boolean) {
+        _isMatrixTheme.value = enabled
+        if (enabled) _isCyberpunkTheme.value = false
+        scope.launch {
+            platformStorage.saveString(KEY_MATRIX_THEME, enabled.toString())
+            if (enabled) platformStorage.saveString(KEY_CYBERPUNK_THEME, "false")
+        }
+    }
+
+    fun setCheatsAgreed(agreed: Boolean?) {
+        _cheatsAgreed.value = agreed
+        scope.launch {
+            if (agreed == null) platformStorage.remove(KEY_CHEATS_AGREED)
+            else platformStorage.saveString(KEY_CHEATS_AGREED, agreed.toString())
+        }
+    }
+
+    fun setCheatsBlocked(blocked: Boolean) {
+        _cheatsBlocked.value = blocked
+        scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
     fun setSakuraThemeExclusive(enabled: Boolean) {
@@ -453,6 +486,25 @@ class ScheduleStorage(
             platformStorage.remove(KEY_LESSONS_PREFIX + target.id)
             platformStorage.remove(KEY_LAST_SYNC_PREFIX + target.id)
         }
+    }
+
+    fun resetAllData() {
+        platformStorage.clearAll()
+        _savedTargets.value = emptyList()
+        _selectedTarget.value = null
+        _cachedLessons.value = emptyMap()
+        _showEmptyLessons.value = true
+        _showLessonProgress.value = true
+        _autoScrollToCurrentLesson.value = true
+        _showAbbreviatedNames.value = false
+        _themeMode.value = ThemeMode.SYSTEM
+        _dockTabs.value = DEFAULT_DOCK_TABS
+        _isSakuraTheme.value = false
+        _isCyberpunkTheme.value = false
+        _isMatrixTheme.value = false
+        _cheatsAgreed.value = null
+        _cheatsBlocked.value = false
+        lastSyncTimes.clear()
     }
 
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats {

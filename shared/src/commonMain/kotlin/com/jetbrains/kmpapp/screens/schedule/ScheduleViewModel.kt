@@ -8,7 +8,6 @@ import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.defaultBells
-import androidx.compose.foundation.lazy.LazyListState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,8 +34,6 @@ class ScheduleViewModel(
     val showLessonProgress: StateFlow<Boolean> = repository.showLessonProgress
     val autoScrollToCurrentLesson: StateFlow<Boolean> = repository.autoScrollToCurrentLesson
     val showAbbreviatedNames: StateFlow<Boolean> = repository.showAbbreviatedNames
-
-    val listState = LazyListState()
 
     private var lastAutoScrolledDate: LocalDate? = null
     private var lastAutoScrolledTargetId: Int? = null
@@ -115,75 +112,60 @@ class ScheduleViewModel(
         repository.currentLessons,
         _selectedDate,
         repository.showEmptyLessons
-    ) { lessons, date, showEmpty ->
+    ) { lessons, date, showEmpty -> slotsForDate(lessons, date, showEmpty) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val currentLessons: StateFlow<List<Lesson>> = repository.currentLessons
+    val showEmptyLessons: StateFlow<Boolean> = repository.showEmptyLessons
+
+    fun slotsForDate(
+        date: LocalDate,
+        lessons: List<Lesson> = currentLessons.value,
+        showEmpty: Boolean = showEmptyLessons.value
+    ): List<ScheduleSlot> = slotsForDate(lessons, date, showEmpty)
+
+    private fun slotsForDate(
+        lessons: List<Lesson>,
+        date: LocalDate,
+        showEmpty: Boolean
+    ): List<ScheduleSlot> {
         val forDay = lessons.filter { it.date == date }
         if (forDay.isEmpty()) {
-            if (showEmpty && date.dayOfWeek != DayOfWeek.SUNDAY) {
-                (1..7).map { b ->
-                    val bellInfo = defaultBells.firstOrNull { it.number == b }
-                    ScheduleSlot.Empty(
-                        bellNumber = b,
-                        startTime = bellInfo?.startTime ?: "—",
-                        endTime = bellInfo?.endTime ?: "—"
-                    )
+            return if (showEmpty && date.dayOfWeek != DayOfWeek.SUNDAY) {
+                (1..7).map { bell ->
+                    val bellInfo = defaultBells.firstOrNull { it.number == bell }
+                    ScheduleSlot.Empty(bell, bellInfo?.startTime ?: "—", bellInfo?.endTime ?: "—")
                 }
-            } else {
-                emptyList()
-            }
-        } else {
-            val bellMap = forDay.groupBy { it.bellNumber }
+            } else emptyList()
+        }
 
-            if (!showEmpty) {
-                bellMap.entries.sortedBy { it.key }.map { (bellNum, items) ->
-                    val first = items.first()
-                    ScheduleSlot.Active(
-                        bellNumber = bellNum,
-                        startTime = first.startTime,
-                        endTime = first.endTime,
-                        lessons = items
-                    )
-                }
-            } else {
-                val result = mutableListOf<ScheduleSlot>()
-                val maxBell = forDay.maxOfOrNull { it.bellNumber } ?: 7
-                val upperBell = maxOf(maxBell, 7) // Always display all 7 pairs visually
-                for (b in 1..upperBell) {
-                    val items = bellMap[b]
-                    if (!items.isNullOrEmpty()) {
-                        val first = items.first()
-                        result.add(
-                            ScheduleSlot.Active(
-                                bellNumber = b,
-                                startTime = first.startTime,
-                                endTime = first.endTime,
-                                lessons = items
-                            )
-                        )
-                    } else {
-                        val bellInfo = defaultBells.firstOrNull { it.number == b }
-                        result.add(
-                            ScheduleSlot.Empty(
-                                bellNumber = b,
-                                startTime = bellInfo?.startTime ?: "—",
-                                endTime = bellInfo?.endTime ?: "—"
-                            )
-                        )
-                    }
-                }
-                result
+        val bellMap = forDay.groupBy { it.bellNumber }
+        if (!showEmpty) {
+            return bellMap.entries.sortedBy { it.key }.map { (bell, items) ->
+                val first = items.first()
+                ScheduleSlot.Active(bell, first.startTime, first.endTime, items)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        val result = mutableListOf<ScheduleSlot>()
+        val upperBell = maxOf(forDay.maxOfOrNull { it.bellNumber } ?: 7, 7)
+        for (bell in 1..upperBell) {
+            val items = bellMap[bell]
+            if (!items.isNullOrEmpty()) {
+                val first = items.first()
+                result += ScheduleSlot.Active(bell, first.startTime, first.endTime, items)
+            } else {
+                val bellInfo = defaultBells.firstOrNull { it.number == bell }
+                result += ScheduleSlot.Empty(bell, bellInfo?.startTime ?: "—", bellInfo?.endTime ?: "—")
+            }
+        }
+        return result
+    }
 
     fun selectDate(date: LocalDate) {
         if (_selectedDate.value != date) {
             _selectedDate.value = date
             resetAutoScroll()
-            viewModelScope.launch {
-                try {
-                    listState.scrollToItem(0)
-                } catch (_: Throwable) {}
-            }
         }
     }
 
@@ -202,21 +184,11 @@ class ScheduleViewModel(
     fun selectTarget(target: ScheduleTarget) {
         repository.selectTarget(target)
         resetAutoScroll()
-        viewModelScope.launch {
-            try {
-                listState.scrollToItem(0)
-            } catch (_: Throwable) {}
-        }
     }
 
     fun addAndSelectTarget(target: ScheduleTarget) {
         repository.addAndSelectTarget(target)
         resetAutoScroll()
-        viewModelScope.launch {
-            try {
-                listState.scrollToItem(0)
-            } catch (_: Throwable) {}
-        }
     }
 
     fun refresh() {

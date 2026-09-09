@@ -16,4 +16,10 @@ actual class PlatformStorage actual constructor() {
     actual fun remove(key: String) {
         userDefaults.removeObjectForKey(key)
     }
+
+    actual fun clearAll() {
+        userDefaults.dictionaryRepresentation().keys.forEach { key ->
+            userDefaults.removeObjectForKey(key as String)
+        }
+    }
 }

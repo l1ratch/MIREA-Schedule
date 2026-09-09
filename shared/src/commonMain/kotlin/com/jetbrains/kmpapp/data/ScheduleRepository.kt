@@ -93,24 +93,16 @@ class ScheduleRepository(
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
 
+    fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
+    fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
+    fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)
+
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)
     }
 
     fun setCyberpunkTheme(enabled: Boolean) {
         storage.setCyberpunkTheme(enabled)
-    }
-
-    fun setMatrixTheme(enabled: Boolean) {
-        storage.setMatrixTheme(enabled)
-    }
-
-    fun setCheatsAgreed(agreed: Boolean?) {
-        storage.setCheatsAgreed(agreed)
-    }
-
-    fun setCheatsBlocked(blocked: Boolean) {
-        storage.setCheatsBlocked(blocked)
     }
 
     val currentLessons: StateFlow<List<Lesson>> = combine(
@@ -303,5 +295,9 @@ class ScheduleRepository(
                 refreshSchedule(current, silent = false)
             }
         }
+    }
+
+    fun resetAllData() {
+        storage.resetAllData()
     }
 }
