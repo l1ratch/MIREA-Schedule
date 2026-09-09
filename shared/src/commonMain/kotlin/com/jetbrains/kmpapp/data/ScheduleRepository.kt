@@ -296,4 +296,8 @@ class ScheduleRepository(
             }
         }
     }
+
+    fun resetAllData() {
+        storage.resetAllData()
+    }
 }

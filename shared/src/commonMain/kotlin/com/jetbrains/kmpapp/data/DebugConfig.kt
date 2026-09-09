@@ -11,4 +11,8 @@ object DebugConfig {
     fun setOfflineSimulated(enabled: Boolean) {
         _isOfflineSimulated.value = enabled
     }
+
+    fun reset() {
+        _isOfflineSimulated.value = false
+    }
 }

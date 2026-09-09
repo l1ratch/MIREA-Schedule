@@ -412,6 +412,25 @@ class ScheduleStorage(
         }
     }
 
+    fun resetAllData() {
+        platformStorage.clearAll()
+        _savedTargets.value = emptyList()
+        _selectedTarget.value = null
+        _cachedLessons.value = emptyMap()
+        _showEmptyLessons.value = true
+        _showLessonProgress.value = true
+        _autoScrollToCurrentLesson.value = true
+        _showAbbreviatedNames.value = false
+        _themeMode.value = ThemeMode.SYSTEM
+        _dockTabs.value = DEFAULT_DOCK_TABS
+        _isSakuraTheme.value = false
+        _isCyberpunkTheme.value = false
+        _isMatrixTheme.value = false
+        _cheatsAgreed.value = null
+        _cheatsBlocked.value = false
+        lastSyncTimes.clear()
+    }
+
     fun getStorageStats(): com.jetbrains.kmpapp.data.model.StorageStats {
         return try {
             var schedulesBytes = 0L

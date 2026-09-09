@@ -3,6 +3,8 @@ package com.jetbrains.kmpapp.screens.other
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.TaskRepository
+import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ScheduleTargetType
 import com.jetbrains.kmpapp.data.model.StorageStats
@@ -37,13 +39,13 @@ enum class OtherSubScreen(val depth: Int) {
     TASK_SETTINGS(2),
     RESOURCES(1),
     ABOUT(1),
-    DEBUG_SETTINGS(2),
-    EXPERIMENTAL_SETTINGS(3)
+    DEBUG_SETTINGS(2)
 }
 
 class OtherViewModel(
     private val repository: ScheduleRepository,
-    private val updateChecker: AppUpdateChecker
+    private val updateChecker: AppUpdateChecker,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     val savedTargets: StateFlow<List<ScheduleTarget>> = repository.savedTargets
@@ -276,6 +278,13 @@ class OtherViewModel(
 
     fun clearCache() {
         repository.clearCache()
+        _storageStats.value = repository.getStorageStats()
+    }
+
+    fun resetAllData() {
+        taskRepository.clearAllData()
+        repository.resetAllData()
+        DebugConfig.reset()
         _storageStats.value = repository.getStorageStats()
     }
 
