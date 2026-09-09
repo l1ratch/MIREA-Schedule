@@ -258,10 +258,18 @@ private fun ScheduleMainContent(
     var totalDrag by remember { mutableStateOf(0f) }
     var dragOffset by remember { mutableStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
+    var swipeDirection by remember { mutableStateOf(0f) }
     val animatedDragOffset by animateFloatAsState(
-        targetValue = if (isDragging) dragOffset else 0f,
+        targetValue = if (isDragging) dragOffset else swipeDirection,
         animationSpec = tween(durationMillis = 180)
     )
+
+    LaunchedEffect(selectedDate) {
+        if (swipeDirection != 0f) {
+            kotlinx.coroutines.delay(180)
+            swipeDirection = 0f
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -356,10 +364,15 @@ private fun ScheduleMainContent(
                                         isDragging = true
                                     },
                                     onDragEnd = {
-                                        if (!isDayTransitionRunning && totalDrag < -90f) {
+                                        swipeDirection = when {
+                                            !isDayTransitionRunning && totalDrag < -90f -> -180f
+                                            !isDayTransitionRunning && totalDrag > 90f -> 180f
+                                            else -> 0f
+                                        }
+                                        if (swipeDirection < 0f) {
                                             isDayTransitionRunning = true
                                             viewModel.nextDay()
-                                        } else if (!isDayTransitionRunning && totalDrag > 90f) {
+                                        } else if (swipeDirection > 0f) {
                                             isDayTransitionRunning = true
                                             viewModel.previousDay()
                                         }
