@@ -168,6 +168,7 @@ object MapHtmlGenerator {
         val gridLineStroke = if (isDark) "rgba(96, 165, 250, 0.35)" else "rgba(37, 99, 235, 0.35)"
         val gridAxisStroke = if (isDark) "rgba(96, 165, 250, 0.95)" else "rgba(37, 99, 235, 0.9)"
         val gridLabelFill = if (isDark) "#93c5fd" else "#1d4ed8"
+        val gridLabelYFill = if (isDark) "#34d399" else "#047857"
 
         return """
 <!DOCTYPE html>
@@ -279,6 +280,46 @@ object MapHtmlGenerator {
     line-height: 1;
     flex-shrink: 0;
   }
+
+  /* Coordinate Plane HUD */
+  .coord-hud {
+    position: absolute;
+    top: 64px;
+    left: 14px;
+    z-index: 900;
+    background: $cardBg;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid $cardBorder;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    color: $cardTitleColor;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    min-width: 168px;
+    transition: opacity 0.2s ease;
+  }
+  .coord-hud.hidden { opacity: 0; pointer-events: none; }
+  .coord-hud .hud-x { color: $gridLabelFill; font-weight: 700; }
+  .coord-hud .hud-y { color: $gridLabelYFill; font-weight: 700; }
+  .coord-hud .hud-sub { color: $cardSubColor; font-size: 11px; margin-top: 2px; }
+
+  /* Coordinate Plane Grid */
+  #coord-plane line { vector-effect: non-scaling-stroke; }
+  #coord-plane text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  #coord-crosshairs line {
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -294,6 +335,10 @@ object MapHtmlGenerator {
     </div>
   </div>
   $preparedSvg
+  <div id="coord-hud" class="coord-hud hidden">
+    <div><span class="hud-x">X</span> <span id="coord-x">--</span> &nbsp;&nbsp; <span class="hud-y">Y</span> <span id="coord-y">--</span></div>
+    <div class="hud-sub" id="coord-extra">step --</div>
+  </div>
 </div>
 <script>
   const viewport = document.getElementById('viewport');
@@ -329,10 +374,14 @@ object MapHtmlGenerator {
   const GRID_TARGET_PX = 110;
   const GRID_LABEL_PX = 12;
 
+  let ptrActive = false;
+  let ptrSxVal = 0;
+  let ptrSyVal = 0;
+
   function applyViewBox() {
     if (!svg) return;
     svg.setAttribute('viewBox', curVx.toFixed(2) + ' ' + curVy.toFixed(2) + ' ' + curVw.toFixed(2) + ' ' + curVh.toFixed(2));
-    if (coordPlaneEnabled) renderGrid();
+    if (coordPlaneEnabled) { renderGrid(); renderHud(); }
   }
 
   function calcInitialView() {
@@ -483,7 +532,10 @@ object MapHtmlGenerator {
     coordPlaneEnabled = !!show;
     const g = document.getElementById('coord-plane');
     if (g) { g.style.display = coordPlaneEnabled ? '' : 'none'; }
-    if (coordPlaneEnabled) renderGrid();
+    const hud = document.getElementById('coord-hud');
+    if (hud) { hud.classList.toggle('hidden', !coordPlaneEnabled); }
+    if (!coordPlaneEnabled) ptrActive = false;
+    if (coordPlaneEnabled) { renderGrid(); renderHud(); }
   };
 
   function coordStep(raw) {
@@ -575,16 +627,82 @@ object MapHtmlGenerator {
         'vector-effect': 'non-scaling-stroke'
       }));
       if (y >= curVy - step * 0.001 && y <= curVy + curVh + step * 0.001) {
-        const tLeft = svgElNS('text', {
-          'x': curVx + labelPad, 'y': y - labelPad,
-          'font-size': fontSvg, 'fill': '$gridLabelFill',
+        const tRight = svgElNS('text', {
+          'x': curVx + curVw - labelPad, 'y': y - labelPad,
+          'font-size': fontSvg, 'fill': '$gridLabelYFill',
           'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          'font-weight': '700'
+          'font-weight': '700',
+          'text-anchor': 'end'
         });
-        tLeft.textContent = fmtCoord(y);
-        g.appendChild(tLeft);
+        tRight.textContent = fmtCoord(y);
+        g.appendChild(tRight);
       }
     }
+
+    if (ptrActive) {
+      g.appendChild(svgElNS('line', {
+        'x1': ptrSxVal, 'y1': curVy - step, 'x2': ptrSxVal, 'y2': curVy + curVh + step,
+        'stroke': '$gridLabelFill', 'stroke-width': 1, 'stroke-dasharray': '6 4',
+        'vector-effect': 'non-scaling-stroke'
+      }));
+      g.appendChild(svgElNS('line', {
+        'x1': curVx - step, 'y1': ptrSyVal, 'x2': curVx + curVw + step, 'y2': ptrSyVal,
+        'stroke': '$gridLabelYFill', 'stroke-width': 1, 'stroke-dasharray': '6 4',
+        'vector-effect': 'non-scaling-stroke'
+      }));
+    }
+  }
+
+  function renderHud() {
+    if (!coordPlaneEnabled) return;
+    const hud = document.getElementById('coord-hud');
+    if (!hud) return;
+    const elX = document.getElementById('coord-x');
+    const elY = document.getElementById('coord-y');
+    const elSub = document.getElementById('coord-extra');
+    let px, py;
+    if (ptrActive) {
+      px = ptrSxVal;
+      py = ptrSyVal;
+    } else {
+      px = curVx + curVw / 2;
+      py = curVy + curVh / 2;
+    }
+    if (elX) elX.textContent = px.toFixed(2);
+    if (elY) elY.textContent = py.toFixed(2);
+    const step = coordStep(curVw / GRID_TARGET_PX);
+    if (elSub) {
+      elSub.textContent = 'step ' + fmtCoord(step) + ' · view ' + Math.round(curVx) + ' ' + Math.round(curVy) + ' ' + Math.round(curVw) + 'x' + Math.round(curVh);
+    }
+  }
+
+  function updatePointerCoords(clientX, clientY, active) {
+    const vW = viewport.clientWidth || window.innerWidth;
+    const vH = viewport.clientHeight || window.innerHeight;
+    if (!vW || !vH) return;
+    ptrActive = active;
+    ptrSxVal = curVx + (clientX / vW) * curVw;
+    ptrSyVal = curVy + (clientY / vH) * curVh;
+    if (coordPlaneEnabled) { renderGrid(); renderHud(); }
+  }
+
+  viewport.addEventListener('mousemove', (e) => { updatePointerCoords(e.clientX, e.clientY, true); });
+  viewport.addEventListener('mouseleave', () => {
+    if (ptrActive && coordPlaneEnabled) { ptrActive = false; renderGrid(); renderHud(); }
+  });
+  viewport.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (t) updatePointerCoords(t.clientX, t.clientY, true);
+  }, { passive: false });
+  viewport.addEventListener('touchend', () => {
+    if (ptrActive && coordPlaneEnabled) { ptrActive = false; renderGrid(); renderHud(); }
+  });
+
+  if (coordPlaneEnabled) {
+    const hud = document.getElementById('coord-hud');
+    if (hud) { hud.classList.remove('hidden'); }
+    renderGrid();
+    renderHud();
   }
 
   // --- Room selection and Info Card ---
