@@ -1,10 +1,10 @@
 {
   "version": "26.9.1",
-  "build": 71,
+  "build": 72,
   "critical": false,
   "min_supported_build": 1,
   "changelog": "Расписание: индикатор оставшегося времени и прогресса текущей пары, магнитная автопрокрутка к текущему занятию или перемене при открытии, настройки в приложении.",
   "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
   "apk_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk",
-  "updated_at": "2026-09-09T07:45:13.252877+00:00"
+  "updated_at": "2026-09-09T09:01:09.785796+00:00"
 }
