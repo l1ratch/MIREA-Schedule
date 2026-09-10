@@ -10,7 +10,7 @@
       "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nСборка: 26.0.0\nОбновлено: 2026-09-10 22:03 UTC",
       "iconURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/main/shared/src/commonMain/composeResources/drawable/app_icon.png",
       "version": "26.0.0",
-      "versionDate": "2026-09-10T22:03:23.429450+00:00",
+      "versionDate": "2026-09-10T22:03:23.429279+00:00",
       "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa",
       "tintColor": "4F46E5"
     }

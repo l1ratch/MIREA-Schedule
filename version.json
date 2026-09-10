@@ -1,10 +1,14 @@
 {
-  "version": "26.9.1",
-  "build": 79,
+  "version": "26.0.0",
+  "build": 1789076800,
   "critical": false,
   "min_supported_build": 1,
-  "changelog": "Расписание: индикатор оставшегося времени и прогресса текущей пары, магнитная автопрокрутка к текущему занятию или перемене при открытии, настройки в приложении.",
+  "changelog": "Расписание: плавное перелистывание дней с сохранением позиции, автопрокрутка к текущей паре, галерея перекрывающихся занятий с группами, сокращённые названия предметов. Карта: фильтры объектов (лестницы, куллеры, банкоматы и др.), уточнённые схемы корпусов, селектор кампусов с адресами. Аудитории: еженедельное обновление данных. Обновления: установка APK прямо из приложения (Android), бета-канал в настройках. Новая нумерация версий: 26.0.0 = год.релиз.патч.",
   "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest",
   "apk_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk",
-  "updated_at": "2026-09-09T20:29:44.169323+00:00"
+  "ipa_url": "https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa",
+  "channel": "stable",
+  "prerelease": false,
+  "updated_at": "2026-09-10T22:03:23.429166+00:00",
+  "commit_sha": "7142505"
 }
