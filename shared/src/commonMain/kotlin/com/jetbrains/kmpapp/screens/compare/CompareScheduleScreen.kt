@@ -40,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -439,26 +438,18 @@ private fun CompareRowView(
 private fun CompareCellView(cell: CompareCell) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = if (cell.isDifferent) MaterialTheme.colorScheme.primaryContainer
+        color = if (cell.isDifferent) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
         else MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .width(TargetColumnWidth)
             .height(CellHeight)
     ) {
         Box(modifier = Modifier.padding(horizontal = 8.dp)) {
-            if (cell.isDifferent && cell.isEmpty) {
+            if (cell.isEmpty) {
                 Text(
                     text = "—",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                DifferenceDot(modifier = Modifier.align(Alignment.TopEnd))
-            } else if (cell.isEmpty) {
-                Text(
-                    text = "—",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
@@ -467,15 +458,15 @@ private fun CompareCellView(cell: CompareCell) {
                     modifier = Modifier.fillMaxWidth().align(Alignment.CenterStart)
                 ) {
                     cell.lessons.forEach { lesson ->
-                        LessonMiniCard(lesson = lesson, isDifferent = cell.isDifferent)
+                        LessonMiniCard(lesson = lesson)
                         if (lesson != cell.lessons.last()) {
                             Spacer(modifier = Modifier.height(4.dp))
                         }
                     }
                 }
-                if (cell.isDifferent) {
-                    DifferenceDot(modifier = Modifier.align(Alignment.TopEnd))
-                }
+            }
+            if (cell.isDifferent) {
+                DifferenceDot(modifier = Modifier.align(Alignment.TopEnd))
             }
         }
     }
@@ -488,33 +479,25 @@ private fun DifferenceDot(modifier: Modifier = Modifier) {
             .padding(top = 6.dp)
             .size(9.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
     )
 }
 
 @Composable
-private fun LessonMiniCard(
-    lesson: Lesson,
-    isDifferent: Boolean
-) {
-    val contentColor: Color = if (isDifferent) MaterialTheme.colorScheme.onPrimaryContainer
-    else MaterialTheme.colorScheme.onSurface
-    val mutedColor: Color = if (isDifferent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-    else MaterialTheme.colorScheme.onSurfaceVariant
-
+private fun LessonMiniCard(lesson: Lesson) {
     Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
         Text(
             text = lesson.subject,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = contentColor,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
         Text(
             text = "${lesson.lessonType.shortName} ${lesson.startTime}–${lesson.endTime}",
             style = MaterialTheme.typography.labelSmall,
-            color = mutedColor
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         if (lesson.classrooms.isNotEmpty() || lesson.teachers.isNotEmpty()) {
             val extras = buildList {
@@ -524,7 +507,7 @@ private fun LessonMiniCard(
             Text(
                 text = extras,
                 style = MaterialTheme.typography.labelSmall,
-                color = mutedColor.copy(alpha = 0.85f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

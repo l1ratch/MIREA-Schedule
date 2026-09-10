@@ -130,9 +130,9 @@ class CompareScheduleViewModel(
             val bellsByTarget = groupedByDay.map { lessonsForTarget ->
                 lessonsForTarget.filter { it.date == date }.groupBy { it.bellNumber }
             }
-            val upperBell = bellsByTarget.flatMap { it.keys }.maxOrNull() ?: continue
 
-            val rows = (1..upperBell).map { bell ->
+            // Always show all 7 bells for each day
+            val rows = (1..7).map { bell ->
                 val cells = bellsByTarget.map { bellMap ->
                     val lessons = bellMap[bell]
                         ?.sortedWith(compareBy({ it.startTime }, { it.subject }))
