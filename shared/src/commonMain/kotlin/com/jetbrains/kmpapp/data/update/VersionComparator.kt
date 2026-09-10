@@ -6,8 +6,11 @@ package com.jetbrains.kmpapp.data.update
  * Правила:
  *  - числовое ядро сравнивается по сегментам (26.10 > 26.9.1, 26.10 < 26.10.1);
  *  - при равном ядре релиз выше prerelease (26.10 > 26.10-dev.151);
- *  - prerelease-сегменты по SemVer: числовой идентификатор ниже буквенного,
- *    буквенные сравниваются лексикографически (dev.9 < dev.10).
+ *  - канальная лестница prerelease: dev < contrib < beta < rc
+ *    (алфавит даёт «beta < dev» — beta-обновление выглядело «микро-правкой»
+ *    для dev-сборки);
+ *  - внутри одного канала — по SemVer: числовой идентификатор ниже буквенного,
+ *    номера сравниваются числово (dev.9 < dev.10).
  */
 object VersionComparator {
 
@@ -39,7 +42,19 @@ object VersionComparator {
         return Parsed(core, pre)
     }
 
+    /** dev=0 < contrib=1 < beta=2 < rc=3; null — не наш канал (сравнение по SemVer). */
+    private fun channelRank(id: String?): Int? = when (id) {
+        "dev" -> 0
+        "contrib" -> 1
+        "beta" -> 2
+        "rc" -> 3
+        else -> null
+    }
+
     private fun comparePre(a: List<String>, b: List<String>): Int {
+        val ra = channelRank(a.firstOrNull())
+        val rb = channelRank(b.firstOrNull())
+        if (ra != null && rb != null && ra != rb) return ra.compareTo(rb)
         val n = minOf(a.size, b.size)
         for (i in 0 until n) {
             val x = a[i]

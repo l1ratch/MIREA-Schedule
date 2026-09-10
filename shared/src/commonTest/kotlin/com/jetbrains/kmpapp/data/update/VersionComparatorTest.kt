@@ -42,6 +42,16 @@ class VersionComparatorTest {
     }
 
     @Test
+    fun channelLadder() {
+        // Канальная лестница, а не алфавит: лексика даёт «beta < dev»,
+        // и beta-обновление выглядело «микро-правкой» для dev-сборки
+        assertOrder("26.10-dev.151", "26.10-beta.1")
+        assertOrder("26.10-dev.151", "26.10-contrib.1")
+        assertOrder("26.10-contrib.151", "26.10-beta.1")
+        assertOrder("26.0.0-dev.9", "26.0.0-beta.2")
+    }
+
+    @Test
     fun acrossLines() {
         assertOrder("26.9.1", "26.10-dev.151")
         assertOrder("26.10-dev.151", "26.11-dev.1")

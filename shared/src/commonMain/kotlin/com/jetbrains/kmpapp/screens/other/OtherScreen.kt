@@ -334,13 +334,11 @@ private fun OtherMainContent(
 
             val subtitleText = when {
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL ->
-                    "Версия ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Важные исправления безопасности"
+                    "Версия ${updateResult?.latestVersion} • Важные исправления безопасности"
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION && isPrereleaseUpdate ->
-                    "Тестовая ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Нажмите для перехода"
-                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION ->
-                    "Версия ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Нажмите для перехода"
-                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD ->
-                    "Сборка ${updateResult?.latestBuild} • Доступны микро-правки"
+                    "Тестовая ${updateResult?.latestVersion} • Нажмите для перехода"
+                hasUpdate ->
+                    "Версия ${updateResult?.latestVersion} • Нажмите для перехода"
                 else -> com.jetbrains.kmpapp.data.model.AppVersion.DISPLAY_VERSION
             }
 
