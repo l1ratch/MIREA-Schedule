@@ -1,0 +1,18 @@
+{
+  "name": "MIREA Schedule (Beta)",
+  "identifier": "mirea-schedule-beta",
+  "sourceURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps-beta.json",
+  "apps": [
+    {
+      "name": "Расписание МИРЭА",
+      "bundleIdentifier": "ru.l1ratch.mireaschedule",
+      "developerName": "l1ratch",
+      "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.",
+      "iconURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/main/shared/src/commonMain/composeResources/drawable/app_icon.png",
+      "version": "26.0.0-dev.2",
+      "versionDate": "2026-09-10T10:43:04.904900+00:00",
+      "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/download/preview/MIREA-Schedule-preview.ipa",
+      "tintColor": "4F46E5"
+    }
+  ]
+}
