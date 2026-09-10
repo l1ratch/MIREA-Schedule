@@ -272,12 +272,6 @@ fun CompareScheduleScreen(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "• — различие",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
 
             CompareGrid(
