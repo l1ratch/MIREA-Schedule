@@ -20,17 +20,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,7 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,6 +79,13 @@ fun CompareScheduleScreen(
     val cachedLessons by viewModel.cachedLessons.collectAsState()
 
     var abbreviateNames by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    val filteredTargets = remember(savedTargets, searchQuery) {
+        val trimmed = searchQuery.trim()
+        if (trimmed.isEmpty()) savedTargets
+        else savedTargets.filter { it.targetTitle.contains(trimmed, ignoreCase = true) }
+    }
 
     val currentWeekStart = DateUtils.getWeekDates(DateUtils.today()).first()
 
@@ -164,14 +178,37 @@ fun CompareScheduleScreen(
                 return@Column
             }
 
+            val focusManager = LocalFocusManager.current
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Поиск среди сохранённых", maxLines = 1) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = "Очистить")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                    autoCorrectEnabled = false
+                ),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(top = 4.dp, bottom = 4.dp)
+                    .padding(top = 6.dp, bottom = 4.dp)
             ) {
-                savedTargets.forEach { target ->
+                filteredTargets.forEach { target ->
                     val isSelected = target.id in selectedTargetIds
                     FilterChip(
                         selected = isSelected,
@@ -185,6 +222,15 @@ fun CompareScheduleScreen(
                         }
                     )
                 }
+            }
+
+            if (filteredTargets.isEmpty()) {
+                Text(
+                    text = "Ничего не найдено",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
+                )
             }
 
             if (selectedTargets.size < 2) {
