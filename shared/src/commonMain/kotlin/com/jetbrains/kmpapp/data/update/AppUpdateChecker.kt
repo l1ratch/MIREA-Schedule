@@ -14,9 +14,9 @@ import kotlinx.serialization.json.Json
 
 enum class UpdateUrgency {
     UP_TO_DATE,
-    MINOR_BUILD, // Жёлтый: новая сборка той же версии (микро-правки, необязательно)
-    NEW_VERSION, // Красный: вышла новая версия (важное обновление, уведомить)
-    CRITICAL     // Пурпурный/бордовый: критические уязвимости/ошибки (обязательно)
+    MINOR_BUILD,
+    NEW_VERSION,
+    CRITICAL
 }
 
 @Serializable
@@ -32,7 +32,9 @@ data class VersionFeed(
     @SerialName("apk_url")
     val apkUrl: String? = null,
     @SerialName("ipa_url")
-    val ipaUrl: String? = null
+    val ipaUrl: String? = null,
+    val channel: String = "stable",
+    val prerelease: Boolean = false
 )
 
 @Serializable
@@ -63,7 +65,9 @@ data class UpdateCheckResult(
     val changelog: String? = null,
     val downloadUrl: String,
     val releaseUrl: String,
-    val apkUrl: String? = null
+    val apkUrl: String? = null,
+    val channel: String = "stable",
+    val isPrerelease: Boolean = false
 ) {
     val hasUpdate: Boolean get() = urgency != UpdateUrgency.UP_TO_DATE
 }
@@ -81,80 +85,88 @@ class AppUpdateChecker(
         isLenient = true
     }
 
-    suspend fun checkForUpdates(): UpdateCheckResult? = withContext(Dispatchers.IO) {
-        if (AppVersion.isTestBuild) {
-            return@withContext UpdateCheckResult(
-                urgency = UpdateUrgency.UP_TO_DATE,
-                latestVersion = AppVersion.VERSION_NAME,
-                latestBuild = AppVersion.BUILD_NUMBER,
-                currentVersion = AppVersion.VERSION_NAME,
-                currentBuild = AppVersion.BUILD_NUMBER,
-                isCritical = false,
-                changelog = null,
-                downloadUrl = "https://github.com/$GITHUB_REPO/releases/latest",
-                releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest",
-                apkUrl = null
-            )
+    suspend fun checkForUpdates(includePrerelease: Boolean = false): UpdateCheckResult? = withContext(Dispatchers.IO) {
+        if (AppVersion.isTestBuild && !includePrerelease) {
+            return@withContext upToDateResult()
         }
 
-        // 1. Try fetching our dedicated version.json from the gh-pages branch
-        try {
-            val response = client.get(AppVersion.VERSION_FEED_URL) {
+        val stableResult = fetchFeedResult(AppVersion.UPDATE_FEED_URL, channel = "stable", isPrerelease = false)
+        val previewResult = if (includePrerelease) {
+            fetchFeedResult(AppVersion.PRERELEASE_FEED_URL, channel = "preview", isPrerelease = true)
+        } else {
+            null
+        }
+
+        pickBestResult(previewResult, stableResult) ?: fetchLatestReleaseResult()
+    }
+
+    private suspend fun fetchFeedResult(url: String, channel: String, isPrerelease: Boolean): UpdateCheckResult? {
+        return try {
+            val response = client.get(url) {
                 header("User-Agent", "MIREA-Schedule-App")
             }
-            if (response.status.value in 200..299) {
-                val rawJson = response.body<String>()
-                val feed = json.decodeFromString<VersionFeed>(rawJson)
+            if (response.status.value !in 200..299) return null
+            val feed = json.decodeFromString<VersionFeed>(response.body<String>())
+            if (feed.version.isBlank()) return null
 
-                val hasNewerVersion = compareVersions(feed.version, AppVersion.VERSION_NAME) > 0
-                val hasNewerBuild = feed.build > AppVersion.BUILD_NUMBER
-                val isUnderMinSupported = AppVersion.BUILD_NUMBER < feed.minSupportedBuild
-                val isCritical = isUnderMinSupported || (feed.critical && (hasNewerVersion || hasNewerBuild))
+            val hasNewerVersion = VersionComparator.compare(feed.version, AppVersion.VERSION_NAME) > 0
+            val hasNewerBuild = feed.build > AppVersion.BUILD_NUMBER
+            val isUnderMinSupported = AppVersion.BUILD_NUMBER < feed.minSupportedBuild
+            val isCritical = !isPrerelease && (isUnderMinSupported || (feed.critical && (hasNewerVersion || hasNewerBuild)))
 
-                val urgency = when {
-                    isCritical -> UpdateUrgency.CRITICAL
-                    hasNewerVersion -> UpdateUrgency.NEW_VERSION
-                    hasNewerBuild -> UpdateUrgency.MINOR_BUILD
-                    else -> UpdateUrgency.UP_TO_DATE
-                }
-
-                val downloadUrl = feed.downloadUrl 
-                    ?: feed.apkUrl 
-                    ?: "https://github.com/$GITHUB_REPO/releases/latest"
-
-                return@withContext UpdateCheckResult(
-                    urgency = urgency,
-                    latestVersion = feed.version.ifBlank { AppVersion.VERSION_NAME },
-                    latestBuild = feed.build,
-                    currentVersion = AppVersion.VERSION_NAME,
-                    currentBuild = AppVersion.BUILD_NUMBER,
-                    isCritical = isCritical,
-                    changelog = feed.changelog,
-                    downloadUrl = downloadUrl,
-                    releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest",
-                    apkUrl = feed.apkUrl ?: feed.downloadUrl
-                )
+            val urgency = when {
+                isCritical -> UpdateUrgency.CRITICAL
+                hasNewerVersion -> UpdateUrgency.NEW_VERSION
+                hasNewerBuild -> UpdateUrgency.MINOR_BUILD
+                else -> UpdateUrgency.UP_TO_DATE
             }
-        } catch (e: Throwable) {
-            println("Version feed check error: ${e.message}, falling back to GitHub API")
-        }
 
-        // 2. Fallback to GitHub Releases API
-        try {
+            val releaseUrl = if (isPrerelease) {
+                "https://github.com/$GITHUB_REPO/releases/tag/preview"
+            } else {
+                "https://github.com/$GITHUB_REPO/releases/latest"
+            }
+            val downloadUrl = feed.downloadUrl ?: feed.apkUrl ?: releaseUrl
+
+            UpdateCheckResult(
+                urgency = urgency,
+                latestVersion = feed.version,
+                latestBuild = feed.build,
+                currentVersion = AppVersion.VERSION_NAME,
+                currentBuild = AppVersion.BUILD_NUMBER,
+                isCritical = isCritical,
+                changelog = feed.changelog,
+                downloadUrl = downloadUrl,
+                releaseUrl = releaseUrl,
+                apkUrl = feed.apkUrl ?: feed.downloadUrl,
+                channel = feed.channel.ifBlank { channel },
+                isPrerelease = isPrerelease
+            )
+        } catch (e: Throwable) {
+            println("Feed check error ($url): ${e.message}")
+            null
+        }
+    }
+
+    /** Из двух кандидатов выбирает более свежую версию; при равенстве выигрывает стабильная. */
+    private fun pickBestResult(preview: UpdateCheckResult?, stable: UpdateCheckResult?): UpdateCheckResult? {
+        if (preview == null) return stable
+        if (stable == null) return preview
+        val c = VersionComparator.compare(preview.latestVersion, stable.latestVersion)
+        return if (c > 0) preview else stable
+    }
+
+    private suspend fun fetchLatestReleaseResult(): UpdateCheckResult? {
+        return try {
             val response = client.get("https://api.github.com/repos/$GITHUB_REPO/releases/latest") {
                 header("User-Agent", "MIREA-Schedule-App")
             }
-            if (response.status.value !in 200..299) {
-                return@withContext null
-            }
+            if (response.status.value !in 200..299) return null
             val release = response.body<GitHubRelease>()
-            if (release.tagName.isBlank()) {
-                return@withContext null
-            }
+            if (release.tagName.isBlank()) return null
 
             val latestTag = release.tagName.trimStart('v', 'V')
-            val current = AppVersion.VERSION_NAME.trimStart('v', 'V')
-            val isNewerVersion = compareVersions(latestTag, current) > 0
+            val isNewerVersion = VersionComparator.compare(latestTag, AppVersion.VERSION_NAME) > 0
 
             val apkAsset = release.assets.firstOrNull { it.name.endsWith(".apk") }
             val downloadUrl = apkAsset?.browserDownloadUrl ?: release.htmlUrl
@@ -169,7 +181,9 @@ class AppUpdateChecker(
                 changelog = release.body,
                 downloadUrl = downloadUrl,
                 releaseUrl = release.htmlUrl,
-                apkUrl = apkAsset?.browserDownloadUrl
+                apkUrl = apkAsset?.browserDownloadUrl,
+                channel = "stable",
+                isPrerelease = false
             )
         } catch (t: Throwable) {
             println("GitHub API update check error: ${t.message}")
@@ -177,17 +191,17 @@ class AppUpdateChecker(
         }
     }
 
-    private fun compareVersions(v1: String, v2: String): Int {
-        val parts1 = v1.trimStart('v', 'V').split('.').mapNotNull { it.toIntOrNull() }
-        val parts2 = v2.trimStart('v', 'V').split('.').mapNotNull { it.toIntOrNull() }
-        val maxLen = maxOf(parts1.size, parts2.size)
-        for (i in 0 until maxLen) {
-            val p1 = parts1.getOrElse(i) { 0 }
-            val p2 = parts2.getOrElse(i) { 0 }
-            if (p1 != p2) return p1.compareTo(p2)
-        }
-        return 0
-    }
+    private fun upToDateResult() = UpdateCheckResult(
+        urgency = UpdateUrgency.UP_TO_DATE,
+        latestVersion = AppVersion.VERSION_NAME,
+        latestBuild = AppVersion.BUILD_NUMBER,
+        currentVersion = AppVersion.VERSION_NAME,
+        currentBuild = AppVersion.BUILD_NUMBER,
+        downloadUrl = "https://github.com/$GITHUB_REPO/releases/latest",
+        releaseUrl = "https://github.com/$GITHUB_REPO/releases/latest",
+        channel = AppVersion.BUILD_CHANNEL,
+        isPrerelease = AppVersion.isTestBuild
+    )
 
     suspend fun fetchContributors(forceRefresh: Boolean = false): List<com.jetbrains.kmpapp.data.model.GitHubContributor> = withContext(Dispatchers.IO) {
         try {

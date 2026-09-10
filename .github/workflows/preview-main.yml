@@ -1,62 +1,49 @@
-name: 🚀 Release Mobile (Tag v*)
+name: 🚧 Main Preview Build (Rolling)
 
-# Релизный сборщик. Запускается ТОЛЬКО пушем тега v26.10 / v26.10.1 /
-# v26.10-beta.1 / v26.10-rc.1 или вручную (dispatch с указанием тега).
-# Канал выводится из тега: чистый тег → stable (+ version.json + apps.json),
-# beta/rc → иммутабельный prerelease. Push в main сюда НЕ попадает —
-# тестовые сборки main собирает preview-main.yml.
+# Тестовые сборки main. Каждый push в main (только код приложения) собирает
+# версию {RELEASE_VERSION}-dev.N и заменяет файлы в ОДНОМ rolling-prerelease
+# `preview`. GitHub Releases не плодятся, version.json НЕ обновляется —
+# обычные пользователи этих сборок не видят. Opt-in проверка — через
+# preview.json и отладочное меню приложения.
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+    paths:
+      - 'shared/**'
+      - 'androidApp/**'
+      - 'iosApp/**'
+      - 'maps/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Тег релиза, например v26.10 или v26.10-beta.1'
-        required: true
-        type: string
 
 permissions:
   contents: write
 
+concurrency:
+  group: preview-main
+  cancel-in-progress: true
+
 jobs:
-  resolve:
-    name: 🧭 Resolve Release Channel
+  build_apk:
+    name: 🤖 Build Android APK (dev)
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.ver.outputs.version }}
-      channel: ${{ steps.ver.outputs.channel }}
-      prerelease: ${{ steps.ver.outputs.prerelease }}
-      commit_sha: ${{ steps.ver.outputs.commit_sha }}
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag != '' && inputs.tag || github.ref }}
 
-      - name: 🧭 Validate tag & resolve version
+      - name: 🔖 Patch version files (dev)
         id: ver
         env:
-          TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
-        run: python tools/versioning.py resolve --tag "$TAG" --build-id "$RUN_ID"
-
-  build_apk:
-    name: 🤖 Build Android APK
-    runs-on: ubuntu-latest
-    needs: resolve
-    steps:
-      - name: 📚 Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag != '' && inputs.tag || github.ref }}
-
-      - name: 🔖 Patch version files
-        env:
-          TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: python tools/versioning.py prepare --tag "$TAG" --build-id "$RUN_ID"
+        run: python tools/versioning.py prepare --channel dev --run-number "$RUN_NUMBER" --build-id "$RUN_ID"
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -75,43 +62,33 @@ jobs:
       - name: 🔨 Run all tests + Build Android APK
         env:
           BUILD_NUMBER: ${{ github.run_id }}
-        run: ./gradlew :shared:allTests assembleDebug --stacktrace
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug --stacktrace
 
-      - name: 🏷️ Prepare APK Artifact
-        env:
-          CHANNEL: ${{ needs.resolve.outputs.channel }}
-          VERSION: ${{ needs.resolve.outputs.version }}
+      - name: 🏷️ Prepare preview APK
         run: |
           mkdir -p dist
-          if [ "$CHANNEL" = "stable" ]; then
-            # неизменное имя — на него ссылаются старые версии приложения
-            cp androidApp/build/outputs/apk/debug/*.apk dist/Schedule-MIREA.apk
-          else
-            cp androidApp/build/outputs/apk/debug/*.apk "dist/Schedule-MIREA-v${VERSION}.apk"
-          fi
+          cp androidApp/build/outputs/apk/debug/*.apk dist/MIREA-Schedule-preview.apk
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Schedule-MIREA-APK
-          path: dist/*.apk
+          name: MIREA-Schedule-preview-APK
+          path: dist/MIREA-Schedule-preview.apk
           if-no-files-found: error
 
   build_ipa:
-    name: 🍏 Build iOS Unsigned IPA
+    name: 🍏 Build iOS Unsigned IPA (dev)
     runs-on: macos-15
-    needs: resolve
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag != '' && inputs.tag || github.ref }}
 
-      - name: 🔖 Patch version files
+      - name: 🔖 Patch version files (dev)
+        id: ver
         env:
-          TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
-        run: python tools/versioning.py prepare --tag "$TAG" --build-id "$RUN_ID"
+        run: python tools/versioning.py prepare --channel dev --run-number "$RUN_NUMBER" --build-id "$RUN_ID"
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -160,54 +137,43 @@ jobs:
             build
 
       - name: 📦 Package Unsigned IPA
-        env:
-          CHANNEL: ${{ needs.resolve.outputs.channel }}
-          VERSION: ${{ needs.resolve.outputs.version }}
         run: |
           cd iosApp
           mkdir -p Payload
           APP_PATH=$(find build -name "*.app" -type d | head -n 1)
           echo "Found app at: $APP_PATH"
           cp -r "$APP_PATH" Payload/
-          if [ "$CHANNEL" = "stable" ]; then
-            IPA_NAME="Schedule-MIREA.ipa"
-          else
-            IPA_NAME="Schedule-MIREA-v${VERSION}.ipa"
-          fi
-          zip -r "../$IPA_NAME" Payload
+          zip -r ../MIREA-Schedule-preview.ipa Payload
           rm -rf Payload
           cd ..
-          echo "IPA_NAME=$IPA_NAME" >> $GITHUB_ENV
 
       - name: 📤 Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Schedule-MIREA-IPA
-          path: ${{ env.IPA_NAME }}
+          name: MIREA-Schedule-preview-IPA
+          path: MIREA-Schedule-preview.ipa
           if-no-files-found: error
 
-  publish_release:
-    name: 🚀 Publish GitHub Release
+  publish_preview:
+    name: 🚀 Publish Rolling Preview Release
     runs-on: ubuntu-latest
-    needs: [resolve, build_apk, build_ipa]
+    needs: [build_apk, build_ipa]
     if: always() && (needs.build_apk.result == 'success' || needs.build_ipa.result == 'success')
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag != '' && inputs.tag || github.ref }}
 
       - name: 📥 Download APK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Schedule-MIREA-APK
+          name: MIREA-Schedule-preview-APK
           path: download_apk
         continue-on-error: true
 
       - name: 📥 Download IPA Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Schedule-MIREA-IPA
+          name: MIREA-Schedule-preview-IPA
           path: download_ipa
         continue-on-error: true
 
@@ -216,26 +182,32 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: 🚀 Publish Release
+      - name: 🔖 Resolve version
+        id: ver
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+        run: python tools/versioning.py resolve --channel dev --run-number "$RUN_NUMBER" --build-id "$RUN_ID"
+
+      - name: 🚀 Publish rolling preview release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHANNEL: ${{ needs.resolve.outputs.channel }}
-          VERSION: ${{ needs.resolve.outputs.version }}
+          VERSION: ${{ steps.ver.outputs.version }}
           BUILD: ${{ github.run_id }}
-          SHA: ${{ needs.resolve.outputs.commit_sha }}
+          SHA: ${{ steps.ver.outputs.commit_sha }}
         run: |
           APK=$(find download_apk -name '*.apk' 2>/dev/null | head -n 1)
           IPA=$(find download_ipa -name '*.ipa' 2>/dev/null | head -n 1)
           ARGS=""
           [ -n "$APK" ] && ARGS="$ARGS --apk $APK"
           [ -n "$IPA" ] && ARGS="$ARGS --ipa $IPA"
-          python tools/publish_release.py --channel "$CHANNEL" --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" $ARGS
+          python tools/publish_release.py --channel preview --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" $ARGS
 
-  update_version_feed:
-    name: 📡 Update Version Feed & App Source (stable only)
+  update_preview_feed:
+    name: 📡 Update Preview Feed & Beta App Source
     runs-on: ubuntu-latest
-    needs: [resolve, publish_release]
-    if: needs.resolve.outputs.channel == 'stable' && needs.publish_release.result == 'success'
+    needs: publish_preview
+    if: needs.publish_preview.result == 'success'
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
@@ -245,11 +217,19 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: 📝 Generate version.json + apps.json
+      - name: 🔖 Resolve version
+        id: ver
         env:
-          VERSION: ${{ needs.resolve.outputs.version }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+        run: python tools/versioning.py resolve --channel dev --run-number "$RUN_NUMBER" --build-id "$RUN_ID"
+
+      - name: 📝 Generate preview.json + apps-beta.json
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
           BUILD: ${{ github.run_id }}
-        run: python tools/update_version_feed.py --channel stable --version "$VERSION" --build-number "$BUILD" --out-dir dist_version
+          SHA: ${{ steps.ver.outputs.commit_sha }}
+        run: python tools/update_version_feed.py --channel preview --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" --out-dir dist_version
 
       - name: 🚀 Deploy feeds to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

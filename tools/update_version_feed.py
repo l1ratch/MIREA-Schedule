@@ -1,77 +1,130 @@
 #!/usr/bin/env python3
 """
-tools/update_version_feed.py
-Extracts version metadata from AppVersion.kt and generates version.json
-for hosting on the gh-pages branch.
+tools/update_version_feed.py — генерация канальных фидов и IPA-источников на gh-pages.
+
+  --channel stable  : version.json (автообновление обычных пользователей)
+                      + apps.json (AltStore-совместимый источник IPA)
+  --channel preview : preview.json (opt-in тестовые обновления через отладочное меню)
+                      + apps-beta.json (AltStore-совместимый источник тестовых IPA)
+
+Вызывается ТОЛЬКО из релизного (stable) и preview-воркфлоу. Деплой на
+gh-pages выполняет workflow (peaceiris/actions-gh-pages, keep_files).
+Источники apps.json / apps-beta.json совместимы с AltStore-подобными
+клиентами (SideStore, GBox и др.); один bundle id — подключай один
+источник за раз.
 """
 
-import os
+import argparse
+import json
 import re
 import sys
-import json
-import argparse
 from datetime import datetime, timezone
+from pathlib import Path
 
-def parse_app_version(app_version_path: str):
-    with open(app_version_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+APP_VERSION_FILE = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt"
+BUNDLE_ID = "ru.l1ratch.mireaschedule"
+TINT_COLOR = "4F46E5"
+APP_DESCRIPTION = (
+    "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные "
+    "карты корпусов, задачи и офлайн-кеш."
+)
 
-    version_name_match = re.search(r'const\s+val\s+VERSION_NAME\s*=\s*"([^"]+)"', content)
-    build_num_match = re.search(r'const\s+val\s+BUILD_NUMBER\s*=\s*(\d+)', content)
-    is_critical_match = re.search(r'const\s+val\s+IS_CRITICAL\s*=\s*(true|false)', content)
-    min_supported_match = re.search(r'const\s+val\s+MIN_SUPPORTED_BUILD\s*=\s*(\d+)', content)
-    repo_match = re.search(r'const\s+val\s+GITHUB_REPO\s*=\s*"([^"]+)"', content)
 
-    # Changelog can be multiline or single line string
-    changelog_match = re.search(r'const\s+val\s+CHANGELOG\s*=\s*"""([\s\S]*?)"""', content)
-    if not changelog_match:
-        changelog_match = re.search(r'const\s+val\s+CHANGELOG\s*=\s*"([^"]*)"', content)
+def parse_app_version(path):
+    content = Path(path).read_text(encoding="utf-8")
+    m = re.search(r'const\s+val\s+GITHUB_REPO\s*=\s*"([^"]+)"', content)
+    repo = m.group(1) if m else "l1ratch/MIREA-Schedule"
+    m = (re.search(r'const\s+val\s+CHANGELOG\s*=\s*"""([\s\S]*?)"""', content)
+         or re.search(r'const\s+val\s+CHANGELOG\s*=\s*"([^"]*)"', content))
+    changelog = m.group(1).strip() if m else ""
+    m = re.search(r'const\s+val\s+IS_CRITICAL\s*=\s*(true|false)', content)
+    critical = (m.group(1) == "true") if m else False
+    m = re.search(r'const\s+val\s+MIN_SUPPORTED_BUILD\s*=\s*(\d+)', content)
+    min_supported = int(m.group(1)) if m else 1
+    return repo, changelog, critical, min_supported
 
-    version_name = version_name_match.group(1) if version_name_match else "1.1.0"
-    build_number = int(build_num_match.group(1)) if build_num_match else 1
-    is_critical = is_critical_match.group(1) == 'true' if is_critical_match else False
-    min_supported = int(min_supported_match.group(1)) if min_supported_match else 1
-    repo = repo_match.group(1) if repo_match else "l1ratch/MIREA-Schedule"
-    changelog = changelog_match.group(1).strip() if changelog_match else ""
 
+def asset_urls(repo, channel):
+    if channel == "stable":
+        base = f"https://github.com/{repo}/releases"
+        return {
+            "download_url": f"{base}/latest",
+            "apk_url": f"{base}/latest/download/Schedule-MIREA.apk",
+            "ipa_url": f"{base}/latest/download/Schedule-MIREA.ipa",
+        }
+    base = f"https://github.com/{repo}/releases/download/preview"
     return {
-        "version": version_name,
-        "build": build_number,
-        "critical": is_critical,
-        "min_supported_build": min_supported,
-        "repo": repo,
-        "changelog": changelog
+        "download_url": f"{base}/MIREA-Schedule-preview.apk",
+        "apk_url": f"{base}/MIREA-Schedule-preview.apk",
+        "ipa_url": f"{base}/MIREA-Schedule-preview.ipa",
     }
 
+
+def build_source(repo, channel, version, ipa_url):
+    stable = channel == "stable"
+    filename = "apps.json" if stable else "apps-beta.json"
+    return {
+        "name": "MIREA Schedule" + ("" if stable else " (Beta)"),
+        "identifier": f"mirea-schedule-{'stable' if stable else 'beta'}",
+        "sourceURL": f"https://raw.githubusercontent.com/{repo}/gh-pages/{filename}",
+        "apps": [{
+            "name": "Расписание МИРЭА",
+            "bundleIdentifier": BUNDLE_ID,
+            "developerName": "l1ratch",
+            "localizedDescription": APP_DESCRIPTION,
+            "iconURL": f"https://raw.githubusercontent.com/{repo}/main/shared/src/commonMain/composeResources/drawable/app_icon.png",
+            "version": version,
+            "versionDate": datetime.now(timezone.utc).isoformat(),
+            "downloadURL": ipa_url,
+            "tintColor": TINT_COLOR,
+        }],
+    }
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Generate version.json from AppVersion.kt")
-    parser.add_argument("--build-number", type=int, default=None, help="Override build number (e.g. from CI run_number)")
-    parser.add_argument("--out-dir", default="dist_version", help="Output directory for version.json")
-    parser.add_argument("--app-version-file", default="shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt")
-    args = parser.parse_args()
+    ap = argparse.ArgumentParser(description="Генерация фидов версий и IPA-источников")
+    ap.add_argument("--channel", required=True, choices=["stable", "preview"])
+    ap.add_argument("--version", required=True, help="Версия из tools/versioning.py")
+    ap.add_argument("--build-number", type=int, required=True, help="github.run_id")
+    ap.add_argument("--commit-sha", default="")
+    ap.add_argument("--out-dir", default="dist_version")
+    ap.add_argument("--app-version-file", default=APP_VERSION_FILE)
+    args = ap.parse_args()
 
-    meta = parse_app_version(args.app_version_file)
-    if args.build_number is not None:
-        meta["build"] = args.build_number
-    elif os.environ.get("GITHUB_RUN_NUMBER"):
-        try:
-            meta["build"] = int(os.environ["GITHUB_RUN_NUMBER"])
-        except ValueError:
-            pass
+    repo, changelog, critical, min_supported = parse_app_version(args.app_version_file)
+    urls = asset_urls(repo, args.channel)
+    is_preview = args.channel == "preview"
 
-    repo = meta.pop("repo")
-    meta["download_url"] = f"https://github.com/{repo}/releases/latest"
-    meta["apk_url"] = f"https://github.com/{repo}/releases/latest/download/Schedule-MIREA.apk"
-    meta["updated_at"] = datetime.now(timezone.utc).isoformat()
+    feed = {
+        "version": args.version,
+        "build": args.build_number,
+        "critical": critical and not is_preview,
+        "min_supported_build": min_supported if not is_preview else 1,
+        "changelog": changelog,
+        "download_url": urls["download_url"],
+        "apk_url": urls["apk_url"],
+        "ipa_url": urls["ipa_url"],
+        "channel": args.channel,
+        "prerelease": is_preview,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if is_preview and args.commit_sha:
+        feed["commit_sha"] = args.commit_sha
 
-    os.makedirs(args.out_dir, exist_ok=True)
-    out_path = os.path.join(args.out_dir, "version.json")
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2, ensure_ascii=False)
+    feed_name = "preview.json" if is_preview else "version.json"
+    source_name = "apps-beta.json" if is_preview else "apps.json"
+    (out_dir / feed_name).write_text(
+        json.dumps(feed, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / source_name).write_text(
+        json.dumps(build_source(repo, args.channel, args.version, urls["ipa_url"]),
+                   indent=2, ensure_ascii=False), encoding="utf-8")
 
-    print(f"Generated version feed at {out_path}:")
-    print(json.dumps(meta, indent=2, ensure_ascii=False))
+    print(f"Generated {out_dir / feed_name} and {out_dir / source_name}:")
+    print(json.dumps(feed, indent=2, ensure_ascii=False))
+
 
 if __name__ == "__main__":
     main()

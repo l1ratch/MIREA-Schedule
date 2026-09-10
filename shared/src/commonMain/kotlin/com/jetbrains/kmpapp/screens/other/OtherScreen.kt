@@ -300,6 +300,7 @@ private fun OtherMainContent(
             // 4. App Version / Auto-Update Card with 3-tier colors
             val urgency = updateResult?.urgency ?: com.jetbrains.kmpapp.data.update.UpdateUrgency.UP_TO_DATE
             val hasUpdate = updateResult?.hasUpdate == true
+            val isPrereleaseUpdate = updateResult?.isPrerelease == true
 
             val cardContainerColor = when (urgency) {
                 com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> Color(0xFF581C87).copy(alpha = 0.20f)
@@ -325,6 +326,7 @@ private fun OtherMainContent(
             val titleText = when {
                 isCheckingUpdate -> "Проверка обновлений..."
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL -> "Критическое обновление!"
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION && isPrereleaseUpdate -> "Доступна тестовая сборка!"
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION -> "Вышла новая версия!"
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD -> "Доступна новая сборка"
                 else -> "У вас актуальная версия"
@@ -333,6 +335,8 @@ private fun OtherMainContent(
             val subtitleText = when {
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.CRITICAL ->
                     "Версия ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Важные исправления безопасности"
+                urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION && isPrereleaseUpdate ->
+                    "Тестовая ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Нажмите для перехода"
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.NEW_VERSION ->
                     "Версия ${updateResult?.latestVersion} (сборка ${updateResult?.latestBuild}) • Нажмите для перехода"
                 urgency == com.jetbrains.kmpapp.data.update.UpdateUrgency.MINOR_BUILD ->
