@@ -1,115 +1,124 @@
-# 🎓 MIREA Schedule App
+# MIREA Schedule
 
-<div align="center">
-
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84.svg?logo=android&logoColor=white)](https://github.com/l1ratch/MIREA-Schedule)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.7.1-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84.svg?logo=android&logoColor=white)](https://github.com/l1ratch/MIREA-Schedule/releases)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.12.0-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![License](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
 
-**Современный, быстрый и автономный мобильный клиент для студентов РТУ МИРЭА.**  
-*Расписание занятий, интерактивные векторные карты корпусов и мониторинг свободных аудиторий.*
+Кроссплатформенное мобильное приложение для просмотра расписания учебных занятий, поиска свободных аудиторий и навигации по корпусам РТУ МИРЭА.
 
-<p align="center">
-  <a href="https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk">
-    <img src="https://img.shields.io/badge/Скачать-APK%20(Android)-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Скачать APK" />
-  </a>
-  &nbsp;
-  <a href="https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa">
-    <img src="https://img.shields.io/badge/Скачать-IPA%20(iOS)-007AFF?style=for-the-badge&logo=apple&logoColor=white" alt="Скачать IPA" />
-  </a>
-</p>
+> **Проект неофициальный.** Не аффилирован с РТУ МИРЭА и не одобрен университетом. Название вуза и все данные (расписание, схемы корпусов) принадлежат их правообладателям; приложение только отображает их и ссылается на официальные источники.
 
-[📦 Все стабильные релизы](https://github.com/l1ratch/MIREA-Schedule/releases) • [🗄️ Архив сборок (Pre-release)](https://github.com/l1ratch/MIREA-Schedule/releases/tag/build-archive) • [Документация API аудиторий](FREE_ROOMS_API.md)
-
-</div>
+**Скачать:** [APK (Android, стабильная)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA (iOS, unsigned)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) · [Все релизы](https://github.com/l1ratch/MIREA-Schedule/releases)
 
 ---
 
-## ✨ Основные возможности
+## Возможности
 
-### 📅 1. Умное расписание занятий
-* **Поддержка любых целей**: поиск и отображение расписания учебных групп, преподавателей и аудиторий.
-* **Интеллектуальный календарь**:
-  * Чётные и нечётные недели с определением текущей недели семестра.
-  * Индикатор текущей пары в реальном времени с прогрессом до конца занятия.
-  * Цветовая индикация типов занятий (лекции, практики, лабораторные).
-* **История и избранное**: сохранение нескольких расписаний с быстрым переключением между ними.
-* **Diff-контроль**: автоматическое отслеживание изменений в расписании и подсветка обновлённых пар.
+**Расписание**
+- Поиск и отображение расписания групп, преподавателей и аудиторий.
+- Нумерация недель семестра, чётные/нечётные недели.
+- Индикация текущего занятия и прогресса до его конца.
+- Сохранение нескольких расписаний с переключением между ними.
+- Подсветка изменений при обновлении расписания.
+- Локальный кеш: расписание доступно без сети.
 
-### 🗺️ 2. Векторные карты корпусов РТУ МИРЭА
-* **Векторные схемы** ключевых кампусов университета(Могут быть неточности):
-  * **В-78** (пр-т Вернадского, 78 — все 4 этажа).
-  * **В-86** (пр-т Вернадского, 86 — все корпуса и этажи).
-  * **С-20** (ул. Стромынка, 20 — все 4 этажа).
-  * **МП-1** (ул. Малая Пироговская, 1).
+**Свободные аудитории**
+- Список аудиторий, свободных на выбранной паре или в интервале.
+- Фильтрация по кампусам. ([API](FREE_ROOMS_API.md))
 
-### 🏢 3. Свободные аудитории в реальном времени
-* Узнавайте, какие кабинеты свободны прямо сейчас или на выбранной паре.
-* Фильтрация по кампусам и временным интервалам.
+**Карты корпусов**
+- Векторные схемы этажей (SVG, WebView, pan/zoom): В-78, В-86, С-20, МП-1.
+- Схемы построены на официальных источниках и **могут содержать неточности**; не используйте их как единственный ориентир при эвакуации.
 
-### 🎨 4. Кастомизация и эргономика
-* **Темы оформления**: Системная, Светлая, Тёмная и специальная пастельная тема «Цветение Сакуры» (Sakura).
-* **Floating Dock (плавающая навигация)**: настройка порядка и видимости разделов приложения.
+**Задачи**
+- Учёт задач по предметам: категории (лабораторные, практики, домашние задания, курсовые и др.), приоритеты, статусы, подзадачи.
+- Генератор списка лабораторных работ.
 
----
-
-## 📲 Установка приложения
-
-### 🤖 Android
-1. Скачайте [**Schedule-MIREA.apk**](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk).
-2. Откройте скачанный файл на устройстве и разрешите установку при запросе системы.
-3. Приложение оснащено встроенным авто-обновлением: при появлении новой версии в разделе «Другое» появится уведомление.
-
-### 🍏 iOS
-Пакет [**Schedule-MIREA.ipa**](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) собирается в CI без цифровой подписи (Unsigned). Для установки на iPhone/iPad используйте любой привычный способ:
-* **Без компьютера**: [SideStore](https://sidestore.io), [TrollStore](https://github.com/opa334/TrollStore) (если поддерживается вашей версией iOS) или [Scarlet](https://usescarlet.com).
-* **С компьютера (Mac/PC)**: [AltStore](https://altstore.io) или [Sideloadly](https://sideloadly.io).
+**Интерфейс**
+- Темы: светлая, тёмная, системная.
+- Настраиваемый плавающий док (порядок и видимость разделов).
+- Встроенная проверка обновлений.
 
 ---
 
-## ⚙️ Сборка и запуск
+## Установка
 
-### Требования к окружению
-* **JDK**: 21 (рекомендуется Azul Zulu или Eclipse Temurin)
-* **Android SDK**: API level 35, Build Tools 35.0.0
-* **Xcode**: 16.0+ (для сборки iOS)
-* **Gradle**: 9.6.1 (поставляется через `gradlew`)
+### Android
+1. Скачайте [Schedule-MIREA.apk](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) (последний стабильный релиз).
+2. Установите, разрешив установку из неизвестных источников.
+3. Обновления: приложение проверяет их само и предлагает скачать новый APK.
 
-### Сборка Android приложения
+### iOS
+IPA собирается без подписи (unsigned). Установка — сторонними инструментами, например: AltStore, SideStore, GBox, Sideloadly. Инструмент подписывает пакет собственным сертификентом.
+
+**Источники приложений (AltStore-совместимый формат, для GBox и аналогов):**
+
+| Источник | Содержимое |
+|---|---|
+| `https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps.json` | Стабильные релизы |
+| `https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps-beta.json` | Последняя сборка любого канала (dev/beta/rc/stable) |
+
+Подключайте один источник за раз: `bundleIdentifier` у обоих одинаковый.
+
+---
+
+## Каналы обновлений
+
+| Канал | Файл фида | Проверяет приложение |
+|---|---|---|
+| Стабильный | `version.json` | всегда, все пользователи |
+| Бета / RC | `beta.json` | только при включённом тумблере «Бета-канал обновлений» в настройках |
+| Dev (сборки из `main`) | — | не проверяется приложением; доступен через GBox-источник выше |
+
+Dev-сборки публикуются в rolling-релизе [`preview`](https://github.com/l1ratch/MIREA-Schedule/releases/tag/preview).
+
+## Версионирование
+
+Формат **CalVer**: `YY.RELEASE.PATCH` — год, номер релиза, патч (например `26.0.0`, `26.0.1`).
+
+Каналы сборки: `26.0.0` (стабильный), `26.0.0-beta.N`, `26.0.0-rc.N`, `26.0.0-dev.N` (тестовые сборки `main`), `26.0.0-contrib.N` (сборки контрибьюторов, не публикуются).
+
+> **Для установок со старой нумерацией (26.9.1 и ниже):** сравнение версий изменилось, приложение предложит обновление только до более нового номера. Если обновление не предлагается, установите стабильную версию вручную по ссылке выше.
+
+---
+
+## Сборка из исходников
+
+Требования: JDK 21, Android SDK (compileSdk 37, minSdk 24, targetSdk 37), Xcode 16+ (для iOS). Gradle 9.6.1 поставляется через wrapper.
+
 ```bash
-# Клонирование репозитория
 git clone https://github.com/l1ratch/MIREA-Schedule.git
 cd MIREA-Schedule
 
-# Сборка Debug APK
+# Android (debug APK)
 ./gradlew assembleDebug
+# результат: androidApp/build/outputs/apk/debug/androidApp-debug.apk
 
-# Готовый APK будет расположен в:
-# androidApp/build/outputs/apk/debug/androidApp-debug.apk
-```
-
-### Сборка iOS приложения
-Сборка iOS доступна на macOS:
-```bash
-# Открытие проекта в Xcode
-open iosApp/iosApp.xcodeproj
-
-# Или сборка через командную строку (Unsigned Release)
+# iOS (unsigned, на macOS)
 cd iosApp
 xcodebuild -scheme iosApp -configuration Release -sdk iphoneos \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 ```
 
+Тесты (общий код): `./gradlew :shared:allTests`.
+
+Стек: Kotlin Multiplatform, Compose Multiplatform, Ktor Client, kotlinx.serialization, Room/SQLite, Multiplatform Settings.
+
+## CI/CD
+
+- Push в `main` → тестовая dev-сборка (`26.0.0-dev.N`, rolling-релиз `preview`).
+- Тег `v26.0.0` → стабильный релиз; `v26.0.0-beta.N` / `-rc.N` → иммутабельный prerelease.
+- Теги `v*` и только они обновляют стабильный фид обновлений. Подробности: [CI_GUIDE.md](.github/CI_GUIDE.md).
+
 ---
 
-## 🤝 Благодарности
+## Источники данных и права
 
-* **Карты корпусов**: Векторные схемы [pulse.mirea.ru](https://pulse.mirea.ru/services/maps) и проект [university-app](https://github.com/0niel/university-app) от [0niel](https://github.com/0niel).
-* **API расписания**: API РТУ МИРЭА.
+- **Расписание:** публичный API РТУ МИРЭА. Данные принадлежат университету.
+- **Карты корпусов:** на основе официальных схем [pulse.mirea.ru](https://pulse.mirea.ru/services/maps) и векторных схем проекта [university-app](https://github.com/0niel/university-app) ([0niel](https://github.com/0niel)).
+- Приложение не отправляет данные пользователей: сетевые запросы — только чтение, к API университета (`schedule-of.mirea.ru`) и GitHub (фиды обновлений, база свободных аудиторий, список контрибьюторов).
 
----
+## Лицензия
 
-## 📜 Лицензия
-
-Проект распространяется под свободной лицензией с открытым исходным кодом. Подробнее см. в файле [LICENSE](LICENSE).
+Код распространяется по [GNU GPL v3](LICENSE). На данные РТУ МИРЭА и использованные схемы корпусов действие лицензии не распространяется — они остаются собственностью их правообладателей и используются здесь в информационных целях со ссылкой на источник.
