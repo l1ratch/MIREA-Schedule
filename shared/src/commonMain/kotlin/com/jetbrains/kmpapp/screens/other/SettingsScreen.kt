@@ -1,6 +1,7 @@
 package com.jetbrains.kmpapp.screens.other
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -457,7 +458,12 @@ private fun SettingsSectionCard(
                         .size(22.dp)
                         .then(
                             if (onIconClick != null) {
-                                Modifier.clickable(onClick = onIconClick)
+                                // Без ripple: визуальная анимация нажатия выдавала скрытую кнопку
+                                Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = onIconClick
+                                )
                             } else Modifier
                         )
                 )

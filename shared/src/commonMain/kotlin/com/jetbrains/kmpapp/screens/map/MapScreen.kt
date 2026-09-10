@@ -203,7 +203,7 @@ fun MapScreen(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = selectedCampus.name,
+                                text = selectedCampus.shortName,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -227,11 +227,18 @@ fun MapScreen(
                         CAMPUSES.forEach { campus ->
                             DropdownMenuItem(
                                 text = {
-                                    Text(
-                                        text = campus.name,
-                                        fontWeight = if (campus.id == selectedCampus.id) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (campus.id == selectedCampus.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Column {
+                                        Text(
+                                            text = campus.name,
+                                            fontWeight = if (campus.id == selectedCampus.id) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (campus.id == selectedCampus.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = campus.address,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 },
                                 onClick = {
                                     selectedCampus = campus
@@ -246,7 +253,7 @@ fun MapScreen(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 // Filter Button (right of campus menu), dropdown opens left-down
-                Box(modifier = Modifier.width(240.dp)) {
+                Box(modifier = Modifier.width(48.dp)) {
                     Surface(
                         color = if (mapMenuExpanded) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
                         shape = RoundedCornerShape(20.dp),
