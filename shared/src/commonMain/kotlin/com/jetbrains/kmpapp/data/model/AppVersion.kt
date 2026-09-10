@@ -10,7 +10,7 @@ object AppVersion {
      *  - contributor build           → 26.X-contrib.N
      * После стабильного релиза v26.0.0 руками поднимается до 26.1.0.
      */
-    const val RELEASE_VERSION = "26.0.0"
+    const val RELEASE_VERSION = "26.1.0"
     const val VERSION_NAME = RELEASE_VERSION
 
     /** stable | beta | rc | dev | contrib — подставляет CI через tools/versioning.py */
