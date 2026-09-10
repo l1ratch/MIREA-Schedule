@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -72,6 +73,7 @@ fun SettingsScreen(
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val isSakuraTheme by viewModel.isSakuraTheme.collectAsState()
+    val betaChannel by viewModel.betaChannel.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
@@ -357,6 +359,37 @@ fun SettingsScreen(
                     Switch(
                         checked = autoScrollToCurrentLesson,
                         onCheckedChange = { viewModel.setAutoScrollToCurrentLesson(it) }
+                    )
+                }
+            }
+
+            // Section: Updates
+            SettingsSectionCard(
+                title = "Обновления",
+                icon = Icons.Default.Update
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Бета-канал обновлений",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Проверять бета-версии и релиз-кандидаты при поиске обновлений",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = betaChannel,
+                        onCheckedChange = { viewModel.setBetaChannel(it) }
                     )
                 }
             }

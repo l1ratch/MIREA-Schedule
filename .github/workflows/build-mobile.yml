@@ -234,10 +234,10 @@ jobs:
           python tools/publish_release.py --channel "$CHANNEL" --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" $ARGS
 
   update_version_feed:
-    name: 📡 Update Version Feed & App Source (stable only)
+    name: 📡 Update Version Feeds & GBox Sources
     runs-on: ubuntu-latest
     needs: [resolve, publish_release]
-    if: needs.resolve.outputs.channel == 'stable' && needs.publish_release.result == 'success'
+    if: needs.publish_release.result == 'success'
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
@@ -247,11 +247,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: 📝 Generate version.json + apps.json
+      - name: 📝 Generate feeds (stable/beta/rc)
         env:
+          CHANNEL: ${{ needs.resolve.outputs.channel }}
           VERSION: ${{ needs.resolve.outputs.version }}
           BUILD: ${{ needs.resolve.outputs.build_id }}
-        run: python tools/update_version_feed.py --channel stable --version "$VERSION" --build-number "$BUILD" --out-dir dist_version
+          SHA: ${{ needs.resolve.outputs.commit_sha }}
+        run: python tools/update_version_feed.py --channel "$CHANNEL" --version "$VERSION" --build-number "$BUILD" --commit-sha "$SHA" --out-dir dist_version
 
       - name: 🚀 Deploy feeds to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

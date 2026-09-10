@@ -65,7 +65,7 @@ class OtherViewModel(
     val cheatsAgreed: StateFlow<Boolean?> = repository.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
-    val includePrereleaseUpdates: StateFlow<Boolean> = repository.includePrereleaseUpdates
+    val betaChannel: StateFlow<Boolean> = repository.betaChannel
 
     fun setShowLessonProgress(enabled: Boolean) {
         repository.setShowLessonProgress(enabled)
@@ -178,8 +178,8 @@ class OtherViewModel(
     private val _updateStatusMessage = MutableStateFlow<String?>(null)
     val updateStatusMessage: StateFlow<String?> = _updateStatusMessage.asStateFlow()
 
-    fun setIncludePrereleaseUpdates(enabled: Boolean) {
-        repository.setIncludePrereleaseUpdates(enabled)
+    fun setBetaChannel(enabled: Boolean) {
+        repository.setBetaChannel(enabled)
         checkForUpdates()
     }
 
@@ -188,7 +188,7 @@ class OtherViewModel(
             try {
                 _isCheckingUpdate.value = true
                 _updateStatusMessage.value = null
-                val result = updateChecker.checkForUpdates(includePrereleaseUpdates.value)
+                val result = updateChecker.checkForUpdates(betaChannel.value)
                 _updateResult.value = result
                 _isCheckingUpdate.value = false
                 if (result != null && !result.hasUpdate) {

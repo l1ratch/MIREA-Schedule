@@ -69,8 +69,8 @@ class ScheduleStorage(
     private val _cheatsBlocked = MutableStateFlow(false)
     val cheatsBlocked: StateFlow<Boolean> = _cheatsBlocked.asStateFlow()
 
-    private val _includePrereleaseUpdates = MutableStateFlow(false)
-    val includePrereleaseUpdates: StateFlow<Boolean> = _includePrereleaseUpdates.asStateFlow()
+    private val _betaChannel = MutableStateFlow(false)
+    val betaChannel: StateFlow<Boolean> = _betaChannel.asStateFlow()
 
     private val lastSyncTimes = mutableMapOf<Int, Long>()
 
@@ -148,8 +148,8 @@ class ScheduleStorage(
             _themeOverlay.value = loadThemeOverlay()
             _cheatsAgreed.value = platformStorage.getString(KEY_CHEATS_AGREED)?.toBooleanStrictOrNull()
             _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
-            _includePrereleaseUpdates.value =
-                platformStorage.getString(KEY_INCLUDE_PRERELEASE_UPDATES)?.toBooleanStrictOrNull() ?: false
+            _betaChannel.value =
+                platformStorage.getString(KEY_BETA_CHANNEL)?.toBooleanStrictOrNull() ?: false
 
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
@@ -283,9 +283,9 @@ class ScheduleStorage(
         scope.launch { platformStorage.saveString(KEY_CHEATS_BLOCKED, blocked.toString()) }
     }
 
-    fun setIncludePrereleaseUpdates(enabled: Boolean) {
-        _includePrereleaseUpdates.value = enabled
-        scope.launch { platformStorage.saveString(KEY_INCLUDE_PRERELEASE_UPDATES, enabled.toString()) }
+    fun setBetaChannel(enabled: Boolean) {
+        _betaChannel.value = enabled
+        scope.launch { platformStorage.saveString(KEY_BETA_CHANNEL, enabled.toString()) }
     }
 
     fun setSakuraThemeExclusive(enabled: Boolean) {
@@ -410,7 +410,7 @@ class ScheduleStorage(
     fun resetAllData() {
         val cheatsAgreedBefore = _cheatsAgreed.value
         val cheatsBlockedBefore = _cheatsBlocked.value
-        val includePrereleaseBefore = _includePrereleaseUpdates.value
+        val betaChannelBefore = _betaChannel.value
         platformStorage.clearAll()
         _savedTargets.value = emptyList()
         _selectedTarget.value = null
@@ -424,13 +424,13 @@ class ScheduleStorage(
         _themeOverlay.value = ThemeOverlay.NONE
         _cheatsAgreed.value = cheatsAgreedBefore
         _cheatsBlocked.value = cheatsBlockedBefore
-        _includePrereleaseUpdates.value = includePrereleaseBefore
+        _betaChannel.value = betaChannelBefore
         lastSyncTimes.clear()
         scope.launch {
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
             else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
-            platformStorage.saveString(KEY_INCLUDE_PRERELEASE_UPDATES, includePrereleaseBefore.toString())
+            platformStorage.saveString(KEY_BETA_CHANNEL, betaChannelBefore.toString())
         }
     }
 
@@ -509,7 +509,7 @@ class ScheduleStorage(
         private const val KEY_THEME_OVERLAY = "mirea_theme_overlay"
         private const val KEY_CHEATS_AGREED = "mirea_cheats_agreed"
         private const val KEY_CHEATS_BLOCKED = "mirea_cheats_blocked"
-        private const val KEY_INCLUDE_PRERELEASE_UPDATES = "mirea_include_prerelease_updates"
+        private const val KEY_BETA_CHANNEL = "mirea_beta_channel"
         val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
     }
 }

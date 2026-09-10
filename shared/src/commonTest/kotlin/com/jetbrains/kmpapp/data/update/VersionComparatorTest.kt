@@ -37,6 +37,8 @@ class VersionComparatorTest {
         assertOrder("26.10-dev.10", "26.10-dev.151")
         assertOrder("26.10-contrib.5", "26.10-contrib.6")
         assertOrder("26.10-dev.151", "26.10-dev.151.1")
+        assertOrder("26.10-beta.9", "26.10-rc.1")    // rc позже beta (один фид beta.json)
+        assertOrder("26.10-beta.2", "26.10-beta.3")
     }
 
     @Test

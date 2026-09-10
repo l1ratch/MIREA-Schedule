@@ -27,8 +27,8 @@ object AppVersion {
     /** Стабильный канал обновлений (обновляется только стабильными релизами). */
     const val UPDATE_FEED_URL = "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/version.json"
 
-    /** Тестовый канал обновлений (opt-in через отладочное меню, обновляется preview-сборками main). */
-    const val PRERELEASE_FEED_URL = "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/preview.json"
+    /** Канал бета-версий (beta/rc): проверяется только если включён «Бета-канал» в настройках. */
+    const val BETA_FEED_URL = "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/beta.json"
 
     const val IS_CRITICAL = false
     const val MIN_SUPPORTED_BUILD = 1

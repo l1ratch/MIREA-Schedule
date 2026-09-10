@@ -85,19 +85,19 @@ class AppUpdateChecker(
         isLenient = true
     }
 
-    suspend fun checkForUpdates(includePrerelease: Boolean = false): UpdateCheckResult? = withContext(Dispatchers.IO) {
-        if (AppVersion.isTestBuild && !includePrerelease) {
+    suspend fun checkForUpdates(includeBeta: Boolean = false): UpdateCheckResult? = withContext(Dispatchers.IO) {
+        if (AppVersion.isTestBuild && !includeBeta) {
             return@withContext upToDateResult()
         }
 
         val stableResult = fetchFeedResult(AppVersion.UPDATE_FEED_URL, channel = "stable", isPrerelease = false)
-        val previewResult = if (includePrerelease) {
-            fetchFeedResult(AppVersion.PRERELEASE_FEED_URL, channel = "preview", isPrerelease = true)
+        val betaResult = if (includeBeta) {
+            fetchFeedResult(AppVersion.BETA_FEED_URL, channel = "beta", isPrerelease = true)
         } else {
             null
         }
 
-        pickBestResult(previewResult, stableResult) ?: fetchLatestReleaseResult()
+        pickBestResult(betaResult, stableResult) ?: fetchLatestReleaseResult()
     }
 
     private suspend fun fetchFeedResult(url: String, channel: String, isPrerelease: Boolean): UpdateCheckResult? {

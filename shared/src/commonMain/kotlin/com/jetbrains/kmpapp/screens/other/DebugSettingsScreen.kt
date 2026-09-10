@@ -56,7 +56,6 @@ fun DebugSettingsScreen(
 ) {
     PlatformBackHandler(onBack = onBack)
     val simulateOffline by DebugConfig.isOfflineSimulated.collectAsState()
-    val includePrereleaseUpdates by viewModel.includePrereleaseUpdates.collectAsState()
     val storageStats by viewModel.storageStats.collectAsState()
     var showClearCacheDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
@@ -104,13 +103,6 @@ fun DebugSettingsScreen(
                 subtitle = "Использовать сохранённые данные без сети",
                 checked = simulateOffline,
                 onCheckedChange = DebugConfig::setOfflineSimulated
-            )
-
-            DebugSwitchCard(
-                title = "Тестовые обновления",
-                subtitle = "Проверять тестовые сборки (preview-канал) при поиске обновлений",
-                checked = includePrereleaseUpdates,
-                onCheckedChange = viewModel::setIncludePrereleaseUpdates
             )
 
             Card(
