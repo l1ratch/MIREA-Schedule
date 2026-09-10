@@ -145,6 +145,7 @@ fun App() {
                 val updateKey = "${activeUpdate.latestVersion}_${activeUpdate.latestBuild}_${activeUpdate.urgency}"
                 val isCritical = activeUpdate.urgency == UpdateUrgency.CRITICAL
                 val isNewVersion = activeUpdate.urgency == UpdateUrgency.NEW_VERSION
+                val isPrereleaseUpdate = activeUpdate.isPrerelease
 
                 if ((isCritical || isNewVersion) && dismissedUpdateKey != updateKey) {
                     AlertDialog(
@@ -162,17 +163,24 @@ fun App() {
                         },
                         title = {
                             Text(
-                                text = if (isCritical) "Критическое обновление!" else "Доступна новая версия",
+                                text = when {
+                                    isCritical -> "Критическое обновление!"
+                                    isPrereleaseUpdate -> "Доступна тестовая версия"
+                                    else -> "Доступна новая версия"
+                                },
                                 fontWeight = FontWeight.Bold
                             )
                         },
                         text = {
                             androidx.compose.foundation.layout.Column {
                                 Text(
-                                    text = if (isCritical) {
-                                        "Обнаружено критическое обновление безопасности/стабильности (сборка ${activeUpdate.latestBuild}). Рекомендуется установить его сейчас."
-                                    } else {
-                                        "Вышла версия ${activeUpdate.latestVersion} (сборка ${activeUpdate.latestBuild})."
+                                    text = when {
+                                        isCritical ->
+                                            "Обнаружено критическое обновление безопасности/стабильности (сборка ${activeUpdate.latestBuild}). Рекомендуется установить его сейчас."
+                                        isPrereleaseUpdate ->
+                                            "Вышла тестовая сборка ${activeUpdate.latestVersion} (сборка ${activeUpdate.latestBuild}). Она может быть менее стабильной."
+                                        else ->
+                                            "Вышла версия ${activeUpdate.latestVersion} (сборка ${activeUpdate.latestBuild})."
                                     },
                                     style = MaterialTheme.typography.bodyMedium
                                 )

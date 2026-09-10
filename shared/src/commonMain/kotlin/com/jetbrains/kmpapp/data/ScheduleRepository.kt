@@ -94,11 +94,13 @@ class ScheduleRepository(
     val isMatrixTheme: StateFlow<Boolean> = storage.isMatrixTheme
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
+    val includePrereleaseUpdates: StateFlow<Boolean> = storage.includePrereleaseUpdates
 
     fun setThemeOverlay(overlay: ThemeOverlay) = storage.setThemeOverlay(overlay)
     fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
     fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)
+    fun setIncludePrereleaseUpdates(enabled: Boolean) = storage.setIncludePrereleaseUpdates(enabled)
 
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)
