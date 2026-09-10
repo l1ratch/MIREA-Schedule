@@ -7,7 +7,8 @@ object MapHtmlGenerator {
         isDark: Boolean = true,
         campusId: String = "",
         showStairs: Boolean = true,
-        showLabels: Boolean = true
+        showLabels: Boolean = true,
+        showCoordinatePlane: Boolean = false
     ): String {
         // 1. Parse viewBox from SVG content to extract base coordinate space
         val vbRegex = Regex("""viewBox=["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']""")
@@ -163,6 +164,12 @@ object MapHtmlGenerator {
         val cardTitleColor = if (isDark) "#f0f6fc" else "#0f172a"
         val cardSubColor = if (isDark) "#8b949e" else "#64748b"
 
+        // Coordinate plane (debug grid) themed colors
+        val gridLineStroke = if (isDark) "rgba(96, 165, 250, 0.35)" else "rgba(37, 99, 235, 0.35)"
+        val gridAxisStroke = if (isDark) "rgba(96, 165, 250, 0.95)" else "rgba(37, 99, 235, 0.9)"
+        val gridLabelFill = if (isDark) "#93c5fd" else "#1d4ed8"
+        val gridLabelYFill = if (isDark) "#34d399" else "#047857"
+
         return """
 <!DOCTYPE html>
 <html>
@@ -273,6 +280,46 @@ object MapHtmlGenerator {
     line-height: 1;
     flex-shrink: 0;
   }
+
+  /* Coordinate Plane HUD */
+  .coord-hud {
+    position: absolute;
+    bottom: 92px;
+    right: 14px;
+    z-index: 900;
+    background: $cardBg;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid $cardBorder;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    color: $cardTitleColor;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    min-width: 168px;
+    transition: opacity 0.2s ease;
+  }
+  .coord-hud.hidden { opacity: 0; pointer-events: none; }
+  .coord-hud .hud-x { color: $gridLabelFill; font-weight: 700; }
+  .coord-hud .hud-y { color: $gridLabelYFill; font-weight: 700; }
+  .coord-hud .hud-sub { color: $cardSubColor; font-size: 11px; margin-top: 2px; }
+
+  /* Coordinate Plane Grid */
+  #coord-plane line { vector-effect: non-scaling-stroke; }
+  #coord-plane text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  #coord-crosshairs line {
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -288,6 +335,10 @@ object MapHtmlGenerator {
     </div>
   </div>
   $preparedSvg
+  <div id="coord-hud" class="coord-hud hidden">
+    <div><span class="hud-x">X</span> <span id="coord-x">--</span> &nbsp;&nbsp; <span class="hud-y">Y</span> <span id="coord-y">--</span></div>
+    <div class="hud-sub" id="coord-extra">step --</div>
+  </div>
 </div>
 <script>
   const viewport = document.getElementById('viewport');
@@ -319,9 +370,18 @@ object MapHtmlGenerator {
   let minVw = 200;
   let maxVw = origW * 2.0;
 
+  let coordPlaneEnabled = $showCoordinatePlane;
+  const GRID_TARGET_PX = 110;
+  const GRID_LABEL_PX = 12;
+
+  let ptrActive = false;
+  let ptrSxVal = 0;
+  let ptrSyVal = 0;
+
   function applyViewBox() {
     if (!svg) return;
     svg.setAttribute('viewBox', curVx.toFixed(2) + ' ' + curVy.toFixed(2) + ' ' + curVw.toFixed(2) + ' ' + curVh.toFixed(2));
+    if (coordPlaneEnabled) { renderGrid(); renderHud(); }
   }
 
   function calcInitialView() {
@@ -468,6 +528,183 @@ object MapHtmlGenerator {
     }
   }
 
+  window.setCoordinatePlane = function(show) {
+    coordPlaneEnabled = !!show;
+    const g = document.getElementById('coord-plane');
+    if (g) { g.style.display = coordPlaneEnabled ? '' : 'none'; }
+    const hud = document.getElementById('coord-hud');
+    if (hud) { hud.classList.toggle('hidden', !coordPlaneEnabled); }
+    if (!coordPlaneEnabled) ptrActive = false;
+    if (coordPlaneEnabled) { renderGrid(); renderHud(); }
+  };
+
+  function coordStep(raw) {
+    if (!(raw > 0)) return 1;
+    const exp = Math.floor(Math.log(raw) / Math.LN10);
+    const base = Math.pow(10, exp);
+    const f = raw / base;
+    let nf;
+    if (f <= 1) nf = 1;
+    else if (f <= 2) nf = 2;
+    else if (f <= 5) nf = 5;
+    else nf = 10;
+    return nf * base;
+  }
+
+  function fmtCoord(v) {
+    if (v === 0) return '0';
+    const av = Math.abs(v);
+    if (av >= 100) return Math.round(v).toString();
+    if (av >= 10) return (Math.round(v * 10) / 10).toString();
+    return (Math.round(v * 100) / 100).toString();
+  }
+
+  function svgElNS(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const key in attrs) {
+      if (Object.prototype.hasOwnProperty.call(attrs, key)) { el.setAttribute(key, attrs[key]); }
+    }
+    return el;
+  }
+
+  function renderGrid() {
+    if (!svg || !viewport) return;
+    let g = document.getElementById('coord-plane');
+    if (!g) {
+      g = svgElNS('g', { 'id': 'coord-plane', 'pointer-events': 'none' });
+      svg.appendChild(g);
+    }
+    g.innerHTML = '';
+    if (!coordPlaneEnabled) { g.style.display = 'none'; return; }
+    g.style.display = '';
+
+    const vW = viewport.clientWidth || window.innerWidth;
+    const vH = viewport.clientHeight || window.innerHeight;
+    if (!vW || !vH) return;
+
+    const step = coordStep(curVw / GRID_TARGET_PX);
+    const fontSvg = step * (GRID_LABEL_PX / GRID_TARGET_PX);
+    const labelPad = fontSvg * 0.45;
+
+    const x0 = Math.floor(curVx / step) * step;
+    const x1 = Math.ceil((curVx + curVw) / step) * step;
+    for (let x = x0; x <= x1; x = +(x + step).toFixed(6)) {
+      const isAxis = (x === 0);
+      g.appendChild(svgElNS('line', {
+        'x1': x, 'y1': curVy, 'x2': x, 'y2': curVy + curVh,
+        'stroke': isAxis ? '$gridAxisStroke' : '$gridLineStroke',
+        'stroke-width': isAxis ? 1.4 : 1,
+        'vector-effect': 'non-scaling-stroke'
+      }));
+      if (x >= curVx - step * 0.001 && x <= curVx + curVw + step * 0.001) {
+        const txTop = svgElNS('text', {
+          'x': x + labelPad, 'y': curVy + fontSvg * 1.15,
+          'font-size': fontSvg, 'fill': '$gridLabelFill',
+          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          'font-weight': '700'
+        });
+        txTop.textContent = fmtCoord(x);
+        g.appendChild(txTop);
+        const txBottom = svgElNS('text', {
+          'x': x + labelPad, 'y': curVy + curVh - fontSvg * 0.4,
+          'font-size': fontSvg, 'fill': '$gridLabelFill',
+          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          'font-weight': '700'
+        });
+        txBottom.textContent = fmtCoord(x);
+        g.appendChild(txBottom);
+      }
+    }
+
+    const y0 = Math.floor(curVy / step) * step;
+    const y1 = Math.ceil((curVy + curVh) / step) * step;
+    for (let y = y0; y <= y1; y = +(y + step).toFixed(6)) {
+      const isAxis = (y === 0);
+      g.appendChild(svgElNS('line', {
+        'x1': curVx, 'y1': y, 'x2': curVx + curVw, 'y2': y,
+        'stroke': isAxis ? '$gridAxisStroke' : '$gridLineStroke',
+        'stroke-width': isAxis ? 1.4 : 1,
+        'vector-effect': 'non-scaling-stroke'
+      }));
+      if (y >= curVy - step * 0.001 && y <= curVy + curVh + step * 0.001) {
+        const tRight = svgElNS('text', {
+          'x': curVx + curVw - labelPad, 'y': y - labelPad,
+          'font-size': fontSvg, 'fill': '$gridLabelYFill',
+          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          'font-weight': '700',
+          'text-anchor': 'end'
+        });
+        tRight.textContent = fmtCoord(y);
+        g.appendChild(tRight);
+      }
+    }
+
+    if (ptrActive) {
+      g.appendChild(svgElNS('line', {
+        'x1': ptrSxVal, 'y1': curVy - step, 'x2': ptrSxVal, 'y2': curVy + curVh + step,
+        'stroke': '$gridLabelFill', 'stroke-width': 1, 'stroke-dasharray': '6 4',
+        'vector-effect': 'non-scaling-stroke'
+      }));
+      g.appendChild(svgElNS('line', {
+        'x1': curVx - step, 'y1': ptrSyVal, 'x2': curVx + curVw + step, 'y2': ptrSyVal,
+        'stroke': '$gridLabelYFill', 'stroke-width': 1, 'stroke-dasharray': '6 4',
+        'vector-effect': 'non-scaling-stroke'
+      }));
+    }
+  }
+
+  function renderHud() {
+    if (!coordPlaneEnabled) return;
+    const hud = document.getElementById('coord-hud');
+    if (!hud) return;
+    const elX = document.getElementById('coord-x');
+    const elY = document.getElementById('coord-y');
+    const elSub = document.getElementById('coord-extra');
+    let px, py;
+    if (ptrActive) {
+      px = ptrSxVal;
+      py = ptrSyVal;
+    } else {
+      px = curVx + curVw / 2;
+      py = curVy + curVh / 2;
+    }
+    if (elX) elX.textContent = px.toFixed(2);
+    if (elY) elY.textContent = py.toFixed(2);
+    const step = coordStep(curVw / GRID_TARGET_PX);
+    if (elSub) {
+      elSub.textContent = 'step ' + fmtCoord(step) + ' · view ' + Math.round(curVx) + ' ' + Math.round(curVy) + ' ' + Math.round(curVw) + 'x' + Math.round(curVh);
+    }
+  }
+
+  function updatePointerCoords(clientX, clientY, active) {
+    const vW = viewport.clientWidth || window.innerWidth;
+    const vH = viewport.clientHeight || window.innerHeight;
+    if (!vW || !vH) return;
+    ptrActive = active;
+    ptrSxVal = curVx + (clientX / vW) * curVw;
+    ptrSyVal = curVy + (clientY / vH) * curVh;
+    if (coordPlaneEnabled) { renderGrid(); renderHud(); }
+  }
+
+  viewport.addEventListener('mousemove', (e) => { updatePointerCoords(e.clientX, e.clientY, true); });
+  viewport.addEventListener('mouseleave', () => {
+    if (ptrActive && coordPlaneEnabled) { ptrActive = false; renderGrid(); renderHud(); }
+  });
+  viewport.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (t) updatePointerCoords(t.clientX, t.clientY, true);
+  }, { passive: false });
+  viewport.addEventListener('touchend', () => {
+    if (ptrActive && coordPlaneEnabled) { ptrActive = false; renderGrid(); renderHud(); }
+  });
+
+  if (coordPlaneEnabled) {
+    const hud = document.getElementById('coord-hud');
+    if (hud) { hud.classList.remove('hidden'); }
+    renderGrid();
+    renderHud();
+  }
+
   // --- Room selection and Info Card ---
   let selectedElement = null;
 
@@ -518,7 +755,10 @@ object MapHtmlGenerator {
         subtitle = 'Зал заседаний Ученого совета';
       } else if (campusId === 's-20' && title === 'КПП 1') {
         icon = '🛂';
-        subtitle = 'Вход';
+        subtitle = 'Вход/выход';
+      } else if (campusId === 's-20' && title === 'КПП 3') {
+        icon = '🛂';
+        subtitle = 'Выход';
       } else if (campusId === 's-20' && title === '102') {
         icon = '🛡️';
         subtitle = 'Охрана';

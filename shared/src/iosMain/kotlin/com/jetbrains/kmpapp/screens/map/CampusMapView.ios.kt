@@ -50,6 +50,9 @@ actual fun CampusMapView(
                     ctrl.onToggleLayer = { section, show ->
                         evaluateJavaScript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
                     }
+                    ctrl.onSetCoordinatePlane = { show ->
+                        evaluateJavaScript("window.setCoordinatePlane && window.setCoordinatePlane($show);", null)
+                    }
                 }
                 webViewRef = this
             }
@@ -61,6 +64,9 @@ actual fun CampusMapView(
                 ctrl.onResetView = { webView.evaluateJavaScript("window.resetView && window.resetView();", null) }
                 ctrl.onToggleLayer = { section, show ->
                     webView.evaluateJavaScript("window.setLayerVisibility && window.setLayerVisibility('$section', $show);", null)
+                }
+                ctrl.onSetCoordinatePlane = { show ->
+                    webView.evaluateJavaScript("window.setCoordinatePlane && window.setCoordinatePlane($show);", null)
                 }
             }
             // CRITICAL FIX: Only reload HTML when it actually changes, preventing 100% CPU loops on recompositions

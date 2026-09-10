@@ -3,12 +3,8 @@ package com.jetbrains.kmpapp.screens.map
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +14,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,22 +25,19 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CenterFocusStrong
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -83,6 +73,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.model.ThemeMode
 
@@ -116,6 +107,16 @@ fun MapScreen(
     var mapMenuExpanded by remember { mutableStateOf(false) }
     var showStairs by remember { mutableStateOf(true) }
     var showRoomNumbers by remember { mutableStateOf(true) }
+    var showWaterCoolers by remember { mutableStateOf(false) }
+    var showAtms by remember { mutableStateOf(false) }
+    var showVending by remember { mutableStateOf(false) }
+    var showCopiers by remember { mutableStateOf(false) }
+    var showChillZones by remember { mutableStateOf(false) }
+    val mapCoordinatePlane by DebugConfig.isMapCoordinatePlaneEnabled.collectAsState()
+
+    LaunchedEffect(mapCoordinatePlane) {
+        controller.setCoordinatePlane(mapCoordinatePlane)
+    }
 
     // Load SVG whenever campus or floor changes
     LaunchedEffect(selectedCampus, selectedFloor) {
@@ -133,13 +134,14 @@ fun MapScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             // 1. Campus Map WebView Canvas
             if (svgContent != null) {
-                val html = remember(svgContent, isDark, selectedCampus.id) {
+                val html = remember(svgContent, isDark, selectedCampus.id, showStairs, showRoomNumbers, mapCoordinatePlane) {
                     MapHtmlGenerator.generateHtml(
                         svgContent = svgContent ?: "",
                         isDark = isDark,
                         campusId = selectedCampus.id,
                         showStairs = showStairs,
-                        showLabels = showRoomNumbers
+                        showLabels = showRoomNumbers,
+                        showCoordinatePlane = mapCoordinatePlane
                     )
                 }
                 CampusMapView(
@@ -171,82 +173,132 @@ fun MapScreen(
                 }
             }
 
-            // 3. Top Header Bar: Campus Selector
-            Column(
+            // 3. Top Header Bar: Campus Selector + Filter Button
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = RoundedCornerShape(20.dp),
-                    shadowElevation = 6.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { campusDropdownExpanded = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                Box(modifier = Modifier.weight(1f)) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shape = RoundedCornerShape(20.dp),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { campusDropdownExpanded = true }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = selectedCampus.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = selectedCampus.address,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Выбрать кампус",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Выбрать кампус",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    }
 
-                        // Campus Dropdown Menu
-                        DropdownMenu(
-                            expanded = campusDropdownExpanded,
-                            onDismissRequest = { campusDropdownExpanded = false }
+                    DropdownMenu(
+                        expanded = campusDropdownExpanded,
+                        onDismissRequest = { campusDropdownExpanded = false }
+                    ) {
+                        CAMPUSES.forEach { campus ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = campus.name,
+                                        fontWeight = if (campus.id == selectedCampus.id) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (campus.id == selectedCampus.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = {
+                                    selectedCampus = campus
+                                    selectedFloor = campus.defaultFloor
+                                    campusDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Filter Button (right of campus menu), dropdown opens left-down
+                Box(modifier = Modifier.width(240.dp)) {
+                    Surface(
+                        color = if (mapMenuExpanded) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+                        shape = RoundedCornerShape(20.dp),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(48.dp)
+                    ) {
+                        IconButton(
+                            onClick = { mapMenuExpanded = !mapMenuExpanded },
+                            modifier = Modifier.size(48.dp)
                         ) {
-                            CAMPUSES.forEach { campus ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(
-                                                text = campus.name,
-                                                fontWeight = if (campus.id == selectedCampus.id) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (campus.id == selectedCampus.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = campus.address,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedCampus = campus
-                                        selectedFloor = campus.defaultFloor
-                                        campusDropdownExpanded = false
-                                    }
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Фильтр карты",
+                                tint = if (mapMenuExpanded) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = mapMenuExpanded,
+                        onDismissRequest = { mapMenuExpanded = false }
+                    ) {
+                        MapFilterRow("Лестницы", showStairs) {
+                            showStairs = it
+                            controller.toggleLayer("stairs", it)
+                        }
+                        MapFilterRow("Номера аудиторий", showRoomNumbers) {
+                            showRoomNumbers = it
+                            controller.toggleLayer("labels", it)
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        MapFilterRow("Куллеры", showWaterCoolers) {
+                            showWaterCoolers = it
+                            controller.toggleLayer("water-coolers", it)
+                        }
+                        MapFilterRow("Банкоматы", showAtms) {
+                            showAtms = it
+                            controller.toggleLayer("atms", it)
+                        }
+                        MapFilterRow("Автоматы", showVending) {
+                            showVending = it
+                            controller.toggleLayer("vending", it)
+                        }
+                        MapFilterRow("Копирки", showCopiers) {
+                            showCopiers = it
+                            controller.toggleLayer("copiers", it)
+                        }
+                        MapFilterRow("Чил-зоны", showChillZones) {
+                            showChillZones = it
+                            controller.toggleLayer("chill-zones", it)
                         }
                     }
                 }
@@ -292,15 +344,15 @@ fun MapScreen(
                 }
             }
 
-            // 5. Floating Zoom Controls (Bottom-Right)
+            // 5. Floating Zoom Controls (Bottom-Left)
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = RoundedCornerShape(20.dp),
                 shadowElevation = 8.dp,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(Alignment.BottomStart)
                     .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 84.dp)
+                    .padding(start = 16.dp, bottom = 72.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(4.dp),
@@ -323,90 +375,6 @@ fun MapScreen(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(Icons.Default.CenterFocusStrong, contentDescription = "Центрировать", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
-
-            // 6. Scrim: auto-hide layers menu on outside tap or map interaction
-            if (mapMenuExpanded) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = {
-                                    mapMenuExpanded = false
-                                }
-                            )
-                        }
-                )
-            }
-
-            // 7. Map Layers Menu (Bottom-Left)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .navigationBarsPadding()
-                    .padding(start = 16.dp, bottom = 140.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = RoundedCornerShape(20.dp),
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    IconButton(
-                        onClick = { mapMenuExpanded = !mapMenuExpanded },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Слои карты",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-
-            // 7. Layers Panel (slides in from the left edge, above the menu button)
-            AnimatedVisibility(
-                visible = mapMenuExpanded,
-                enter = slideInHorizontally(
-                    animationSpec = tween(220),
-                    initialOffsetX = { -it }
-                ) + fadeIn(tween(160)),
-                exit = slideOutHorizontally(
-                    animationSpec = tween(180),
-                    targetOffsetX = { -it }
-                ) + fadeOut(tween(120)),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .navigationBarsPadding()
-                    .padding(start = 16.dp, bottom = 204.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = RoundedCornerShape(16.dp),
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.width(240.dp)
-                ) {
-                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
-                        MapLayerRow(
-                            title = "Лестницы",
-                            checked = showStairs,
-                            onClick = {
-                                showStairs = !showStairs
-                                controller.toggleLayer("stairs", showStairs)
-                            }
-                        )
-                        MapLayerRow(
-                            title = "Номера аудиторий",
-                            checked = showRoomNumbers,
-                            onClick = {
-                                showRoomNumbers = !showRoomNumbers
-                                controller.toggleLayer("labels", showRoomNumbers)
-                            }
-                        )
                     }
                 }
             }
@@ -528,40 +496,26 @@ fun MapScreen(
 }
 
 @Composable
-private fun MapLayerRow(
+private fun MapFilterRow(
     title: String,
     checked: Boolean,
-    onClick: () -> Unit
+    onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier.size(20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (checked) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (checked) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    DropdownMenuItem(
+        text = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (checked) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        trailingIcon = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
+            )
+        },
+        onClick = { onCheckedChange(!checked) }
+    )
 }
