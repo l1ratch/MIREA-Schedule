@@ -7,12 +7,13 @@
 
 Кроссплатформенное мобильное приложение: расписание учебных занятий, поиск свободных аудиторий и схемы корпусов РТУ МИРЭА.
 
+> [!NOTE]
 > **Проект неофициальный.** Не аффилирован с РТУ МИРЭА и не одобрен университетом. Название вуза и все данные (расписание, схемы корпусов) принадлежат их правообладателям; приложение только отображает их со ссылкой на официальные источники.
 
 **Скачать:** [APK (Android, стабильная версия)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA (iOS, без подписи)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) · [Все релизы](https://github.com/l1ratch/MIREA-Schedule/releases)
 
 > [!CAUTION]
-> ⚠️ Если установлена версия **26.9.0–26.9.4**: нумерация версий изменилась, автоматическое обновление не сработает. Установите свежую версию вручную: [APK](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa).
+> Если установлена версия **26.9.0–26.9.4**: нумерация версий изменилась, автоматическое обновление не сработает. Установите свежую версию вручную: [APK](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa).
 
 ---
 
