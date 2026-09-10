@@ -127,7 +127,7 @@ class OtherViewModel(
                 htmlUrl = "https://github.com/prosto-max",
                 avatarUrl = "https://avatars.githubusercontent.com/u/151039381?v=4",
                 contributions = 5,
-                role = "Соавтор и тестировщик"
+                role = "Соавтор и разработчик"
             )
         )
     )
@@ -155,7 +155,7 @@ class OtherViewModel(
                     htmlUrl = "https://github.com/prosto-max",
                     avatarUrl = prostoMaxFromApi?.avatarUrl ?: "https://github.com/prosto-max.png",
                     contributions = prostoMaxFromApi?.contributions ?: 5,
-                    role = "Соавтор и тестировщик"
+                    role = "Соавтор и разработчик"
                 )
                 val otherContributors = fetched.filterNot {
                     it.login.equals("l1ratch", ignoreCase = true) || it.login.equals("prosto-max", ignoreCase = true)
