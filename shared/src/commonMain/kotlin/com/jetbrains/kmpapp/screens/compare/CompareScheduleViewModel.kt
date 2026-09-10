@@ -152,28 +152,14 @@ class CompareScheduleViewModel(
                 val signatures = row.cells.map { cellSignature(it.lessons) }
                 val nonEmpty = signatures.filterNotNull()
                 matchesCount += nonEmpty.size
-                val hasEmpty = signatures.any { it == null }
-                val allSame = !hasEmpty && nonEmpty.toSet().size <= 1
+                val allSame = nonEmpty.isNotEmpty() && nonEmpty.toSet().size <= 1
                 if (nonEmpty.isEmpty() || allSame) {
                     row
                 } else {
-                    val counts = nonEmpty.groupingBy { it }.eachCount()
-                    val maxCount = counts.values.maxOrNull() ?: 1
-                    val mode = counts.filterValues { it == maxCount }.keys.singleOrNull()
-
-                    val newCells = row.cells.mapIndexed { index, cell ->
-                        val signature = signatures[index]
-                        val isDifferent = when {
-                            signature == null -> true
-                            mode == null -> true
-                            else -> signature != mode
-                        }
-                        if (isDifferent) {
-                            differencesCount++
-                            cell.copy(isDifferent = true)
-                        } else {
-                            cell
-                        }
+                    // Highlight the whole pair: targets don't match at this bell.
+                    val newCells = row.cells.map { cell ->
+                        differencesCount++
+                        cell.copy(isDifferent = true)
                     }
                     row.copy(cells = newCells)
                 }
