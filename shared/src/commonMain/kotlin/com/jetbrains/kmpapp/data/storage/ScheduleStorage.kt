@@ -131,13 +131,10 @@ class ScheduleStorage(
                     val loaded = dockTabsStr.split(",").mapNotNull { name ->
                         try { AppTab.valueOf(name.trim()) } catch (_: Throwable) { null }
                     }
-                    val legacyDefault = listOf(AppTab.SCHEDULE, AppTab.FREE_ROOMS, AppTab.TASKS, AppTab.OTHER)
-                    val previousDefault = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.MAP, AppTab.OTHER)
-                    if (loaded == legacyDefault || loaded == previousDefault) {
-                        _dockTabs.value = DEFAULT_DOCK_TABS
-                    } else {
-                        _dockTabs.value = sanitizeDockTabs(loaded)
-                    }
+                    // ponytail: раньше совпадение со старыми дефолтами принудительно
+                    // сбрасывалось на новый дефолт — это стирало живой выбор
+                    // (дока без «Аудиторий» == старый дефолт). Сохранённое доверяем.
+                    _dockTabs.value = sanitizeDockTabs(loaded)
                 } else {
                     _dockTabs.value = DEFAULT_DOCK_TABS
                 }
