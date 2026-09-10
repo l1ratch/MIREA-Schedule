@@ -56,7 +56,7 @@ git push origin v26.0.0
 
 **Файлы которые БОЛЬШЕ НЕ используются:**
 - ❌ Хардкод версий в `AppVersion.kt` — теперь подставляет CI
-- ❌ Ручное изменение `BUILD_NUMBER` — теперь `github.run_id`
+- ❌ Ручное изменение `BUILD_NUMBER` — теперь epoch-секунды `github.run_started_at` (подставляет CI)
 - ❌ Ручное редактирование `version.json` — обновляется только из stable релиза
 
 **Все версии теперь через `tools/versioning.py`:**

@@ -16,7 +16,11 @@ object AppVersion {
     /** stable | beta | rc | dev | contrib — подставляет CI через tools/versioning.py */
     const val BUILD_CHANNEL = "stable"
 
-    /** Числовой код сборки: CI подставляет github.run_id (монотонный для всех каналов). */
+    /**
+     * Числовой код сборки. CI подставляет epoch-секунды начала запуска
+     * (github.run_started_at): монотонно во всех каналах, влезает в
+     * Int32 / Android versionCode (max 2147483647). github.run_id НЕ подходит.
+     */
     const val BUILD_NUMBER = 32
     const val COMMIT_SHA = "local"
 

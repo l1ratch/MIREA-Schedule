@@ -28,6 +28,7 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
       channel: ${{ steps.ver.outputs.channel }}
       prerelease: ${{ steps.ver.outputs.prerelease }}
+      build_id: ${{ steps.ver.outputs.build_id }}
       commit_sha: ${{ steps.ver.outputs.commit_sha }}
     steps:
       - name: 📚 Checkout Repository
@@ -39,8 +40,8 @@ jobs:
         id: ver
         env:
           TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: python tools/versioning.py resolve --tag "$TAG" --build-id "$RUN_ID"
+          RUN_STARTED: ${{ github.run_started_at }}
+        run: python tools/versioning.py resolve --tag "$TAG" --build-time "$RUN_STARTED"
 
   build_apk:
     name: 🤖 Build Android APK
@@ -55,8 +56,11 @@ jobs:
       - name: 🔖 Patch version files
         env:
           TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: python tools/versioning.py prepare --tag "$TAG" --build-id "$RUN_ID"
+          RUN_STARTED: ${{ github.run_started_at }}
+        run: python tools/versioning.py prepare --tag "$TAG" --build-time "$RUN_STARTED"
+
+      - name: 🔢 Export build number (versionCode == AppVersion.BUILD_NUMBER)
+        run: echo "BUILD_NUMBER=${{ needs.resolve.outputs.build_id }}" >> $GITHUB_ENV
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -73,8 +77,6 @@ jobs:
           validate-wrappers: false
 
       - name: 🔨 Run all tests + Build Android APK
-        env:
-          BUILD_NUMBER: ${{ github.run_id }}
         run: ./gradlew :shared:allTests assembleDebug --stacktrace
 
       - name: 🏷️ Prepare APK Artifact
@@ -110,8 +112,8 @@ jobs:
       - name: 🔖 Patch version files
         env:
           TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: python tools/versioning.py prepare --tag "$TAG" --build-id "$RUN_ID"
+          RUN_STARTED: ${{ github.run_started_at }}
+        run: python tools/versioning.py prepare --tag "$TAG" --build-time "$RUN_STARTED"
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
@@ -221,7 +223,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANNEL: ${{ needs.resolve.outputs.channel }}
           VERSION: ${{ needs.resolve.outputs.version }}
-          BUILD: ${{ github.run_id }}
+          BUILD: ${{ needs.resolve.outputs.build_id }}
           SHA: ${{ needs.resolve.outputs.commit_sha }}
         run: |
           APK=$(find download_apk -name '*.apk' 2>/dev/null | head -n 1)
@@ -248,7 +250,7 @@ jobs:
       - name: 📝 Generate version.json + apps.json
         env:
           VERSION: ${{ needs.resolve.outputs.version }}
-          BUILD: ${{ github.run_id }}
+          BUILD: ${{ needs.resolve.outputs.build_id }}
         run: python tools/update_version_feed.py --channel stable --version "$VERSION" --build-number "$BUILD" --out-dir dist_version
 
       - name: 🚀 Deploy feeds to gh-pages branch

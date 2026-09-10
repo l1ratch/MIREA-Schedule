@@ -8,9 +8,11 @@ tools/versioning.py — единый генератор версий для вс
   dev      push в main               → {RELEASE_VERSION}-dev.<run_number> (rolling preview)
   contrib  ручная сборка ветки      → {RELEASE_VERSION}-contrib.<run_number>
 
-Числовой BUILD_NUMBER (versionCode / CFBundleVersion) = github.run_id:
-один и монотонный для всех каналов и воркфлоу, поэтому любая свежая
-сборка всегда устанавливается поверх любой старой.
+Числовой BUILD_NUMBER (versionCode / CFBundleVersion) = epoch-секунды
+начала запуска (github.run_started_at). Монотонно растёт во всех каналах,
+одинаково для всех job'ов одного запуска (иначе APK и фид разойдутся),
+влезает в Int32/Android versionCode (max 2147483647, запас до 2038).
+github.run_id (~34e9) НЕ подходит — превышает Int32 и ломает Kotlin + Android.
 
 Команды:
   resolve — вычислить версию и вывести в $GITHUB_OUTPUT (файлы не трогает)
@@ -27,6 +29,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 APP_VERSION_FILE = "shared/src/commonMain/kotlin/com/jetbrains/kmpapp/data/model/AppVersion.kt"
@@ -35,6 +38,9 @@ PLIST_FILE = "iosApp/iosApp/Info.plist"
 
 # v26.10 | v26.10.1 | v26.10-beta.1 | v26.10-rc.2
 TAG_RE = re.compile(r"^v(\d+\.\d+(?:\.\d+)?)(?:-(beta|rc)\.(\d+))?$")
+
+# Android versionCode / Kotlin Int: жёсткий потолок.
+MAX_BUILD_ID = 2_147_483_647
 
 
 def read_release_version():
@@ -56,7 +62,20 @@ def short_sha():
         return sha[:8] if sha else "local"
 
 
-def resolve(channel, tag, run_number, run_id):
+def compute_build_id(build_time):
+    """BUILD_NUMBER из ISO8601 времени начала ранa или текущего времени."""
+    if build_time:
+        # github.run_started_at: "2026-09-10T10:07:08Z"
+        dt = datetime.fromisoformat(build_time.replace("Z", "+00:00"))
+        bid = int(dt.timestamp())
+    else:
+        bid = int(datetime.now(timezone.utc).timestamp())
+    if bid > MAX_BUILD_ID:
+        sys.exit(f"build id {bid} превышает Int32 max ({MAX_BUILD_ID}). Смените схему.")
+    return bid
+
+
+def resolve(channel, tag, run_number, build_id):
     if tag:
         m = TAG_RE.match(tag.strip())
         if not m:
@@ -79,7 +98,7 @@ def resolve(channel, tag, run_number, run_id):
         "version": version,
         "channel": channel,
         "prerelease": "true" if channel != "stable" else "false",
-        "build_id": str(run_id),
+        "build_id": str(build_id),
         "commit_sha": short_sha(),
     }
 
@@ -145,15 +164,16 @@ def main():
                     help="Тег релиза: v26.10, v26.10.1, v26.10-beta.1, v26.10-rc.1")
     ap.add_argument("--run-number", type=int, default=0,
                     help="github.run_number (номер pre/contrib-сборки)")
-    ap.add_argument("--build-id", type=int,
-                    default=int(os.environ.get("GITHUB_RUN_ID", "32")),
-                    help="github.run_id — монотонный числовой код сборки")
+    ap.add_argument("--build-time", default=None,
+                    help="ISO8601 времени начала ранa (github.run_started_at). "
+                         "Если не задано — текущее UTC-время.")
     args = ap.parse_args()
 
     if not args.tag and not args.channel:
         sys.exit("Нужен --tag или --channel")
 
-    info = resolve(args.channel, args.tag, args.run_number, args.build_id)
+    build_id = compute_build_id(args.build_time)
+    info = resolve(args.channel, args.tag, args.run_number, build_id)
     if args.command == "prepare":
         patch_files(info)
     emit(info)
