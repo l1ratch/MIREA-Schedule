@@ -8,14 +8,14 @@
 Кроссплатформенное мобильное приложение: расписание учебных занятий, поиск свободных аудиторий и схемы корпусов РТУ МИРЭА.
 
 > [!NOTE]
-> **Проект неофициальный.** Не аффилирован с РТУ МИРЭА и не одобрен университетом. Название вуза и все данные (расписание, схемы корпусов) принадлежат их правообладателям; приложение только отображает их со ссылкой на официальные источники.
+> **Проект неофициальный.** Не аффилирован с РТУ МИРЭА. Название вуза и все данные (расписание, схемы корпусов) принадлежат их правообладателям; приложение только отображает их со ссылкой на официальные источники.
 
 **Скачать:** [APK (Android, стабильная версия)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA (iOS, без подписи)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) · [Все релизы](https://github.com/l1ratch/MIREA-Schedule/releases)
 
+---
+
 > [!CAUTION]
 > Если установлена версия **26.9.0–26.9.4**: нумерация версий изменилась, автоматическое обновление не сработает. Установите свежую версию вручную: [APK](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa).
-
----
 
 ## Возможности
 
@@ -97,4 +97,5 @@ xcodebuild -scheme iosApp -configuration Release -sdk iphoneos \
 
 ## Лицензия
 
-Код проекта распространяется по [GNU GPL v3](LICENSE). Права на использованные данные и материалы остаются за их правообладателями: расписание и сведения о занятиях — РТУ МИРЭА; векторные схемы корпусов — [pulse.mirea.ru](https://pulse.mirea.ru/services/maps) и проект [university-app](https://github.com/0niel/university-app) ([0niel](https://github.com/0niel)). На эти данные действие GPL не распространяется.
+Код проекта распространяется по [GNU GPL v3](LICENSE). 
+Права на использованные данные и материалы остаются за их правообладателями: расписание и сведения о занятиях — РТУ МИРЭА; векторные схемы корпусов — [pulse.mirea.ru](https://pulse.mirea.ru/services/maps) и проект [university-app](https://github.com/0niel/university-app) ([0niel](https://github.com/0niel)).
