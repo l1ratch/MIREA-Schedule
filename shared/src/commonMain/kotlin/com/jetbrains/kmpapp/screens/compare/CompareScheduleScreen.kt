@@ -291,7 +291,8 @@ private fun CompareGrid(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         item(key = "column_headers") {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
