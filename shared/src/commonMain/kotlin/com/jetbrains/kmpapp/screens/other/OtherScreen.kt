@@ -169,7 +169,7 @@ private fun OtherMainContent(
     val dockTabs by viewModel.dockTabs.collectAsState()
     val uriHandler = LocalUriHandler.current
     val hiddenTabs = remember(dockTabs) {
-        AppTab.entries.filter { it != AppTab.OTHER && it !in dockTabs.take(5) }
+        AppTab.entries.filter { it != AppTab.OTHER && it !in dockTabs.take(6) }
     }
 
     Scaffold(

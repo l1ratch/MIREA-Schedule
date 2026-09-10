@@ -166,7 +166,7 @@ fun DockSettingsScreen(
                     modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
                 )
 
-                val isDockFull = dockTabs.size >= 5
+                val isDockFull = dockTabs.size >= 6
                 if (isDockFull && availableHiddenTabs.isNotEmpty()) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
@@ -174,7 +174,7 @@ fun DockSettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "В доке может быть максимум 5 разделов. Чтобы добавить раздел, сначала уберите один из текущих.",
+                            text = "В доке может быть максимум 6 разделов. Чтобы добавить раздел, сначала уберите один из текущих.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.padding(12.dp)
@@ -399,7 +399,7 @@ private fun HiddenTabItemCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (canAdd) "Нажмите +, чтобы добавить в док" else "Лимит 5 разделов достигнут",
+                        text = if (canAdd) "Нажмите +, чтобы добавить в док" else "Лимит 6 разделов достигнут",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (canAdd) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
                     )

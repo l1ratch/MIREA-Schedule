@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.outlined.CompareArrows
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Settings
@@ -56,6 +58,7 @@ enum class AppTab(
     FREE_ROOMS("Аудитории", Icons.Filled.MeetingRoom, Icons.Outlined.MeetingRoom, isFixed = false),
     TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
     MAP("Карта", Icons.Filled.Map, Icons.Filled.Map, isFixed = false),
+    COMPARE("Сравнение", Icons.Filled.CompareArrows, Icons.Outlined.CompareArrows, isFixed = false),
     OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }
 
@@ -69,7 +72,7 @@ fun FloatingDock(
 ) {
     val powerManager: PlatformPowerManager = koinInject()
     val isLowPowerMode by powerManager.isLowPowerMode.collectAsState()
-    val displayedTabs = remember(tabs) { tabs.take(5) }
+    val displayedTabs = remember(tabs) { tabs.take(6) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Elevated comfortably above bottom: iOS home indicator (34dp) sits at ~20dp offset; Android button bar sits safely above buttons
     val bottomOffset = when {

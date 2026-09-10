@@ -318,7 +318,7 @@ class ScheduleStorage(
 
     private fun sanitizeDockTabs(tabs: List<AppTab>): List<AppTab> {
         return try {
-            val middle = tabs.filter { !it.isFixed }.distinct().take(3)
+            val middle = tabs.filter { !it.isFixed }.distinct().take(4)
             listOf(AppTab.SCHEDULE) + middle + listOf(AppTab.OTHER)
         } catch (_: Throwable) {
             DEFAULT_DOCK_TABS
@@ -510,7 +510,14 @@ class ScheduleStorage(
         private const val KEY_CHEATS_AGREED = "mirea_cheats_agreed"
         private const val KEY_CHEATS_BLOCKED = "mirea_cheats_blocked"
         private const val KEY_BETA_CHANNEL = "mirea_beta_channel"
-        val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
+        val DEFAULT_DOCK_TABS = listOf(
+            AppTab.SCHEDULE,
+            AppTab.TASKS,
+            AppTab.FREE_ROOMS,
+            AppTab.MAP,
+            AppTab.COMPARE,
+            AppTab.OTHER
+        )
     }
 }
 
