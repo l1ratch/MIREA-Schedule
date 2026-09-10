@@ -114,9 +114,12 @@ class AppUpdateChecker(
             val isUnderMinSupported = AppVersion.BUILD_NUMBER < feed.minSupportedBuild
             val isCritical = !isPrerelease && (isUnderMinSupported || (feed.critical && (hasNewerVersion || hasNewerBuild)))
 
+            // NEW_VERSION требует и новую версию, и новую сборку: легаси-релизы (26.9.x)
+            // численно больше всей линии 26.0.0, но их build (79) меньше любого epoch —
+            // без этой проверки dev/beta-сборкам предлагался бы даунгрейд до 26.9.1
             val urgency = when {
                 isCritical -> UpdateUrgency.CRITICAL
-                hasNewerVersion -> UpdateUrgency.NEW_VERSION
+                hasNewerVersion && hasNewerBuild -> UpdateUrgency.NEW_VERSION
                 hasNewerBuild -> UpdateUrgency.MINOR_BUILD
                 else -> UpdateUrgency.UP_TO_DATE
             }
@@ -152,6 +155,12 @@ class AppUpdateChecker(
     private fun pickBestResult(preview: UpdateCheckResult?, stable: UpdateCheckResult?): UpdateCheckResult? {
         if (preview == null) return stable
         if (stable == null) return preview
+        // Кандидат с доступным обновлением приоритетнее «актуального»:
+        // иначе легаси-стабильный (26.9.x, «актуально» после guard'а сборок)
+        // строково обыгрывал бы новую бету (26.0.0-beta.1)
+        if (preview.hasUpdate != stable.hasUpdate) {
+            return if (preview.hasUpdate) preview else stable
+        }
         val c = VersionComparator.compare(preview.latestVersion, stable.latestVersion)
         return if (c > 0) preview else stable
     }
