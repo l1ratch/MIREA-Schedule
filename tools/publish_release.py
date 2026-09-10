@@ -51,10 +51,6 @@ def build_preview_notes(version, build_number, commit_sha, date):
         f"### 🚧 Rolling-сборка ветки `main`",
         "",
         f"**Версия:** `{version}` · **сборка:** `#{build_number}` · **коммит:** `{commit_sha or '—'}` · {date}",
-        "",
-        "Файлы **заменяются** при каждом push в `main` — здесь всегда последняя тестовая сборка.",
-        "Обычным пользователям этот канал не виден: автообновление читает только стабильный `version.json`.",
-        "Opt-in проверка тестовых обновлений — через отладочное меню приложения.",
     ]
     return "\n".join(lines)
 
@@ -80,7 +76,7 @@ def build_release_notes(version, build_number, date, repo, tag, files, changelog
 
 def publish_preview(args, files, date):
     tag = "preview"
-    title = f"🧪 Тестовая сборка {args.version} (сборка #{args.build_number})"
+    title = f"Test Build {args.version} (сборка #{args.build_number})"
     notes = build_preview_notes(args.version, args.build_number, args.commit_sha, date)
     Path("release_notes.md").write_text(notes, encoding="utf-8")
 
