@@ -1,14 +1,14 @@
 {
-  "version": "26.0.0-beta.1",
-  "build": 1789063862,
+  "version": "26.0.0-beta.2",
+  "build": 1789071232,
   "critical": false,
   "min_supported_build": 1,
   "changelog": "Расписание: плавное перелистывание дней с сохранением позиции, автопрокрутка к текущей паре, галерея перекрывающихся занятий с группами, сокращённые названия предметов. Карта: фильтры объектов (лестницы, куллеры, банкоматы и др.), уточнённые схемы корпусов, селектор кампусов с адресами. Аудитории: еженедельное обновление данных. Обновления: установка APK прямо из приложения (Android), бета-канал в настройках. Новая нумерация версий: 26.0.0 = год.релиз.патч.",
-  "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.0.0-beta.1",
-  "apk_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.0.0-beta.1/Schedule-MIREA-v26.0.0-beta.1.apk",
-  "ipa_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.0.0-beta.1/Schedule-MIREA-v26.0.0-beta.1.ipa",
+  "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.0.0-beta.2",
+  "apk_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.0.0-beta.2/Schedule-MIREA-v26.0.0-beta.2.apk",
+  "ipa_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.0.0-beta.2/Schedule-MIREA-v26.0.0-beta.2.ipa",
   "channel": "beta",
   "prerelease": true,
-  "updated_at": "2026-09-10T18:25:36.296875+00:00",
-  "commit_sha": "64f517d"
+  "updated_at": "2026-09-10T20:30:42.816501+00:00",
+  "commit_sha": "f079d3e"
 }
