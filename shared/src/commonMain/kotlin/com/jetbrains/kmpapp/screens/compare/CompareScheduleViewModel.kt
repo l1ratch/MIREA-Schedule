@@ -148,36 +148,38 @@ class CompareScheduleViewModel(
                 )
             }
 
-            for (row in rows) {
+            val processedRows = rows.map { row ->
                 val signatures = row.cells.map { cellSignature(it.lessons) }
                 val nonEmpty = signatures.filterNotNull()
                 matchesCount += nonEmpty.size
-                if (nonEmpty.isEmpty()) continue
-
                 val hasEmpty = signatures.any { it == null }
-                val distinct = nonEmpty.toSet()
-                val allSame = !hasEmpty && distinct.size <= 1
-                if (allSame) continue
+                val allSame = !hasEmpty && nonEmpty.toSet().size <= 1
+                if (nonEmpty.isEmpty() || allSame) {
+                    row
+                } else {
+                    val counts = nonEmpty.groupingBy { it }.eachCount()
+                    val maxCount = counts.values.maxOrNull() ?: 1
+                    val mode = counts.filterValues { it == maxCount }.keys.singleOrNull()
 
-                val counts = nonEmpty.groupingBy { it }.eachCount()
-                val maxCount = counts.values.maxOrNull() ?: 1
-                val mode = counts.filterValues { it == maxCount }.keys.singleOrNull()
-
-                for (index in row.cells.indices) {
-                    val signature = signatures[index]
-                    val isDifferent = when {
-                        signature == null -> true
-                        mode == null -> true
-                        else -> signature != mode
+                    val newCells = row.cells.mapIndexed { index, cell ->
+                        val signature = signatures[index]
+                        val isDifferent = when {
+                            signature == null -> true
+                            mode == null -> true
+                            else -> signature != mode
+                        }
+                        if (isDifferent) {
+                            differencesCount++
+                            cell.copy(isDifferent = true)
+                        } else {
+                            cell
+                        }
                     }
-                    if (isDifferent) {
-                        row.cells[index] = row.cells[index].copy(isDifferent = true)
-                        differencesCount++
-                    }
+                    row.copy(cells = newCells)
                 }
             }
 
-            days += CompareDay(date, rows)
+            days += CompareDay(date, processedRows)
         }
 
         return ScheduleComparison(targets, days, differencesCount, matchesCount)

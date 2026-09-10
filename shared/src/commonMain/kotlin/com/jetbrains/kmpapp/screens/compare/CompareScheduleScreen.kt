@@ -295,9 +295,12 @@ private fun CompareGrid(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item(key = "column_headers") {
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 TimeHeaderCell()
-                Row(modifier = Modifier.horizontalScroll(horizontalScrollState)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.horizontalScroll(horizontalScrollState)
+                ) {
                     targets.forEach { target ->
                         TargetHeaderCell(
                             target = target,
@@ -344,7 +347,6 @@ private fun TimeHeaderCell() {
         modifier = Modifier
             .width(TimeColumnWidth)
             .height(48.dp)
-            .padding(end = 6.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer),
         contentAlignment = Alignment.Center
@@ -398,12 +400,11 @@ private fun CompareRowView(
     row: CompareRow,
     scrollState: androidx.compose.foundation.ScrollState
 ) {
-    Row {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
             modifier = Modifier
                 .width(TimeColumnWidth)
                 .height(CellHeight)
-                .padding(end = 6.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer),
             contentAlignment = Alignment.Center
@@ -423,7 +424,10 @@ private fun CompareRowView(
             }
         }
 
-        Row(modifier = Modifier.horizontalScroll(scrollState)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.horizontalScroll(scrollState)
+        ) {
             row.cells.forEach { cell ->
                 CompareCellView(cell = cell)
             }
@@ -440,7 +444,6 @@ private fun CompareCellView(cell: CompareCell) {
         modifier = Modifier
             .width(TargetColumnWidth)
             .height(CellHeight)
-            .padding(end = 6.dp)
     ) {
         Box(modifier = Modifier.padding(horizontal = 8.dp)) {
             if (cell.isDifferent && cell.isEmpty) {
@@ -461,7 +464,7 @@ private fun CompareCellView(cell: CompareCell) {
             } else {
                 Column(
                     verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().align(Alignment.CenterStart)
                 ) {
                     cell.lessons.forEach { lesson ->
                         LessonMiniCard(lesson = lesson, isDifferent = cell.isDifferent)
