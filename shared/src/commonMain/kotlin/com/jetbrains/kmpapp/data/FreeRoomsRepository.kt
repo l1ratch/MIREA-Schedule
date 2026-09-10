@@ -2,6 +2,7 @@ package com.jetbrains.kmpapp.data
 
 import com.jetbrains.kmpapp.data.model.FreeRoomItem
 import com.jetbrains.kmpapp.data.model.FreeRoomsData
+import com.jetbrains.kmpapp.data.model.FreeRoomsDateRange
 import com.jetbrains.kmpapp.data.sync.CacheStrategy
 import com.jetbrains.kmpapp.data.sync.SyncResult
 import com.jetbrains.kmpapp.data.sync.UnifiedSyncManager
@@ -42,8 +43,12 @@ class FreeRoomsRepository(
         floor: Int?,
         dateIso: String,
         bellNumber: Int?,
-        searchQuery: String = ""
+        searchQuery: String = "",
+        dateRange: FreeRoomsDateRange? = null
     ): List<FreeRoomItem> {
+        // Дата вне горизонта данных: занятость неизвестна, не показываем фальшивые «свободные»
+        val range = dateRange
+        if (range != null && (dateIso < range.start || dateIso > range.end)) return emptyList()
         val query = searchQuery.trim().lowercase()
         return allRooms.filter { room ->
             val matchCampus = room.campus.equals(campus, ignoreCase = true)

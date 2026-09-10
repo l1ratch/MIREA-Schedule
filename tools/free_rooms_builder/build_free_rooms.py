@@ -337,9 +337,9 @@ def main():
     setup_global_opener()
 
     today = datetime.date.today()
-    # Расписание на следующие 30 дней вперед
+    # Расписание на 14 дней вперёд (пересборка каждую неделю — данные не старше 7 дней)
     start_range = today
-    end_range = today + datetime.timedelta(days=30)
+    end_range = today + datetime.timedelta(days=14)
     print(f"Период расчета: с {start_range} по {end_range}")
 
     rooms_meta = discover_all_classrooms()

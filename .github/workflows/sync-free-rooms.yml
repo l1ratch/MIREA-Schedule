@@ -2,8 +2,8 @@ name: Sync Free Classrooms Schedule
 
 on:
   schedule:
-    # Запуск 1-го и 15-го числа каждого месяца в 03:00 UTC (06:00 МСК)
-    - cron: '0 3 1,15 * *'
+    # Запуск каждое воскресенье в 03:00 UTC (06:00 МСК) — к понедельнику свежие данные
+    - cron: '0 3 * * 0'
   workflow_dispatch:
 
 permissions:

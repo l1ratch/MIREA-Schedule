@@ -78,7 +78,8 @@ class FreeRoomsViewModel(
             floor = floor,
             dateIso = date.toString(),
             bellNumber = bell,
-            searchQuery = query
+            searchQuery = query,
+            dateRange = data.dateRange
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
