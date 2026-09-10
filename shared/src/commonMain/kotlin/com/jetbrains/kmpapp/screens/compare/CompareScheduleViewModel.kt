@@ -152,7 +152,9 @@ class CompareScheduleViewModel(
                 val signatures = row.cells.map { cellSignature(it.lessons) }
                 val nonEmpty = signatures.filterNotNull()
                 matchesCount += nonEmpty.size
-                val allSame = nonEmpty.isNotEmpty() && nonEmpty.toSet().size <= 1
+                // A pair counts as different when any cell has a lesson that another lacks,
+                // or when lessons differ between targets (null kept as a distinct signature).
+                val allSame = nonEmpty.isNotEmpty() && signatures.toSet().size <= 1
                 if (nonEmpty.isEmpty() || allSame) {
                     row
                 } else {
