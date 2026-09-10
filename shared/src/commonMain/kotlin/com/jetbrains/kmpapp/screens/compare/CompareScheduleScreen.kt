@@ -5,7 +5,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -165,10 +164,12 @@ fun CompareScheduleScreen(
                 return@Column
             }
 
-            FlowRow(
+            Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(top = 4.dp, bottom = 4.dp)
             ) {
                 savedTargets.forEach { target ->
                     val isSelected = target.id in selectedTargetIds
@@ -432,13 +433,13 @@ private fun CompareRowView(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "${row.bellNumber} пара",
+                    text = row.startTime,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = row.startTime,
+                    text = "– ${row.endTime}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -504,21 +505,22 @@ private fun LessonMiniCard(lesson: Lesson, abbreviateNames: Boolean) {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "${lesson.lessonType.shortName} ${lesson.startTime}–${lesson.endTime}",
+            text = lesson.lessonType.shortName,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        if (lesson.classrooms.isNotEmpty() || lesson.teachers.isNotEmpty()) {
-            val extras = buildList {
-                if (lesson.classrooms.isNotEmpty()) add("ауд. ${lesson.classrooms.joinToString(", ")}")
-                if (lesson.teachers.isNotEmpty()) add(lesson.teachers.joinToString(", "))
-            }.joinToString(" · ")
+        if (lesson.classrooms.isNotEmpty()) {
             Text(
-                text = extras,
+                text = "Ауд. ${lesson.classrooms.joinToString(", ")}",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+        }
+        if (lesson.teachers.isNotEmpty()) {
+            Text(
+                text = lesson.teachers.joinToString(", "),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
         }
     }

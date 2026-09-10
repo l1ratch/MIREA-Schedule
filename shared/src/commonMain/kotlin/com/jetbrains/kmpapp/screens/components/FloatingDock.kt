@@ -72,7 +72,7 @@ fun FloatingDock(
 ) {
     val powerManager: PlatformPowerManager = koinInject()
     val isLowPowerMode by powerManager.isLowPowerMode.collectAsState()
-    val displayedTabs = remember(tabs) { tabs.take(6) }
+    val displayedTabs = remember(tabs) { tabs.take(5) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Elevated comfortably above bottom: iOS home indicator (34dp) sits at ~20dp offset; Android button bar sits safely above buttons
     val bottomOffset = when {
