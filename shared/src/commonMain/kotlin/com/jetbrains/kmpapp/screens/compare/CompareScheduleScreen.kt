@@ -20,10 +20,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -36,6 +38,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +72,8 @@ fun CompareScheduleScreen(
     val weekStart by viewModel.selectedWeekStart.collectAsState()
     val cachedLessons by viewModel.cachedLessons.collectAsState()
 
+    var abbreviateNames by rememberSaveable { mutableStateOf(false) }
+
     val currentWeekStart = DateUtils.getWeekDates(DateUtils.today()).first()
 
     Scaffold(
@@ -92,6 +99,16 @@ fun CompareScheduleScreen(
                         text = "Два и более расписания рядом",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(
+                    onClick = { abbreviateNames = !abbreviateNames },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Compress,
+                        contentDescription = "Сокращать названия предметов",
+                        tint = if (abbreviateNames) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                     )
                 }
                 IconButton(
@@ -218,7 +235,8 @@ fun CompareScheduleScreen(
             CompareGrid(
                 targets = selectedTargets,
                 comparison = comparison,
-                cachedLessons = cachedLessons
+                cachedLessons = cachedLessons,
+                abbreviateNames = abbreviateNames
             )
         }
     }
@@ -285,7 +303,8 @@ private fun WeekNavBar(
 private fun CompareGrid(
     targets: List<ScheduleTarget>,
     comparison: ScheduleComparison,
-    cachedLessons: Map<Int, List<Lesson>>
+    cachedLessons: Map<Int, List<Lesson>>,
+    abbreviateNames: Boolean
 ) {
     val horizontalScrollState = rememberScrollState()
 
@@ -429,14 +448,14 @@ private fun CompareRowView(
             modifier = Modifier.horizontalScroll(scrollState)
         ) {
             row.cells.forEach { cell ->
-                CompareCellView(cell = cell)
+                CompareCellView(cell = cell, abbreviateNames = abbreviateNames)
             }
         }
     }
 }
 
 @Composable
-private fun CompareCellView(cell: CompareCell) {
+private fun CompareCellView(cell: CompareCell, abbreviateNames: Boolean) {
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = if (cell.isDifferent) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
@@ -456,10 +475,13 @@ private fun CompareCellView(cell: CompareCell) {
             } else {
                 Column(
                     verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth().align(Alignment.CenterStart)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.CenterStart)
+                        .verticalScroll(rememberScrollState())
                 ) {
                     cell.lessons.forEach { lesson ->
-                        LessonMiniCard(lesson = lesson)
+                        LessonMiniCard(lesson = lesson, abbreviateNames = abbreviateNames)
                         if (lesson != cell.lessons.last()) {
                             Spacer(modifier = Modifier.height(4.dp))
                         }
@@ -471,15 +493,13 @@ private fun CompareCellView(cell: CompareCell) {
 }
 
 @Composable
-private fun LessonMiniCard(lesson: Lesson) {
+private fun LessonMiniCard(lesson: Lesson, abbreviateNames: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
         Text(
-            text = abbreviateSubjectName(lesson.subject),
+            text = if (abbreviateNames) abbreviateSubjectName(lesson.subject) else lesson.subject,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "${lesson.lessonType.shortName} ${lesson.startTime}–${lesson.endTime}",
