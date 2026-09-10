@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -48,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.DateUtils
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
+import com.jetbrains.kmpapp.screens.schedule.abbreviateSubjectName
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.plus
 
@@ -465,29 +465,15 @@ private fun CompareCellView(cell: CompareCell) {
                     }
                 }
             }
-            if (cell.isDifferent) {
-                DifferenceDot(modifier = Modifier.align(Alignment.TopEnd))
-            }
         }
     }
-}
-
-@Composable
-private fun DifferenceDot(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .padding(top = 6.dp)
-            .size(9.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
-    )
 }
 
 @Composable
 private fun LessonMiniCard(lesson: Lesson) {
     Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
         Text(
-            text = lesson.subject,
+            text = abbreviateSubjectName(lesson.subject),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
