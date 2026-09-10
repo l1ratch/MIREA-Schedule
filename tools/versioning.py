@@ -8,10 +8,14 @@ tools/versioning.py — единый генератор версий для вс
   dev      push в main               → {RELEASE_VERSION}-dev.<run_number> (rolling preview)
   contrib  ручная сборка ветки      → {RELEASE_VERSION}-contrib.<run_number>
 
-Числовой BUILD_NUMBER (versionCode / CFBundleVersion) = epoch-секунды
-начала запуска (github.run_started_at). Монотонно растёт во всех каналах,
-одинаково для всех job'ов одного запуска (иначе APK и фид разойдутся),
-влезает в Int32/Android versionCode (max 2147483647, запас до 2038).
+Числовой BUILD_NUMBER (versionCode / CFBundleVersion) = epoch-секунды,
+вычисленные ОДИН раз в resolve-джобе запуска (tools/versioning.py resolve).
+Все остальные джобы обязаны брать готовое число через `--build-id
+${{ needs.resolve.outputs.build_id }}` — иначе APK и фид разойдутся.
+github.run_started_at в выражениях workflow рендерится ПУСТЫМ (свойство
+контекста не существует) — с 26.0.0-dev.2 по dev.8 каждая джоба молча
+подставляла своё «сейчас», и номера расходились на минуты.
+Влезает в Int32/Android versionCode (max 2147483647, запас до 2038).
 github.run_id (~34e9) НЕ подходит — превышает Int32 и ломает Kotlin + Android.
 
 Команды:
@@ -63,9 +67,14 @@ def short_sha():
 
 
 def compute_build_id(build_time):
-    """BUILD_NUMBER из ISO8601 времени начала ранa или текущего времени."""
+    """BUILD_NUMBER из ISO8601 времени или текущего времени.
+
+    Вызывается ТОЛЬКО в resolve-джобе (один момент на весь запуск).
+    Пустая строка == не задано == now(): свойство github.run_started_at
+    не существует и рендерится пустым, молча подменяясь «сейчас».
+    """
     if build_time:
-        # github.run_started_at: "2026-09-10T10:07:08Z"
+        # например "2026-09-10T10:07:08Z"
         dt = datetime.fromisoformat(build_time.replace("Z", "+00:00"))
         bid = int(dt.timestamp())
     else:
@@ -164,15 +173,22 @@ def main():
                     help="Тег релиза: v26.10, v26.10.1, v26.10-beta.1, v26.10-rc.1")
     ap.add_argument("--run-number", type=int, default=0,
                     help="github.run_number (номер pre/contrib-сборки)")
+    ap.add_argument("--build-id", type=int, default=None,
+                    help="Готовый BUILD_NUMBER из needs.resolve.outputs. "
+                         "Обязателен для prepare без --build-time — число "
+                         "вычисляется один раз на запуск (resolve-джоба).")
     ap.add_argument("--build-time", default=None,
-                    help="ISO8601 времени начала ранa (github.run_started_at). "
-                         "Если не задано — текущее UTC-время.")
+                    help="ISO8601 момента запуска. Только для resolve-джобы "
+                         "(или локальных тестов); иначе берётся now().")
     args = ap.parse_args()
 
     if not args.tag and not args.channel:
         sys.exit("Нужен --tag или --channel")
+    if args.command == "prepare" and not args.build_id and not args.build_time:
+        sys.exit("prepare требует --build-id ${{ needs.resolve.outputs.build_id }} "
+                 "(или --build-time для локального теста) — одно число на весь запуск")
 
-    build_id = compute_build_id(args.build_time)
+    build_id = args.build_id if args.build_id else compute_build_id(args.build_time)
     info = resolve(args.channel, args.tag, args.run_number, build_id)
     if args.command == "prepare":
         patch_files(info)

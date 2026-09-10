@@ -13,9 +13,11 @@
 | **dev** | `YY.X.Z-dev.N` | `26.0.0-dev.151` | push в `main` | только `apps-beta.json` |
 | **contrib** | `YY.X.Z-contrib.N` | `26.0.0-contrib.5` | ручной workflow | ничего (только Artifacts) |
 
-- `BUILD_NUMBER` (versionCode/CFBundleVersion) = **epoch-секунды начала запуска**
-  (`github.run_started_at`, подставляет `tools/versioning.py --build-time`).
-  Монотонный, влезает в Int32/Android versionCode. `github.run_id` НЕЛЬЗЯ (~34e9 > Int32).
+- `BUILD_NUMBER` (versionCode/CFBundleVersion) = **epoch-секунды**, вычисленные
+  один раз на запуск в resolve-джобе (`tools/versioning.py resolve`); сборки
+  берут готовое через `--build-id`. Монотонный, влезает в Int32/Android
+  versionCode. `github.run_id` (~34e9 > Int32) и `github.run_started_at`
+  (рендерится пустым) — НЕЛЬЗЯ.
 - В репо хранится ТОЛЬКО `AppVersion.RELEASE_VERSION` (линия разработки).
   После стабильного релиза `v26.0.0` подними её до `26.1.0`.
 

@@ -17,9 +17,10 @@ object AppVersion {
     const val BUILD_CHANNEL = "stable"
 
     /**
-     * Числовой код сборки. CI подставляет epoch-секунды начала запуска
-     * (github.run_started_at): монотонно во всех каналах, влезает в
-     * Int32 / Android versionCode (max 2147483647). github.run_id НЕ подходит.
+     * Числовой код сборки. CI вычисляет ОДИН раз на запуск в resolve-джобе
+     * (epoch-секунды) и раздаёт всем джобам через --build-id: монотонно во
+     * всех каналах, влезает в Int32 / Android versionCode (max 2147483647).
+     * github.run_id и github.run_started_at НЕ подходят.
      */
     const val BUILD_NUMBER = 32
     const val COMMIT_SHA = "local"

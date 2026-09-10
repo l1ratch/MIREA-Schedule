@@ -40,8 +40,7 @@ jobs:
         id: ver
         env:
           TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_STARTED: ${{ github.run_started_at }}
-        run: python tools/versioning.py resolve --tag "$TAG" --build-time "$RUN_STARTED"
+        run: python tools/versioning.py resolve --tag "$TAG"
 
   build_apk:
     name: 🤖 Build Android APK
@@ -56,8 +55,7 @@ jobs:
       - name: 🔖 Patch version files
         env:
           TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_STARTED: ${{ github.run_started_at }}
-        run: python tools/versioning.py prepare --tag "$TAG" --build-time "$RUN_STARTED"
+        run: python tools/versioning.py prepare --tag "$TAG" --build-id "${{ needs.resolve.outputs.build_id }}"
 
       - name: 🔢 Export build number (versionCode == AppVersion.BUILD_NUMBER)
         run: echo "BUILD_NUMBER=${{ needs.resolve.outputs.build_id }}" >> $GITHUB_ENV
@@ -112,8 +110,7 @@ jobs:
       - name: 🔖 Patch version files
         env:
           TAG: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
-          RUN_STARTED: ${{ github.run_started_at }}
-        run: python tools/versioning.py prepare --tag "$TAG" --build-time "$RUN_STARTED"
+        run: python tools/versioning.py prepare --tag "$TAG" --build-id "${{ needs.resolve.outputs.build_id }}"
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5
