@@ -11,9 +11,8 @@
 
 **Скачать:** [APK (Android, стабильная версия)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA (iOS, без подписи)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) · [Все релизы](https://github.com/l1ratch/MIREA-Schedule/releases)
 
-> [![Обновление с 26.9.x](https://img.shields.io/badge/%E2%9A%A0%EF%B8%8F_26.9.0%E2%80%9326.9.4_%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D0%B5_%D0%B2%D1%80%D1%83%D1%87%D0%BD%D1%83%D1%8E-red)](https://github.com/l1ratch/MIREA-Schedule/releases/latest)
->
-> **Если установлена версия 26.9.0–26.9.4:** схема нумерации версий изменилась, автоматическое предложение обновления не сработает. Скачайте и установите свежую версию вручную.
+> [!IMPORTANT]
+> ⚠️ Если установлена версия **26.9.0–26.9.4**: нумерация версий изменилась, автоматическое обновление не сработает. Установите свежую версию вручную: [APK](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa).
 
 ---
 
@@ -56,20 +55,11 @@
 ### iOS
 IPA собирается без подписи (unsigned) — для установки переподпишите его любым инструментом sideload.
 
-Источники приложений (AltStore-совместимый формат):
+Источник приложений (AltStore-совместимый формат):
 
-| Источник | Содержимое |
-|---|---|
-| [`apps.json`](https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps.json) | Стабильные релизы |
-| [`apps-beta.json`](https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps-beta.json) | Последняя сборка любого канала. Личный источник мейнтейнера, официально не поддерживается |
-
-Подключайте один источник за раз: `bundleIdentifier` у обоих одинаковый.
-
----
-
-## Версии
-
-Формат — CalVer: `ГГ.РЕЛИЗ.ПАТЧ` (например `26.0.0`, патч — `26.0.1`). Стабильные релизы отмечаются тегами `v26.0.0`, беты и релиз-кандидаты — `v26.0.0-beta.N` / `v26.0.0-rc.N`.
+```
+https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps.json
+```
 
 ---
 
