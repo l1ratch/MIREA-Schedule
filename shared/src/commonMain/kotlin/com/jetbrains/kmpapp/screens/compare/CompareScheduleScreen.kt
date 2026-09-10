@@ -351,7 +351,8 @@ private fun CompareGrid(
                     day.rows.forEach { row ->
                         CompareRowView(
                             row = row,
-                            scrollState = horizontalScrollState
+                            scrollState = horizontalScrollState,
+                            abbreviateNames = abbreviateNames
                         )
                     }
                 }
@@ -417,7 +418,8 @@ private fun TargetHeaderCell(
 @Composable
 private fun CompareRowView(
     row: CompareRow,
-    scrollState: androidx.compose.foundation.ScrollState
+    scrollState: androidx.compose.foundation.ScrollState,
+    abbreviateNames: Boolean
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
