@@ -75,6 +75,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import com.jetbrains.kmpapp.data.DebugConfig
 import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.ThemeMode
 
 @Composable
@@ -120,6 +121,10 @@ fun MapScreen(
 
     // Load SVG whenever campus or floor changes
     LaunchedEffect(selectedCampus, selectedFloor) {
+        AppAnalytics.logEvent(
+            "map_view",
+            mapOf("campus" to selectedCampus.id, "floor" to selectedFloor.toString())
+        )
         isLoading = true
         val svg = MapRepository.loadFloorSvg(selectedCampus.id, selectedFloor)
         svgContent = svg

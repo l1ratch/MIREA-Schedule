@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.screens.components.AppTab
 
 @Composable
@@ -358,8 +359,12 @@ private fun OtherMainContent(
                     .clip(RoundedCornerShape(20.dp))
                     .clickable {
                         if (hasUpdate) {
-                            val url = updateResult?.downloadUrl 
-                                ?: updateResult?.releaseUrl 
+                            AppAnalytics.logEvent(
+                                "update_open",
+                                mapOf("version" to (updateResult?.latestVersion ?: "?"))
+                            )
+                            val url = updateResult?.downloadUrl
+                                ?: updateResult?.releaseUrl
                                 ?: com.jetbrains.kmpapp.data.model.AppVersion.GITHUB_REPO_URL
                             uriHandler.openUri(url)
                         } else {

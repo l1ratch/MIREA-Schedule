@@ -102,11 +102,25 @@ fun App() {
     val themeMode by repository.themeMode.collectAsState()
     val themeOverlay by repository.themeOverlay.collectAsState()
     val dockTabs by repository.dockTabs.collectAsState()
+    val selectedTarget by repository.selectedTarget.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
     val freeRoomsViewModel: FreeRoomsViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
+
+    val betaChannel by otherViewModel.betaChannel.collectAsState()
+
+    // Аналитика интересов: состав дока, кто пользуется (тип цели), бета-канал
+    LaunchedEffect(dockTabs) {
+        AppAnalytics.logEvent("dock_config", mapOf("tabs" to dockTabs.joinToString(",") { it.name }))
+    }
+    LaunchedEffect(selectedTarget) {
+        selectedTarget?.let { AppAnalytics.logEvent("target_type", mapOf("type" to it.type.name)) }
+    }
+    LaunchedEffect(betaChannel) {
+        AppAnalytics.logEvent("beta_channel", mapOf("enabled" to betaChannel.toString()))
+    }
 
     val systemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
