@@ -76,6 +76,10 @@ class ScheduleStorage(
     private val _analyticsEnabled = MutableStateFlow(true)
     val analyticsEnabled: StateFlow<Boolean> = _analyticsEnabled.asStateFlow()
 
+    // null = согласие ещё не спрашивали: первый вход ИЛИ обновление со старой версии
+    private val _analyticsConsent = MutableStateFlow<Boolean?>(null)
+    val analyticsConsent: StateFlow<Boolean?> = _analyticsConsent.asStateFlow()
+
     private val lastSyncTimes = mutableMapOf<Int, Long>()
 
     init {
@@ -153,7 +157,10 @@ class ScheduleStorage(
                 platformStorage.getString(KEY_BETA_CHANNEL)?.toBooleanStrictOrNull() ?: false
             _analyticsEnabled.value =
                 platformStorage.getString(KEY_ANALYTICS_ENABLED)?.toBooleanStrictOrNull() ?: true
-            AppAnalytics.setEnabled(_analyticsEnabled.value)
+            _analyticsConsent.value =
+                platformStorage.getString(KEY_ANALYTICS_CONSENT)?.toBooleanStrictOrNull()
+            // До первого ответа на диалог согласия ничего не отправляем.
+            AppAnalytics.setEnabled(_analyticsEnabled.value && _analyticsConsent.value != null)
 
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
@@ -294,8 +301,21 @@ class ScheduleStorage(
 
     fun setAnalyticsEnabled(enabled: Boolean) {
         _analyticsEnabled.value = enabled
-        AppAnalytics.setEnabled(enabled)
+        // Ручное включение тумблера = согласие; до ответа на диалог ничего не уходит
+        if (enabled) _analyticsConsent.value = _analyticsConsent.value ?: true
+        AppAnalytics.setEnabled(enabled && _analyticsConsent.value != null)
         scope.launch { platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString()) }
+    }
+
+    /** Ответ на диалог первого запуска: сразу задаёт и согласие, и тумблер. */
+    fun setAnalyticsConsent(accepted: Boolean) {
+        _analyticsConsent.value = accepted
+        _analyticsEnabled.value = accepted
+        AppAnalytics.setEnabled(accepted)
+        scope.launch {
+            platformStorage.saveString(KEY_ANALYTICS_CONSENT, accepted.toString())
+            platformStorage.saveString(KEY_ANALYTICS_ENABLED, accepted.toString())
+        }
     }
 
     fun setSakuraThemeExclusive(enabled: Boolean) {
@@ -422,6 +442,7 @@ class ScheduleStorage(
         val cheatsBlockedBefore = _cheatsBlocked.value
         val betaChannelBefore = _betaChannel.value
         val analyticsEnabledBefore = _analyticsEnabled.value
+        val analyticsConsentBefore = _analyticsConsent.value
         platformStorage.clearAll()
         _savedTargets.value = emptyList()
         _selectedTarget.value = null
@@ -437,6 +458,7 @@ class ScheduleStorage(
         _cheatsBlocked.value = cheatsBlockedBefore
         _betaChannel.value = betaChannelBefore
         _analyticsEnabled.value = analyticsEnabledBefore
+        _analyticsConsent.value = analyticsConsentBefore
         lastSyncTimes.clear()
         scope.launch {
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
@@ -444,6 +466,8 @@ class ScheduleStorage(
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
             platformStorage.saveString(KEY_BETA_CHANNEL, betaChannelBefore.toString())
             platformStorage.saveString(KEY_ANALYTICS_ENABLED, analyticsEnabledBefore.toString())
+            if (analyticsConsentBefore == null) platformStorage.remove(KEY_ANALYTICS_CONSENT)
+            else platformStorage.saveString(KEY_ANALYTICS_CONSENT, analyticsConsentBefore.toString())
         }
     }
 
@@ -524,6 +548,7 @@ class ScheduleStorage(
         private const val KEY_CHEATS_BLOCKED = "mirea_cheats_blocked"
         private const val KEY_BETA_CHANNEL = "mirea_beta_channel"
         private const val KEY_ANALYTICS_ENABLED = "mirea_analytics_enabled"
+        private const val KEY_ANALYTICS_CONSENT = "mirea_analytics_consent"
         val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
     }
 }

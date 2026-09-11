@@ -103,6 +103,7 @@ fun App() {
     val themeOverlay by repository.themeOverlay.collectAsState()
     val dockTabs by repository.dockTabs.collectAsState()
     val selectedTarget by repository.selectedTarget.collectAsState()
+    val analyticsConsent by repository.analyticsConsent.collectAsState()
 
     val scheduleViewModel: ScheduleViewModel = koinViewModel()
     val otherViewModel: OtherViewModel = koinViewModel()
@@ -298,6 +299,43 @@ fun App() {
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
                 }
+            }
+
+            // Диалог согласия: первый вход или обновление со старой версии (не спрашивали ни разу).
+            // Пока нет ответа — аналитика не отправляет ничего (см. ScheduleStorage).
+            if (analyticsConsent == null) {
+                AlertDialog(
+                    onDismissRequest = { },
+                    title = { Text("Привет!") },
+                    text = {
+                        Column {
+                            Text(
+                                "Приложение неофициальное — сделано студентами для студентов РТУ МИРЭА. " +
+                                    "Расписание и схемы корпусов берутся из открытых источников университета."
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Чтобы быстрее чинить падения и понимать, какие разделы полезнее, " +
+                                    "мы собираем анонимную статистику: отчёты об ошибках и какие вкладки открываются. " +
+                                    "Никаких личных данных, аккаунтов и названий групп."
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Можно отказаться — и в любой момент включить или выключить в Настройках."
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { repository.setAnalyticsConsent(true) }) {
+                            Text("Отправлять")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { repository.setAnalyticsConsent(false) }) {
+                            Text("Не отправлять")
+                        }
+                    }
+                )
             }
         }
     }
