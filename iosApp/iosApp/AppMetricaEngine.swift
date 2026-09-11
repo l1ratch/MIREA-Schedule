@@ -5,7 +5,7 @@ import Shared
 /// сюда приходят только события и тумблер из общих настроек.
 final class AppMetricaEngine: AnalyticsEngine {
     func logEvent(name: String, params: [String : String]) {
-        AppMetrica.reportEvent(name, attributes: params)
+        AppMetrica.reportEvent(name: name, parameters: params, onFailure: nil)
     }
 
     func setEnabled(enabled: Bool) {
