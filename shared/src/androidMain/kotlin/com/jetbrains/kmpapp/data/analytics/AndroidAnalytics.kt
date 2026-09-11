@@ -12,7 +12,10 @@ class AndroidAnalytics : AnalyticsEngine {
 
     init {
         AndroidContextProvider.context?.let { context ->
-            AppMetrica.activate(context, AppMetricaConfig.new(AppAnalytics.API_KEY))
+            AppMetrica.activate(
+                context,
+                AppMetricaConfig.newConfigBuilder(AppAnalytics.API_KEY).build()
+            )
         }
     }
 
