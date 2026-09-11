@@ -1,3 +1,5 @@
 TEAM_ID=
 BUNDLE_ID=ru.l1ratch.mireaschedule
 APP_NAME=Расписание
+// AppMetrica (SPM, статическая линковка): без -ObjC ObjC-категории SDK не загрузятся
+OTHER_LDFLAGS = $(inherited) -ObjC
