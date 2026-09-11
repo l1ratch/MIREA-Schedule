@@ -549,7 +549,15 @@ class ScheduleStorage(
         private const val KEY_BETA_CHANNEL = "mirea_beta_channel"
         private const val KEY_ANALYTICS_ENABLED = "mirea_analytics_enabled"
         private const val KEY_ANALYTICS_CONSENT = "mirea_analytics_consent"
-        val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
+        // Дефолт дока для НОВЫХ установок (решение владельца): Существующие
+        // пользователи не затрагиваются — их сохранённый док доверяется.
+        // «Аудитории» и «Сравнение» добавляются в настройках дока.
+        val DEFAULT_DOCK_TABS = listOf(
+            AppTab.SCHEDULE,
+            AppTab.TASKS,
+            AppTab.MAP,
+            AppTab.OTHER
+        )
     }
 }
 

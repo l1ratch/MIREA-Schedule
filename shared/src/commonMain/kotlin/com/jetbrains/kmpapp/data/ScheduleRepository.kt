@@ -32,6 +32,7 @@ class ScheduleRepository(
     val isLowPowerMode: StateFlow<Boolean> = powerManager.isLowPowerMode
     val savedTargets: StateFlow<List<ScheduleTarget>> = storage.savedTargets
     val selectedTarget: StateFlow<ScheduleTarget?> = storage.selectedTarget
+    val cachedLessons: StateFlow<Map<Int, List<Lesson>>> = storage.cachedLessons
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = storage.themeMode
     val dockTabs: StateFlow<List<com.jetbrains.kmpapp.screens.components.AppTab>> = storage.dockTabs
@@ -178,6 +179,12 @@ class ScheduleRepository(
         val current = selectedTarget.value ?: return
         scope.launch {
             refreshSchedule(current, silent = false)
+        }
+    }
+
+    fun refreshTarget(target: ScheduleTarget) {
+        scope.launch {
+            refreshSchedule(target, silent = false)
         }
     }
 
