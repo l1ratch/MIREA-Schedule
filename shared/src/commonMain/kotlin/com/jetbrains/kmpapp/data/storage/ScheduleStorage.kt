@@ -1,5 +1,6 @@
 package com.jetbrains.kmpapp.data.storage
 
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
@@ -71,6 +72,9 @@ class ScheduleStorage(
 
     private val _betaChannel = MutableStateFlow(false)
     val betaChannel: StateFlow<Boolean> = _betaChannel.asStateFlow()
+
+    private val _analyticsEnabled = MutableStateFlow(true)
+    val analyticsEnabled: StateFlow<Boolean> = _analyticsEnabled.asStateFlow()
 
     private val lastSyncTimes = mutableMapOf<Int, Long>()
 
@@ -147,6 +151,9 @@ class ScheduleStorage(
             _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
             _betaChannel.value =
                 platformStorage.getString(KEY_BETA_CHANNEL)?.toBooleanStrictOrNull() ?: false
+            _analyticsEnabled.value =
+                platformStorage.getString(KEY_ANALYTICS_ENABLED)?.toBooleanStrictOrNull() ?: true
+            AppAnalytics.setEnabled(_analyticsEnabled.value)
 
             // Restore saved targets
             val targets: List<ScheduleTarget> = try {
@@ -285,6 +292,12 @@ class ScheduleStorage(
         scope.launch { platformStorage.saveString(KEY_BETA_CHANNEL, enabled.toString()) }
     }
 
+    fun setAnalyticsEnabled(enabled: Boolean) {
+        _analyticsEnabled.value = enabled
+        AppAnalytics.setEnabled(enabled)
+        scope.launch { platformStorage.saveString(KEY_ANALYTICS_ENABLED, enabled.toString()) }
+    }
+
     fun setSakuraThemeExclusive(enabled: Boolean) {
         setThemeOverlay(if (enabled) ThemeOverlay.SAKURA else ThemeOverlay.NONE)
     }
@@ -408,6 +421,7 @@ class ScheduleStorage(
         val cheatsAgreedBefore = _cheatsAgreed.value
         val cheatsBlockedBefore = _cheatsBlocked.value
         val betaChannelBefore = _betaChannel.value
+        val analyticsEnabledBefore = _analyticsEnabled.value
         platformStorage.clearAll()
         _savedTargets.value = emptyList()
         _selectedTarget.value = null
@@ -422,12 +436,14 @@ class ScheduleStorage(
         _cheatsAgreed.value = cheatsAgreedBefore
         _cheatsBlocked.value = cheatsBlockedBefore
         _betaChannel.value = betaChannelBefore
+        _analyticsEnabled.value = analyticsEnabledBefore
         lastSyncTimes.clear()
         scope.launch {
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
             else platformStorage.saveString(KEY_CHEATS_AGREED, cheatsAgreedBefore.toString())
             platformStorage.saveString(KEY_CHEATS_BLOCKED, cheatsBlockedBefore.toString())
             platformStorage.saveString(KEY_BETA_CHANNEL, betaChannelBefore.toString())
+            platformStorage.saveString(KEY_ANALYTICS_ENABLED, analyticsEnabledBefore.toString())
         }
     }
 
@@ -507,6 +523,7 @@ class ScheduleStorage(
         private const val KEY_CHEATS_AGREED = "mirea_cheats_agreed"
         private const val KEY_CHEATS_BLOCKED = "mirea_cheats_blocked"
         private const val KEY_BETA_CHANNEL = "mirea_beta_channel"
+        private const val KEY_ANALYTICS_ENABLED = "mirea_analytics_enabled"
         val DEFAULT_DOCK_TABS = listOf(AppTab.SCHEDULE, AppTab.TASKS, AppTab.FREE_ROOMS, AppTab.MAP, AppTab.OTHER)
     }
 }

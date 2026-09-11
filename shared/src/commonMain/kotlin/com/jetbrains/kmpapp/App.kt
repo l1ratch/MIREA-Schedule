@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.jetbrains.kmpapp.data.ScheduleRepository
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.update.startPlatformUpdate
 import com.jetbrains.kmpapp.data.model.ThemeMode
 import com.jetbrains.kmpapp.screens.components.AppTab
@@ -260,7 +261,10 @@ fun App() {
                 if (!isImeVisible) {
                     FloatingDock(
                         currentTab = currentTab,
-                        onTabSelected = { currentTab = it },
+                        onTabSelected = {
+                            currentTab = it
+                            AppAnalytics.logEvent("tab_open", mapOf("tab" to it.name))
+                        },
                         onTabReselected = { tab ->
                             when (tab) {
                                 AppTab.SCHEDULE -> {

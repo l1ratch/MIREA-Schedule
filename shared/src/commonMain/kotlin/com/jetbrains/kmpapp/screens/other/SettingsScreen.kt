@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tune
@@ -75,6 +76,7 @@ fun SettingsScreen(
     val themeMode by viewModel.themeMode.collectAsState()
     val isSakuraTheme by viewModel.isSakuraTheme.collectAsState()
     val betaChannel by viewModel.betaChannel.collectAsState()
+    val analyticsEnabled by viewModel.analyticsEnabled.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
@@ -391,6 +393,37 @@ fun SettingsScreen(
                     Switch(
                         checked = betaChannel,
                         onCheckedChange = { viewModel.setBetaChannel(it) }
+                    )
+                }
+            }
+
+            // Section: Anonymous statistics
+            SettingsSectionCard(
+                title = "Статистика",
+                icon = Icons.Default.Analytics
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Отправлять анонимную статистику",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Помогает находить падения приложения и понимать, какие разделы чаще используются. Полностью анонимно, без личных данных (Яндекс AppMetrica)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = analyticsEnabled,
+                        onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
                     )
                 }
             }

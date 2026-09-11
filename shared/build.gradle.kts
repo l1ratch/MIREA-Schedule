@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.appmetrica.analytics)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

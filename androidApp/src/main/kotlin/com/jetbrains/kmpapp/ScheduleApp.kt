@@ -3,6 +3,8 @@ package com.jetbrains.kmpapp
 import android.app.Application
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
+import com.jetbrains.kmpapp.data.analytics.AndroidAnalytics
+import com.jetbrains.kmpapp.data.analytics.AppAnalytics
 import com.jetbrains.kmpapp.data.storage.AndroidContextProvider
 import com.jetbrains.kmpapp.di.initKoin
 import kotlinx.coroutines.CoroutineScope
@@ -14,6 +16,7 @@ class ScheduleApp : Application() {
         super.onCreate()
         AndroidContextProvider.context = this
         initKoin()
+        AppAnalytics.setEngine(AndroidAnalytics())
 
         // Pre-warm Android InputMethodManager and Compose text classes on main thread idle
         android.os.Looper.myQueue().addIdleHandler {

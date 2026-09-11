@@ -8,9 +8,10 @@ object AppVersion {
      *  - тег v26.0.0-beta.3 / -rc.1  → beta / rc (prerelease)
      *  - push в main                 → 26.X-dev.N (rolling preview)
      *  - contributor build           → 26.X-contrib.N
-     * После стабильного релиза v26.0.0 руками поднимается до 26.1.0.
+     * Сейчас линия 26.0.1: небольшое обновление после v26.0.0 (аналитика),
+     * после его релиза поднимается до 26.1.0.
      */
-    const val RELEASE_VERSION = "26.1.0"
+    const val RELEASE_VERSION = "26.0.1"
     const val VERSION_NAME = RELEASE_VERSION
 
     /** stable | beta | rc | dev | contrib — подставляет CI через tools/versioning.py */

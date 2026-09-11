@@ -66,6 +66,7 @@ class OtherViewModel(
     val cheatsBlocked: StateFlow<Boolean> = repository.cheatsBlocked
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
     val betaChannel: StateFlow<Boolean> = repository.betaChannel
+    val analyticsEnabled: StateFlow<Boolean> = repository.analyticsEnabled
 
     fun setShowLessonProgress(enabled: Boolean) {
         repository.setShowLessonProgress(enabled)
@@ -90,6 +91,7 @@ class OtherViewModel(
     fun setMatrixTheme(enabled: Boolean) = repository.setMatrixTheme(enabled)
     fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
+    fun setAnalyticsEnabled(enabled: Boolean) = repository.setAnalyticsEnabled(enabled)
 
     fun setDockTabs(tabs: List<AppTab>) {
         repository.setDockTabs(tabs)

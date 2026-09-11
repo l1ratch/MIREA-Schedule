@@ -9,6 +9,8 @@
 
 > [!NOTE]
 > Приложение не является официальным продуктом РТУ МИРЭА. Расписание и схемы корпусов загружаются из открытых источников университета.
+>
+> Приложение отправляет анонимную статистику использования и отчёты о падениях (Яндекс AppMetrica) — без личных данных и аккаунтов. Отключается в настройках («Отправлять анонимную статистику»).
 
 **Скачать:** [APK (Android, стабильная версия)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA (iOS, без подписи)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) · [Все релизы](https://github.com/l1ratch/MIREA-Schedule/releases)
 

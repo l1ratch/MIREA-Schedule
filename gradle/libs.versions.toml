@@ -6,6 +6,7 @@ android-targetSdk = "37"
 androidx-activity = "1.13.0"
 androidx-lifecycle = "2.11.0-beta01"
 androidx-navigation = "2.9.2"
+appmetrica = "8.5.1"
 coil = "3.5.0"
 compose-material-icons = "1.7.3"
 compose-material3 = "1.12.0-alpha03"
@@ -18,6 +19,7 @@ ktor = "3.5.1"
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-runtimeCompose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+appmetrica-analytics = { module = "io.appmetrica.analytics:analytics", version.ref = "appmetrica" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-ktor = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coil" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-multiplatform" }

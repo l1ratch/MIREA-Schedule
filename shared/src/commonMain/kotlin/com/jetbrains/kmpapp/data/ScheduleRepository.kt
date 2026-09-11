@@ -95,12 +95,14 @@ class ScheduleRepository(
     val cheatsAgreed: StateFlow<Boolean?> = storage.cheatsAgreed
     val cheatsBlocked: StateFlow<Boolean> = storage.cheatsBlocked
     val betaChannel: StateFlow<Boolean> = storage.betaChannel
+    val analyticsEnabled: StateFlow<Boolean> = storage.analyticsEnabled
 
     fun setThemeOverlay(overlay: ThemeOverlay) = storage.setThemeOverlay(overlay)
     fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
     fun setCheatsAgreed(agreed: Boolean?) = storage.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = storage.setCheatsBlocked(blocked)
     fun setBetaChannel(enabled: Boolean) = storage.setBetaChannel(enabled)
+    fun setAnalyticsEnabled(enabled: Boolean) = storage.setAnalyticsEnabled(enabled)
 
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)
