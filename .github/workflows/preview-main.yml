@@ -38,6 +38,7 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
       build_id: ${{ steps.ver.outputs.build_id }}
       commit_sha: ${{ steps.ver.outputs.commit_sha }}
+      prev_version: ${{ steps.ver.outputs.prev_version }}
     steps:
       - name: 📚 Checkout Repository
         uses: actions/checkout@v4
@@ -45,11 +46,15 @@ jobs:
       # ЕДИНСТВЕННОЕ место вычисления номера сборки: один запуск = одно число
       # для APK, IPA, релиза и apps-beta.json (github.run_started_at в
       # выражениях рендерится пустым — не полагаться на него).
+      # Номер дев-сборки = прошлый номер той же линии +1 (имя релиза preview),
+      # отменившиеся прогоны номер не съедают; смена RELEASE_VERSION → dev.1.
       - name: 🧭 Resolve version
         id: ver
         env:
-          RUN_NUMBER: ${{ github.run_number }}
-        run: python tools/versioning.py resolve --channel dev --run-number "$RUN_NUMBER"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREV="$(gh api "repos/${{ github.repository }}/releases/tags/preview" --jq .name 2>/dev/null || true)"
+          python tools/versioning.py resolve --channel dev --prev-version "${PREV:-}"
 
   build_apk:
     name: 🤖 Build Android APK (dev)
@@ -60,7 +65,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔖 Patch version files (dev)
-        run: python tools/versioning.py prepare --channel dev --run-number "${{ github.run_number }}" --build-id "${{ needs.resolve.outputs.build_id }}"
+        run: python tools/versioning.py prepare --channel dev --prev-version "${{ needs.resolve.outputs.prev_version }}" --build-id "${{ needs.resolve.outputs.build_id }}"
 
       - name: 🔢 Export build number (versionCode == AppVersion.BUILD_NUMBER)
         run: echo "BUILD_NUMBER=${{ needs.resolve.outputs.build_id }}" >> $GITHUB_ENV
@@ -103,7 +108,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🔖 Patch version files (dev)
-        run: python tools/versioning.py prepare --channel dev --run-number "${{ github.run_number }}" --build-id "${{ needs.resolve.outputs.build_id }}"
+        run: python tools/versioning.py prepare --channel dev --prev-version "${{ needs.resolve.outputs.prev_version }}" --build-id "${{ needs.resolve.outputs.build_id }}"
 
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v5

@@ -5,7 +5,7 @@ tools/versioning.py — единый генератор версий для вс
 Каналы и форматы:
   stable   тег v26.10 / v26.10.1     → версия 26.10 / 26.10.1
   beta|rc  тег v26.10-beta.1 / -rc.1 → версия 26.10-beta.1 (prerelease)
-  dev      push в main               → {RELEASE_VERSION}-dev.<run_number> (rolling preview)
+  dev      push в main               → {RELEASE_VERSION}-dev.<номер линии> (rolling preview)
   contrib  ручная сборка ветки      → {RELEASE_VERSION}-contrib.<run_number>
 
 Числовой BUILD_NUMBER (versionCode / CFBundleVersion) = epoch-секунды,
@@ -84,7 +84,20 @@ def compute_build_id(build_time):
     return bid
 
 
-def resolve(channel, tag, run_number, build_id):
+def next_dev_number(prev_version):
+    """Номер дев-сборки ТЕКУЩЕЙ линии: «…26.0.1-dev.17…» → 18, смена линии → 1.
+
+    prev_version — имя rolling-релиза `preview` (последняя ОПУБЛИКОВАННАЯ дев-версия),
+    не github.run_number: отменённые прогоны не съедают номер, при смене
+    RELEASE_VERSION счётчик сбрасывается в 1.
+    """
+    m = prev_version and re.search(r"(\d+\.\d+\.\d+)-dev\.(\d+)", prev_version)
+    if m and m.group(1) == read_release_version():
+        return int(m.group(2)) + 1
+    return 1
+
+
+def resolve(channel, tag, run_number, build_id, prev_version=None):
     if tag:
         m = TAG_RE.match(tag.strip())
         if not m:
@@ -97,7 +110,7 @@ def resolve(channel, tag, run_number, build_id):
         if m.group(2):
             version += f"-{m.group(2)}.{m.group(3)}"
     elif channel == "dev":
-        version = f"{read_release_version()}-dev.{run_number}"
+        version = f"{read_release_version()}-dev.{next_dev_number(prev_version)}"
     elif channel == "contrib":
         version = f"{read_release_version()}-contrib.{run_number}"
     else:
@@ -109,6 +122,7 @@ def resolve(channel, tag, run_number, build_id):
         "prerelease": "true" if channel != "stable" else "false",
         "build_id": str(build_id),
         "commit_sha": short_sha(),
+        "prev_version": prev_version or "",
     }
 
 
@@ -172,7 +186,10 @@ def main():
     ap.add_argument("--tag", default=None,
                     help="Тег релиза: v26.10, v26.10.1, v26.10-beta.1, v26.10-rc.1")
     ap.add_argument("--run-number", type=int, default=0,
-                    help="github.run_number (номер pre/contrib-сборки)")
+                    help="github.run_number (номер contrib-сборки; dev больше не использует)")
+    ap.add_argument("--prev-version", default=None,
+                    help="Имя rolling-релиза preview (для канала dev): из него "
+                         "берётся предыдущий номер той же линии +1, смена линии → 1")
     ap.add_argument("--build-id", type=int, default=None,
                     help="Готовый BUILD_NUMBER из needs.resolve.outputs. "
                          "Обязателен для prepare без --build-time — число "
@@ -189,7 +206,7 @@ def main():
                  "(или --build-time для локального теста) — одно число на весь запуск")
 
     build_id = args.build_id if args.build_id else compute_build_id(args.build_time)
-    info = resolve(args.channel, args.tag, args.run_number, build_id)
+    info = resolve(args.channel, args.tag, args.run_number, build_id, args.prev_version)
     if args.command == "prepare":
         patch_files(info)
     emit(info)
