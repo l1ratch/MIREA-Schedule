@@ -24,22 +24,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.data.model.NotePage
 import com.jetbrains.kmpapp.data.model.NoteSection
@@ -193,30 +197,35 @@ private fun PageHeader(
     onDeletePage: (String) -> Unit,
     onSelectPage: (String) -> Unit
 ) {
+    var renameTarget by remember { mutableStateOf<NotePage?>(null) }
+    var draftTitle by remember { mutableStateOf("") }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (currentPage != null) {
-            var title by remember(currentPage.id) { mutableStateOf(currentPage.title) }
-            LaunchedEffect(title) {
-                delay(350)
-                onRename(currentPage.id, title)
-            }
-            TextField(
-                value = title,
-                onValueChange = { title = it },
-                modifier = Modifier.weight(1f),
-                label = { Text("Название страницы") },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
+            Text(
+                text = currentPage.title.ifBlank { "Без названия" },
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 4.dp)
             )
+            IconButton(
+                onClick = {
+                    renameTarget = currentPage
+                    draftTitle = currentPage.title
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = "Переименовать страницу"
+                )
+            }
             IconButton(onClick = { onDeletePage(currentPage.id) }) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
@@ -225,7 +234,12 @@ private fun PageHeader(
                 )
             }
         } else {
-            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Конспекты",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 
@@ -246,6 +260,36 @@ private fun PageHeader(
                 label = { Text("+") }
             )
         }
+    }
+
+    if (renameTarget != null) {
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            title = { Text("Переименовать страницу") },
+            text = {
+                OutlinedTextField(
+                    value = draftTitle,
+                    onValueChange = { draftTitle = it },
+                    singleLine = true,
+                    label = { Text("Название страницы") }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRename(renameTarget!!.id, draftTitle.trim())
+                        renameTarget = null
+                    }
+                ) {
+                    Text("Переименовать")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { renameTarget = null }) {
+                    Text("Отмена")
+                }
+            }
+        )
     }
 }
 
@@ -329,7 +373,9 @@ private fun SectionCard(
     }
     LaunchedEffect(localText) {
         delay(350)
-        onTextChange(localText)
+        if (localText != section.text) {
+            onTextChange(localText)
+        }
     }
 
     Surface(
@@ -361,18 +407,16 @@ private fun SectionCard(
                         .background(accent)
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                key(section) {
-                    IconButton(
-                        onClick = onRemove,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = "Удалить поле",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Удалить поле",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
             TextField(
