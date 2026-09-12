@@ -3,7 +3,7 @@ import Shared
 
 /// iOS-движок локальных напоминаний о занятиях (UNUserNotificationCenter).
 /// Разрешение запрашивается только в момент включения тумблера в настройках.
-final class NotificationsEngine: NotificationEngine {
+final class NotificationsEngine: NotificationsManagerNotificationEngine {
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
     }
