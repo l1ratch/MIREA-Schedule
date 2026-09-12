@@ -88,120 +88,114 @@ class ScheduleStorage(
 
     private fun loadPersistedState() {
         try {
-            // Restore theme mode setting
-            try {
-                val themeStr = platformStorage.getString(KEY_APP_THEME)
-                if (!themeStr.isNullOrBlank()) {
-                    _themeMode.value = try {
-                        ThemeMode.valueOf(themeStr)
-                    } catch (_: Throwable) {
-                        ThemeMode.SYSTEM
-                    }
-                }
-            } catch (_: Throwable) {}
-
-            // Restore show empty lessons setting
-            try {
-                val showEmptyStr = platformStorage.getString(KEY_SHOW_EMPTY_LESSONS)
-                if (!showEmptyStr.isNullOrBlank()) {
-                    _showEmptyLessons.value = showEmptyStr.toBooleanStrictOrNull() ?: true
-                }
-            } catch (_: Throwable) {}
-
-            // Restore show lesson progress setting
-            try {
-                val showProgressStr = platformStorage.getString(KEY_SHOW_LESSON_PROGRESS)
-                if (!showProgressStr.isNullOrBlank()) {
-                    _showLessonProgress.value = showProgressStr.toBooleanStrictOrNull() ?: true
-                }
-            } catch (_: Throwable) {}
-
-            // Restore auto scroll to current lesson setting
-            try {
-                val autoScrollStr = platformStorage.getString(KEY_AUTO_SCROLL_CURRENT_LESSON)
-                if (!autoScrollStr.isNullOrBlank()) {
-                    _autoScrollToCurrentLesson.value = autoScrollStr.toBooleanStrictOrNull() ?: true
-                }
-            } catch (_: Throwable) {}
-
-            // Restore show abbreviated names setting
-            try {
-                val showAbbreviatedStr = platformStorage.getString(KEY_SHOW_ABBREVIATED_NAMES)
-                if (!showAbbreviatedStr.isNullOrBlank()) {
-                    _showAbbreviatedNames.value = showAbbreviatedStr.toBooleanStrictOrNull() ?: false
-                }
-            } catch (_: Throwable) {}
-
-            // Restore dock tabs setting
-            try {
-                val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
-                if (!dockTabsStr.isNullOrBlank()) {
-                    val loaded = dockTabsStr.split(",").mapNotNull { name ->
-                        try { AppTab.valueOf(name.trim()) } catch (_: Throwable) { null }
-                    }
-                    // ponytail: раньше совпадение со старыми дефолтами принудительно
-                    // сбрасывалось на новый дефолт — это стирало живой выбор
-                    // (дока без «Аудиторий» == старый дефолт). Сохранённое доверяем.
-                    _dockTabs.value = sanitizeDockTabs(loaded)
-                } else {
-                    _dockTabs.value = DEFAULT_DOCK_TABS
-                }
-            } catch (_: Throwable) {
-                _dockTabs.value = DEFAULT_DOCK_TABS
-            }
-
-            _themeOverlay.value = loadThemeOverlay()
-            _cheatsAgreed.value = platformStorage.getString(KEY_CHEATS_AGREED)?.toBooleanStrictOrNull()
-            _cheatsBlocked.value = platformStorage.getString(KEY_CHEATS_BLOCKED)?.toBooleanStrictOrNull() ?: false
-            _betaChannel.value =
-                platformStorage.getString(KEY_BETA_CHANNEL)?.toBooleanStrictOrNull() ?: false
-            _analyticsEnabled.value =
-                platformStorage.getString(KEY_ANALYTICS_ENABLED)?.toBooleanStrictOrNull() ?: true
-            _analyticsConsent.value =
-                platformStorage.getString(KEY_ANALYTICS_CONSENT)?.toBooleanStrictOrNull()
-            // До первого ответа на диалог согласия ничего не отправляем.
-            AppAnalytics.setEnabled(_analyticsEnabled.value && _analyticsConsent.value != null)
-
-            // Restore saved targets
-            val targets: List<ScheduleTarget> = try {
-                val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
-                if (!targetsJson.isNullOrBlank()) {
-                    try { json.decodeFromString(targetsJson) } catch (_: Throwable) { emptyList() }
-                } else {
-                    emptyList()
-                }
-            } catch (_: Throwable) {
-                emptyList()
-            }
-            _savedTargets.value = targets
-
-            // IMPORTANT: Restore cached lessons for all targets BEFORE setting selected target!
-            val loadedCache = mutableMapOf<Int, List<Lesson>>()
-            for (target in targets) {
-                try {
-                    val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
-                    if (!lessonsJson.isNullOrBlank()) {
-                        try {
-                            val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
-                            loadedCache[target.id] = lessons
-                        } catch (_: Throwable) {}
-                    }
-                    val syncTimeStr = platformStorage.getString(KEY_LAST_SYNC_PREFIX + target.id)
-                    syncTimeStr?.toLongOrNull()?.let { lastSyncTimes[target.id] = it }
-                } catch (_: Throwable) {}
-            }
-            _cachedLessons.value = loadedCache
-
-            // Now that cached lessons and timestamps are ready, restore selected target!
-            try {
-                val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
-                val activeId = activeIdStr?.toIntOrNull()
-                val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
-                _selectedTarget.value = selected
-            } catch (_: Throwable) {}
+            loadPreferenceFlags()
+            loadDockTabsSetting()
+            restoreScheduleData()
         } catch (t: Throwable) {
             println("ScheduleStorage: failed to load persisted state: ${t.message}")
         }
+    }
+
+    /** Тумблеры и скалярные настройки; отсутствующий или битый ключ = дефолт. */
+    private fun loadPreferenceFlags() {
+        _themeMode.value = loadThemeModeSetting()
+        _showEmptyLessons.value = loadBooleanFlag(KEY_SHOW_EMPTY_LESSONS, true)
+        _showLessonProgress.value = loadBooleanFlag(KEY_SHOW_LESSON_PROGRESS, true)
+        _autoScrollToCurrentLesson.value = loadBooleanFlag(KEY_AUTO_SCROLL_CURRENT_LESSON, true)
+        _showAbbreviatedNames.value = loadBooleanFlag(KEY_SHOW_ABBREVIATED_NAMES, false)
+        _themeOverlay.value = loadThemeOverlay()
+        _cheatsAgreed.value = nullableFlag(KEY_CHEATS_AGREED)
+        _cheatsBlocked.value = loadBooleanFlag(KEY_CHEATS_BLOCKED, false)
+        _betaChannel.value = loadBooleanFlag(KEY_BETA_CHANNEL, false)
+        _analyticsEnabled.value = loadBooleanFlag(KEY_ANALYTICS_ENABLED, true)
+        _analyticsConsent.value = nullableFlag(KEY_ANALYTICS_CONSENT)
+        // До первого ответа на диалог согласия ничего не отправляем.
+        AppAnalytics.setEnabled(_analyticsEnabled.value && _analyticsConsent.value != null)
+    }
+
+    private fun loadBooleanFlag(key: String, default: Boolean): Boolean = try {
+        val s = platformStorage.getString(key)
+        if (s.isNullOrBlank()) default else s.toBooleanStrictOrNull() ?: default
+    } catch (_: Throwable) {
+        default
+    }
+
+    /** null = ключа нет (решение ещё не принимали); битое значение тоже null. */
+    private fun nullableFlag(key: String): Boolean? = try {
+        platformStorage.getString(key)?.toBooleanStrictOrNull()
+    } catch (_: Throwable) {
+        null
+    }
+
+    private fun loadThemeModeSetting(): ThemeMode = try {
+        val s = platformStorage.getString(KEY_APP_THEME)
+        if (s.isNullOrBlank()) ThemeMode.SYSTEM else try {
+            ThemeMode.valueOf(s)
+        } catch (_: Throwable) {
+            ThemeMode.SYSTEM
+        }
+    } catch (_: Throwable) {
+        ThemeMode.SYSTEM
+    }
+
+    private fun loadDockTabsSetting() {
+        try {
+            val dockTabsStr = platformStorage.getString(KEY_DOCK_TABS)
+            if (!dockTabsStr.isNullOrBlank()) {
+                val loaded = dockTabsStr.split(",").mapNotNull { name ->
+                    try { AppTab.valueOf(name.trim()) } catch (_: Throwable) { null }
+                }
+                // ponytail: раньше совпадение со старыми дефолтами принудительно
+                // сбрасывалось на новый дефолт — это стирало живой выбор
+                // (дока без «Аудиторий» == старый дефолт). Сохранённое доверяем.
+                _dockTabs.value = sanitizeDockTabs(loaded)
+            } else {
+                _dockTabs.value = DEFAULT_DOCK_TABS
+            }
+        } catch (_: Throwable) {
+            _dockTabs.value = DEFAULT_DOCK_TABS
+        }
+    }
+
+    /** Цели, кэш уроков и выбранная цель. Порядок важен: кэш ДО выбранной цели. */
+    private fun restoreScheduleData() {
+        // Restore saved targets
+        val targets: List<ScheduleTarget> = try {
+            val targetsJson = platformStorage.getString(KEY_SAVED_TARGETS)
+            if (!targetsJson.isNullOrBlank()) {
+                try { json.decodeFromString(targetsJson) } catch (_: Throwable) { emptyList() }
+            } else {
+                emptyList()
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+        _savedTargets.value = targets
+
+        // IMPORTANT: Restore cached lessons for all targets BEFORE setting selected target!
+        val loadedCache = mutableMapOf<Int, List<Lesson>>()
+        for (target in targets) {
+            try {
+                val lessonsJson = platformStorage.getString(KEY_LESSONS_PREFIX + target.id)
+                if (!lessonsJson.isNullOrBlank()) {
+                    try {
+                        val lessons: List<Lesson> = json.decodeFromString(lessonsJson)
+                        loadedCache[target.id] = lessons
+                    } catch (_: Throwable) {}
+                }
+                val syncTimeStr = platformStorage.getString(KEY_LAST_SYNC_PREFIX + target.id)
+                syncTimeStr?.toLongOrNull()?.let { lastSyncTimes[target.id] = it }
+            } catch (_: Throwable) {}
+        }
+        _cachedLessons.value = loadedCache
+
+        // Now that cached lessons and timestamps are ready, restore selected target!
+        try {
+            val activeIdStr = platformStorage.getString(KEY_SELECTED_TARGET_ID)
+            val activeId = activeIdStr?.toIntOrNull()
+            val selected = targets.firstOrNull { it.id == activeId } ?: targets.firstOrNull()
+            _selectedTarget.value = selected
+        } catch (_: Throwable) {}
     }
 
     fun setThemeMode(mode: ThemeMode) {
