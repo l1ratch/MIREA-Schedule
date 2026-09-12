@@ -20,27 +20,6 @@
 	<string>26.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>32</string>
-	<key>CFBundleAlternateIcons</key>
-	<dict>
-		<key>AppIcon-New-Light</key>
-		<dict>
-			<key>CFBundleIconFiles</key>
-			<array>
-				<string>AppIcon-New-Light</string>
-			</array>
-			<key>UIPrerenderedIcon</key>
-			<false/>
-		</dict>
-		<key>AppIcon-New-Dark</key>
-		<dict>
-			<key>CFBundleIconFiles</key>
-			<array>
-				<string>AppIcon-New-Dark</string>
-			</array>
-			<key>UIPrerenderedIcon</key>
-			<false/>
-		</dict>
-	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

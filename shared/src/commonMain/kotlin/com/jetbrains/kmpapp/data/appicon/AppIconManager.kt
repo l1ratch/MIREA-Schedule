@@ -8,10 +8,10 @@ package com.jetbrains.kmpapp.data.appicon
  * применяем только в момент выбора пользователем.
  */
 object AppIconManager {
-    /** Значения совпадают с ключами CFBundleAlternateIcons в Info.plist. */
+    /** Значения совпадают с именами appiconset'ов в Assets.xcassets (asset catalog). */
     const val ICON_DEFAULT = "default"
-    const val ICON_NEW_LIGHT = "AppIcon-New-Light"
-    const val ICON_NEW_DARK = "AppIcon-New-Dark"
+    const val ICON_NEW_LIGHT = "AppIconNewLight"
+    const val ICON_NEW_DARK = "AppIconNewDark"
 
     interface IconEngine {
         fun applyIcon(name: String)
