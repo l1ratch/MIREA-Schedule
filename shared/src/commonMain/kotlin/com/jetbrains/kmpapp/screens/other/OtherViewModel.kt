@@ -41,7 +41,8 @@ enum class OtherSubScreen(val depth: Int) {
     RESOURCES(1),
     ABOUT(1),
     DEBUG_SETTINGS(2),
-    EXPERIMENTAL_SETTINGS(3)
+    EXPERIMENTAL_SETTINGS(3),
+    ICON_PICKER(2)
 }
 
 class OtherViewModel(
@@ -67,6 +68,9 @@ class OtherViewModel(
     val dockTabs: StateFlow<List<AppTab>> = repository.dockTabs
     val betaChannel: StateFlow<Boolean> = repository.betaChannel
     val analyticsEnabled: StateFlow<Boolean> = repository.analyticsEnabled
+    val appIcon: StateFlow<String> = repository.appIcon
+    val notificationsEnabled: StateFlow<Boolean> = repository.notificationsEnabled
+    val notifyMinutesBefore: StateFlow<Int> = repository.notifyMinutesBefore
 
     fun setShowLessonProgress(enabled: Boolean) {
         repository.setShowLessonProgress(enabled)
@@ -92,6 +96,9 @@ class OtherViewModel(
     fun setCheatsAgreed(agreed: Boolean?) = repository.setCheatsAgreed(agreed)
     fun setCheatsBlocked(blocked: Boolean) = repository.setCheatsBlocked(blocked)
     fun setAnalyticsEnabled(enabled: Boolean) = repository.setAnalyticsEnabled(enabled)
+    fun setAppIcon(name: String) = repository.setAppIcon(name)
+    fun setNotificationsEnabled(enabled: Boolean) = repository.setNotificationsEnabled(enabled)
+    fun setNotifyMinutesBefore(minutes: Int) = repository.setNotifyMinutesBefore(minutes)
 
     fun setDockTabs(tabs: List<AppTab>) {
         repository.setDockTabs(tabs)

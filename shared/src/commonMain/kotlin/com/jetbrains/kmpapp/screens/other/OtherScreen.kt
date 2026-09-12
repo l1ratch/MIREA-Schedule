@@ -107,7 +107,8 @@ fun OtherScreen(
                     onBack = { viewModel.resetToRoot() },
                     onOpenDataAndCache = { viewModel.navigateToSubScreen(OtherSubScreen.DATA_AND_CACHE) },
                     onOpenDockSettings = { viewModel.navigateToSubScreen(OtherSubScreen.DOCK_SETTINGS) },
-                    onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) }
+                    onOpenTaskSettings = { viewModel.navigateToSubScreen(OtherSubScreen.TASK_SETTINGS) },
+                    onOpenIconPicker = { viewModel.navigateToSubScreen(OtherSubScreen.ICON_PICKER) }
                 )
             }
             OtherSubScreen.DATA_AND_CACHE -> {
@@ -118,6 +119,12 @@ fun OtherScreen(
             }
             OtherSubScreen.DOCK_SETTINGS -> {
                 DockSettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { viewModel.navigateToSubScreen(OtherSubScreen.SETTINGS) }
+                )
+            }
+            OtherSubScreen.ICON_PICKER -> {
+                IconPickerScreen(
                     viewModel = viewModel,
                     onBack = { viewModel.navigateToSubScreen(OtherSubScreen.SETTINGS) }
                 )

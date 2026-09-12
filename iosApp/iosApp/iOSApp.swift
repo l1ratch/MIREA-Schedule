@@ -10,6 +10,8 @@ struct iOSApp: App {
             AppMetrica.activate(with: configuration)
         }
         AppAnalytics.shared.setEngine(engine: AppMetricaEngine())
+        AppIconManager.shared.setEngine(newEngine: AppIconEngine())
+        NotificationsManager.shared.setEngine(newEngine: NotificationsEngine())
     }
 
     var body: some Scene {

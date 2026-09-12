@@ -1,6 +1,8 @@
 package com.jetbrains.kmpapp.data.storage
 
 import com.jetbrains.kmpapp.data.analytics.AppAnalytics
+import com.jetbrains.kmpapp.data.appicon.AppIconManager
+import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.data.model.Lesson
 import com.jetbrains.kmpapp.data.model.ScheduleTarget
 import com.jetbrains.kmpapp.data.model.ThemeMode
@@ -80,6 +82,15 @@ class ScheduleStorage(
     private val _analyticsConsent = MutableStateFlow<Boolean?>(null)
     val analyticsConsent: StateFlow<Boolean?> = _analyticsConsent.asStateFlow()
 
+    private val _appIcon = MutableStateFlow(AppIconManager.ICON_DEFAULT)
+    val appIcon: StateFlow<String> = _appIcon.asStateFlow()
+
+    private val _notificationsEnabled = MutableStateFlow(false)
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+
+    private val _notifyMinutesBefore = MutableStateFlow(15)
+    val notifyMinutesBefore: StateFlow<Int> = _notifyMinutesBefore.asStateFlow()
+
     private val lastSyncTimes = mutableMapOf<Int, Long>()
 
     init {
@@ -111,6 +122,10 @@ class ScheduleStorage(
         _analyticsConsent.value = nullableFlag(KEY_ANALYTICS_CONSENT)
         // До первого ответа на диалог согласия ничего не отправляем.
         AppAnalytics.setEnabled(_analyticsEnabled.value && _analyticsConsent.value != null)
+        _appIcon.value = platformStorage.getString(KEY_APP_ICON) ?: AppIconManager.ICON_DEFAULT
+        _notificationsEnabled.value = loadBooleanFlag(KEY_NOTIFICATIONS_ENABLED, false)
+        _notifyMinutesBefore.value =
+            platformStorage.getString(KEY_NOTIFY_MINUTES_BEFORE)?.toIntOrNull() ?: 15
     }
 
     private fun loadBooleanFlag(key: String, default: Boolean): Boolean = try {
@@ -312,6 +327,24 @@ class ScheduleStorage(
         }
     }
 
+    /** Выбор иконки приложения; применяется немедленно (iOS), хранится для UI. */
+    fun setAppIcon(name: String) {
+        _appIcon.value = name
+        AppIconManager.apply(name)
+        scope.launch { platformStorage.saveString(KEY_APP_ICON, name) }
+    }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        _notificationsEnabled.value = enabled
+        if (enabled) NotificationsManager.requestAuthorization()
+        scope.launch { platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, enabled.toString()) }
+    }
+
+    fun setNotifyMinutesBefore(minutes: Int) {
+        _notifyMinutesBefore.value = minutes
+        scope.launch { platformStorage.saveString(KEY_NOTIFY_MINUTES_BEFORE, minutes.toString()) }
+    }
+
     fun setSakuraThemeExclusive(enabled: Boolean) {
         setThemeOverlay(if (enabled) ThemeOverlay.SAKURA else ThemeOverlay.NONE)
     }
@@ -437,6 +470,8 @@ class ScheduleStorage(
         val betaChannelBefore = _betaChannel.value
         val analyticsEnabledBefore = _analyticsEnabled.value
         val analyticsConsentBefore = _analyticsConsent.value
+        val notificationsEnabledBefore = _notificationsEnabled.value
+        val notifyMinutesBeforeBefore = _notifyMinutesBefore.value
         platformStorage.clearAll()
         _savedTargets.value = emptyList()
         _selectedTarget.value = null
@@ -453,6 +488,8 @@ class ScheduleStorage(
         _betaChannel.value = betaChannelBefore
         _analyticsEnabled.value = analyticsEnabledBefore
         _analyticsConsent.value = analyticsConsentBefore
+        _notificationsEnabled.value = notificationsEnabledBefore
+        _notifyMinutesBefore.value = notifyMinutesBeforeBefore
         lastSyncTimes.clear()
         scope.launch {
             if (cheatsAgreedBefore == null) platformStorage.remove(KEY_CHEATS_AGREED)
@@ -462,6 +499,8 @@ class ScheduleStorage(
             platformStorage.saveString(KEY_ANALYTICS_ENABLED, analyticsEnabledBefore.toString())
             if (analyticsConsentBefore == null) platformStorage.remove(KEY_ANALYTICS_CONSENT)
             else platformStorage.saveString(KEY_ANALYTICS_CONSENT, analyticsConsentBefore.toString())
+            platformStorage.saveString(KEY_NOTIFICATIONS_ENABLED, notificationsEnabledBefore.toString())
+            platformStorage.saveString(KEY_NOTIFY_MINUTES_BEFORE, notifyMinutesBeforeBefore.toString())
         }
     }
 
@@ -543,6 +582,9 @@ class ScheduleStorage(
         private const val KEY_BETA_CHANNEL = "mirea_beta_channel"
         private const val KEY_ANALYTICS_ENABLED = "mirea_analytics_enabled"
         private const val KEY_ANALYTICS_CONSENT = "mirea_analytics_consent"
+        private const val KEY_APP_ICON = "mirea_app_icon"
+        private const val KEY_NOTIFICATIONS_ENABLED = "mirea_notifications_enabled"
+        private const val KEY_NOTIFY_MINUTES_BEFORE = "mirea_notify_minutes_before"
         // Дефолт дока для НОВЫХ установок (решение владельца): Существующие
         // пользователи не затрагиваются — их сохранённый док доверяется.
         // «Аудитории» и «Сравнение» добавляются в настройках дока.

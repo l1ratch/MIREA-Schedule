@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -98,6 +99,43 @@ class ScheduleRepository(
     val betaChannel: StateFlow<Boolean> = storage.betaChannel
     val analyticsEnabled: StateFlow<Boolean> = storage.analyticsEnabled
     val analyticsConsent: StateFlow<Boolean?> = storage.analyticsConsent
+    val appIcon: StateFlow<String> = storage.appIcon
+    val notificationsEnabled: StateFlow<Boolean> = storage.notificationsEnabled
+    val notifyMinutesBefore: StateFlow<Int> = storage.notifyMinutesBefore
+
+    init {
+        // Единая точка перепланирования напоминаний: кэш расписания, выбранная
+        // цель, тумблер или минуты — любое изменение (и старт приложения)
+        // пересчитывают партию уведомлений. Лишние пересчёты дешёвые: движок
+        // начинает с cancelAll.
+        scope.launch {
+            combine(
+                storage.cachedLessons,
+                storage.selectedTarget,
+                storage.notificationsEnabled,
+                storage.notifyMinutesBefore
+            ) { lessons, target, enabled, minutes ->
+                NotificationsPayload(lessons, target, enabled, minutes)
+            }.collect { p ->
+                val targetLessons = p.target?.let { p.lessons[it.id] }.orEmpty()
+                if (p.enabled && p.target != null) {
+                    NotificationsManager.reschedule(targetLessons, p.minutes) { lesson ->
+                        val room = lesson.classrooms.firstOrNull()?.let { ", ауд. $it" } ?: ""
+                        "Через ${p.minutes} мин: ${lesson.subject}$room"
+                    }
+                } else {
+                    NotificationsManager.reschedule(emptyList(), p.minutes) { "" } // снимает всё
+                }
+            }
+        }
+    }
+
+    private data class NotificationsPayload(
+        val lessons: Map<Int, List<Lesson>>,
+        val target: com.jetbrains.kmpapp.data.model.ScheduleTarget?,
+        val enabled: Boolean,
+        val minutes: Int
+    )
 
     fun setThemeOverlay(overlay: ThemeOverlay) = storage.setThemeOverlay(overlay)
     fun setMatrixTheme(enabled: Boolean) = storage.setMatrixTheme(enabled)
@@ -106,6 +144,9 @@ class ScheduleRepository(
     fun setBetaChannel(enabled: Boolean) = storage.setBetaChannel(enabled)
     fun setAnalyticsEnabled(enabled: Boolean) = storage.setAnalyticsEnabled(enabled)
     fun setAnalyticsConsent(accepted: Boolean) = storage.setAnalyticsConsent(accepted)
+    fun setAppIcon(name: String) = storage.setAppIcon(name)
+    fun setNotificationsEnabled(enabled: Boolean) = storage.setNotificationsEnabled(enabled)
+    fun setNotifyMinutesBefore(minutes: Int) = storage.setNotifyMinutesBefore(minutes)
 
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)
