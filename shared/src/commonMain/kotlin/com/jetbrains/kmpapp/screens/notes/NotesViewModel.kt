@@ -19,6 +19,8 @@ class NotesViewModel(
 
     val pages: StateFlow<List<NotePage>> = repository.notePages
 
+    val askBeforeNoteDelete: StateFlow<Boolean> = repository.askBeforeNoteDelete
+
     private val _selectedPageId = MutableStateFlow<String?>(null)
     val selectedPageId: StateFlow<String?> = _selectedPageId.asStateFlow()
 

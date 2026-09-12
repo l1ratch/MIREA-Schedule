@@ -107,6 +107,7 @@ class ScheduleRepository(
     val appIcon: StateFlow<String> = storage.appIcon
     val notificationsEnabled: StateFlow<Boolean> = storage.notificationsEnabled
     val notifyMinutesBefore: StateFlow<Int> = storage.notifyMinutesBefore
+    val askBeforeNoteDelete: StateFlow<Boolean> = storage.askBeforeNoteDelete
 
     init {
         // Единая точка перепланирования напоминаний: кэш расписания, выбранная
@@ -152,6 +153,7 @@ class ScheduleRepository(
     fun setAppIcon(name: String) = storage.setAppIcon(name)
     fun setNotificationsEnabled(enabled: Boolean) = storage.setNotificationsEnabled(enabled)
     fun setNotifyMinutesBefore(minutes: Int) = storage.setNotifyMinutesBefore(minutes)
+    fun setAskBeforeNoteDelete(ask: Boolean) = storage.setAskBeforeNoteDelete(ask)
 
     fun setSakuraTheme(enabled: Boolean) {
         storage.setSakuraThemeExclusive(enabled)

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -84,18 +85,20 @@ private val DARK_PALETTE = listOf(
 fun NotesScreen(viewModel: NotesViewModel) {
     val pages by viewModel.pages.collectAsState()
     val currentPage by viewModel.currentPage.collectAsState()
+    val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
-            .padding(top = 8.dp)
+            .statusBarsPadding()
             .imePadding()
-            .padding(bottom = 16.dp)
+            .padding(bottom = 88.dp)
     ) {
         PageHeader(
             currentPage = currentPage,
             pages = pages,
+            askBeforeNoteDelete = askBeforeNoteDelete,
             onRename = viewModel::renamePage,
             onAddPage = viewModel::addPage,
             onDeletePage = viewModel::deletePage,
@@ -154,6 +157,7 @@ fun NotesScreen(viewModel: NotesViewModel) {
                 SectionCard(
                     section = section,
                     isActive = index == activeSection,
+                    askBeforeNoteDelete = askBeforeNoteDelete,
                     onActivate = { activeSection = index },
                     onTextChange = { text -> viewModel.setSectionText(current.id, index, text) },
                     onRemove = { viewModel.removeSection(current.id, index) }
@@ -192,6 +196,7 @@ fun NotesScreen(viewModel: NotesViewModel) {
 private fun PageHeader(
     currentPage: NotePage?,
     pages: List<NotePage>,
+    askBeforeNoteDelete: Boolean,
     onRename: (String, String) -> Unit,
     onAddPage: () -> Unit,
     onDeletePage: (String) -> Unit,
@@ -199,22 +204,23 @@ private fun PageHeader(
 ) {
     var renameTarget by remember { mutableStateOf<NotePage?>(null) }
     var draftTitle by remember { mutableStateOf("") }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(
+            text = "Электронные конспекты",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 4.dp)
+        )
         if (currentPage != null) {
-            Text(
-                text = currentPage.title.ifBlank { "Без названия" },
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 4.dp)
-            )
             IconButton(
                 onClick = {
                     renameTarget = currentPage
@@ -226,20 +232,18 @@ private fun PageHeader(
                     contentDescription = "Переименовать страницу"
                 )
             }
-            IconButton(onClick = { onDeletePage(currentPage.id) }) {
+            IconButton(
+                onClick = {
+                    if (askBeforeNoteDelete) confirmDelete = true
+                    else onDeletePage(currentPage.id)
+                }
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "Удалить страницу",
                     tint = MaterialTheme.colorScheme.error
                 )
             }
-        } else {
-            Text(
-                text = "Конспекты",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f)
-            )
         }
     }
 
@@ -286,6 +290,35 @@ private fun PageHeader(
             },
             dismissButton = {
                 TextButton(onClick = { renameTarget = null }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+
+    if (confirmDelete && currentPage != null) {
+        val pageForDialog = currentPage
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Удалить страницу?") },
+            text = {
+                Text(
+                    "Страница «${pageForDialog.title.ifBlank { "Без названия" }}» " +
+                        "и все её поля будут удалены безвозвратно."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmDelete = false
+                        onDeletePage(pageForDialog.id)
+                    }
+                ) {
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
                     Text("Отмена")
                 }
             }
@@ -361,12 +394,14 @@ private fun PaletteSwatch(
 private fun SectionCard(
     section: NoteSection,
     isActive: Boolean,
+    askBeforeNoteDelete: Boolean,
     onActivate: () -> Unit,
     onTextChange: (String) -> Unit,
     onRemove: () -> Unit
 ) {
     val accent = Color(section.color)
     var localText by remember { mutableStateOf(section.text) }
+    var confirmRemove by remember { mutableStateOf(false) }
 
     LaunchedEffect(section.text) {
         if (section.text != localText) localText = section.text
@@ -408,7 +443,10 @@ private fun SectionCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = onRemove,
+                    onClick = {
+                        if (askBeforeNoteDelete) confirmRemove = true
+                        else onRemove()
+                    },
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
@@ -439,5 +477,28 @@ private fun SectionCard(
                 )
             )
         }
+    }
+
+    if (confirmRemove) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            title = { Text("Удалить поле?") },
+            text = { Text("Текст поля будет удалён безвозвратно.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmRemove = false
+                        onRemove()
+                    }
+                ) {
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemove = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
     }
 }

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tune
@@ -86,6 +87,7 @@ fun SettingsScreen(
     val analyticsEnabled by viewModel.analyticsEnabled.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val notifyMinutesBefore by viewModel.notifyMinutesBefore.collectAsState()
+    val askBeforeNoteDelete by viewModel.askBeforeNoteDelete.collectAsState()
 
     var sakuraTapCount by remember { mutableIntStateOf(0) }
     var lastSakuraTapMark by remember { mutableStateOf<kotlin.time.TimeMark?>(null) }
@@ -466,6 +468,37 @@ fun SettingsScreen(
                     Switch(
                         checked = analyticsEnabled,
                         onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
+                    )
+                }
+            }
+
+            // Section: Notes
+            SettingsSectionCard(
+                title = "Конспекты",
+                icon = Icons.Default.EditNote
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Спрашивать каждый раз при удалении заметок",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Подтверждение перед удалением страниц и полей в конспектах",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = askBeforeNoteDelete,
+                        onCheckedChange = { viewModel.setAskBeforeNoteDelete(it) }
                     )
                 }
             }
