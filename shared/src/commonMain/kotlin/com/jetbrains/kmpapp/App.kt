@@ -33,6 +33,8 @@ import com.jetbrains.kmpapp.screens.components.FloatingDock
 import com.jetbrains.kmpapp.screens.compare.CompareScheduleScreen
 import com.jetbrains.kmpapp.screens.compare.CompareScheduleViewModel
 import com.jetbrains.kmpapp.screens.map.MapScreen
+import com.jetbrains.kmpapp.screens.notes.NotesScreen
+import com.jetbrains.kmpapp.screens.notes.NotesViewModel
 import com.jetbrains.kmpapp.screens.other.OtherScreen
 import com.jetbrains.kmpapp.screens.other.OtherViewModel
 import com.jetbrains.kmpapp.screens.rooms.FreeRoomsScreen
@@ -112,6 +114,7 @@ fun App() {
     val freeRoomsViewModel: FreeRoomsViewModel = koinViewModel()
     val tasksViewModel: TasksViewModel = koinViewModel()
     val compareViewModel: CompareScheduleViewModel = koinViewModel()
+    val notesViewModel: NotesViewModel = koinViewModel()
 
     val betaChannel by otherViewModel.betaChannel.collectAsState()
 
@@ -264,6 +267,9 @@ fun App() {
                         AppTab.MAP -> {
                             MapScreen()
                         }
+                        AppTab.NOTES -> {
+                            NotesScreen(viewModel = notesViewModel)
+                        }
                         AppTab.COMPARE -> {
                             CompareScheduleScreen(viewModel = compareViewModel)
                         }
@@ -296,6 +302,7 @@ fun App() {
                                 }
                                 AppTab.TASKS -> {}
                                 AppTab.MAP -> {}
+                                AppTab.NOTES -> {}
                                 AppTab.COMPARE -> {}
                                 AppTab.OTHER -> {
                                     otherViewModel.resetToRoot()

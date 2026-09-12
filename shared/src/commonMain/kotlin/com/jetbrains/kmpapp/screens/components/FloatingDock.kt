@@ -20,12 +20,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.CompareArrows
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -58,6 +60,7 @@ enum class AppTab(
     FREE_ROOMS("Аудитории", Icons.Filled.MeetingRoom, Icons.Outlined.MeetingRoom, isFixed = false),
     TASKS("Задачи", Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt, isFixed = false),
     MAP("Карта", Icons.Filled.Map, Icons.Filled.Map, isFixed = false),
+    NOTES("Конспекты", Icons.Filled.EditNote, Icons.Outlined.EditNote, isFixed = false),
     COMPARE("Сравнение", Icons.Filled.CompareArrows, Icons.Outlined.CompareArrows, isFixed = false),
     OTHER("Другое", Icons.Filled.Settings, Icons.Outlined.Settings, isFixed = true)
 }

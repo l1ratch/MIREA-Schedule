@@ -37,6 +37,11 @@ class ScheduleRepository(
     val showEmptyLessons: StateFlow<Boolean> = storage.showEmptyLessons
     val themeMode: StateFlow<ThemeMode> = storage.themeMode
     val dockTabs: StateFlow<List<com.jetbrains.kmpapp.screens.components.AppTab>> = storage.dockTabs
+    val notePages: StateFlow<List<com.jetbrains.kmpapp.data.model.NotePage>> = storage.notePages
+
+    fun updateNotePages(pages: List<com.jetbrains.kmpapp.data.model.NotePage>) {
+        storage.saveNotePages(pages)
+    }
 
     fun setDockTabs(tabs: List<com.jetbrains.kmpapp.screens.components.AppTab>) {
         storage.setDockTabs(tabs)
