@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,6 +34,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -499,6 +502,12 @@ fun SettingsScreen(
                     }
 
                     if (notificationsEnabled) {
+                        val presets = listOf(5, 10, 15)
+                        val isCustom = notifyMinutesBefore !in presets
+                        var customText by remember(notificationsEnabled) {
+                            mutableStateOf(if (isCustom) notifyMinutesBefore.toString() else "")
+                        }
+
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "За сколько минут до пары",
@@ -510,7 +519,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            listOf(10, 15, 30, 60).forEach { minutes ->
+                            presets.forEach { minutes ->
                                 FilterChip(
                                     selected = notifyMinutesBefore == minutes,
                                     onClick = { viewModel.setNotifyMinutesBefore(minutes) },
@@ -526,6 +535,43 @@ fun SettingsScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                             }
+                            FilterChip(
+                                selected = isCustom,
+                                onClick = {
+                                    // Свой вариант: берём последнее валидное или 20
+                                    val value = customText.toIntOrNull()?.takeIf { it in 1..120 } ?: 20
+                                    customText = value.toString()
+                                    viewModel.setNotifyMinutesBefore(value)
+                                },
+                                label = {
+                                    Text(
+                                        text = "Своё",
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center
+                                    )
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        if (isCustom) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = customText,
+                                onValueChange = { text ->
+                                    val digits = text.filter { it.isDigit() }.take(3)
+                                    customText = digits
+                                    digits.toIntOrNull()?.let { value ->
+                                        if (value in 1..120) viewModel.setNotifyMinutesBefore(value)
+                                    }
+                                },
+                                label = { Text("Минут до пары (1–120)") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }
