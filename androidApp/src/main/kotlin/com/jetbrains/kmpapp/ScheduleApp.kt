@@ -5,8 +5,10 @@ import android.content.Context
 import android.view.inputmethod.InputMethodManager
 import com.jetbrains.kmpapp.data.analytics.AndroidAnalytics
 import com.jetbrains.kmpapp.data.analytics.AppAnalytics
+import com.jetbrains.kmpapp.data.notifications.NotificationsManager
 import com.jetbrains.kmpapp.data.storage.AndroidContextProvider
 import com.jetbrains.kmpapp.di.initKoin
+import com.jetbrains.kmpapp.notifications.AndroidNotificationsEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,6 +19,9 @@ class ScheduleApp : Application() {
         AndroidContextProvider.context = this
         initKoin()
         AppAnalytics.setEngine(AndroidAnalytics())
+        // Движок напоминаний: секция «Уведомления» в настройках видна там,
+        // где движок зарегистрирован (Android и iOS симметричны).
+        NotificationsManager.setEngine(AndroidNotificationsEngine)
 
         // Pre-warm Android InputMethodManager and Compose text classes on main thread idle
         android.os.Looper.myQueue().addIdleHandler {
