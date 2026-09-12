@@ -151,7 +151,10 @@ fun IconPickerScreen(
                         Image(
                             painter = painterResource(option.preview),
                             contentDescription = option.title,
-                            modifier = Modifier.size(64.dp)
+                            // Скругление ~22%, как у системной иконки iOS
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(14.dp))
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {

@@ -408,68 +408,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Section: Updates
-            SettingsSectionCard(
-                title = "Обновления",
-                icon = Icons.Default.Update
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Бета-канал обновлений",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Проверять бета-версии и релиз-кандидаты при поиске обновлений",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = betaChannel,
-                        onCheckedChange = { viewModel.setBetaChannel(it) }
-                    )
-                }
-            }
-
-            // Section: Anonymous statistics
-            SettingsSectionCard(
-                title = "Статистика",
-                icon = Icons.Default.Analytics
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Отправлять анонимную статистику",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Помогает находить падения приложения и понимать, какие разделы чаще используются. Полностью анонимно, без личных данных (Яндекс AppMetrica)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = analyticsEnabled,
-                        onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
-                    )
-                }
-            }
-
             // Section: Lesson notifications (iOS only — платформенный движок)
             if (NotificationsManager.supportsNotifications) {
                 SettingsSectionCard(
@@ -574,6 +512,68 @@ fun SettingsScreen(
                             )
                         }
                     }
+                }
+            }
+
+            // Section: Updates
+            SettingsSectionCard(
+                title = "Обновления",
+                icon = Icons.Default.Update
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Бета-канал обновлений",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Проверять бета-версии и релиз-кандидаты при поиске обновлений",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = betaChannel,
+                        onCheckedChange = { viewModel.setBetaChannel(it) }
+                    )
+                }
+            }
+
+            // Section: Anonymous statistics
+            SettingsSectionCard(
+                title = "Статистика",
+                icon = Icons.Default.Analytics
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Отправлять анонимную статистику",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Помогает находить падения приложения и понимать, какие разделы чаще используются. Полностью анонимно, без личных данных (Яндекс AppMetrica)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = analyticsEnabled,
+                        onCheckedChange = { viewModel.setAnalyticsEnabled(it) }
+                    )
                 }
             }
 
