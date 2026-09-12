@@ -56,6 +56,16 @@ class NotesViewModel(
         updatePage(pageId) { it.copy(title = title) }
     }
 
+    fun movePage(pageId: String, delta: Int) {
+        val list = repository.notePages.value.toMutableList()
+        val from = list.indexOfFirst { it.id == pageId }
+        val to = from + delta
+        if (from < 0 || to < 0 || to >= list.size) return
+        val page = list.removeAt(from)
+        list.add(to, page)
+        repository.updateNotePages(list)
+    }
+
     fun addSection(pageId: String) {
         updatePage(pageId) { page ->
             page.copy(sections = page.sections + NoteSection())

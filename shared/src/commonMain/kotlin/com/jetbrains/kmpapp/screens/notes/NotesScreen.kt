@@ -3,6 +3,7 @@ package com.jetbrains.kmpapp.screens.notes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focus.focusChanged
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,10 +23,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -41,23 +48,27 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.NotePage
 import com.jetbrains.kmpapp.data.model.NoteSection
-import kotlinx.coroutines.delay
 
 private val LIGHT_PALETTE = listOf(
     0xFF1E5BB0, // синий
@@ -93,7 +104,7 @@ fun NotesScreen(viewModel: NotesViewModel) {
             .padding(horizontal = 16.dp)
             .statusBarsPadding()
             .imePadding()
-            .padding(bottom = 88.dp)
+            .padding(bottom = 104.dp)
     ) {
         PageHeader(
             currentPage = currentPage,
@@ -102,7 +113,8 @@ fun NotesScreen(viewModel: NotesViewModel) {
             onRename = viewModel::renamePage,
             onAddPage = viewModel::addPage,
             onDeletePage = viewModel::deletePage,
-            onSelectPage = viewModel::selectPage
+            onSelectPage = viewModel::selectPage,
+            onMovePage = viewModel::movePage
         )
 
         HorizontalDivider(
@@ -200,18 +212,30 @@ private fun PageHeader(
     onRename: (String, String) -> Unit,
     onAddPage: () -> Unit,
     onDeletePage: (String) -> Unit,
-    onSelectPage: (String) -> Unit
+    onSelectPage: (String) -> Unit,
+    onMovePage: (String, Int) -> Unit
 ) {
     var renameTarget by remember { mutableStateOf<NotePage?>(null) }
     var draftTitle by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+
+    val trimmedQuery = searchQuery.trim()
+    val visiblePages = remember(pages, searchQuery) {
+        if (trimmedQuery.isEmpty()) pages
+        else pages.filter { it.title.contains(trimmedQuery, ignoreCase = true) }
+    }
+    val currentPageIndex = pages.indexOfFirst { it.id == currentPage?.id }
+    val canMoveUp = currentPage != null && currentPageIndex > 0
+    val canMoveDown = currentPage != null && currentPageIndex in 0 until pages.size - 1
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Электронные конспекты",
+            text = "Конспекты",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -247,11 +271,57 @@ private fun PageHeader(
         }
     }
 
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("Поиск по страницам", fontSize = 13.sp, maxLines = 1) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Close, contentDescription = "Очистить")
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+            textStyle = MaterialTheme.typography.bodyLarge
+        )
+        IconButton(
+            onClick = { onMovePage(currentPage!!.id, -1) },
+            enabled = canMoveUp
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowUpward,
+                contentDescription = "Переместить страницу вверх"
+            )
+        }
+        IconButton(
+            onClick = { onMovePage(currentPage!!.id, 1) },
+            enabled = canMoveDown
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowDownward,
+                contentDescription = "Переместить страницу вниз"
+            )
+        }
+    }
+
     LazyRow(
         modifier = Modifier.padding(top = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        items(pages, key = { it.id }) { page ->
+        items(visiblePages, key = { it.id }) { page ->
             FilterChip(
                 selected = page.id == currentPage?.id,
                 onClick = { onSelectPage(page.id) },
@@ -402,15 +472,21 @@ private fun SectionCard(
     val accent = Color(section.color)
     var localText by remember { mutableStateOf(section.text) }
     var confirmRemove by remember { mutableStateOf(false) }
+    var hasFocus by remember { mutableStateOf(false) }
 
-    LaunchedEffect(section.text) {
-        if (section.text != localText) localText = section.text
+    val latestText by rememberUpdatedState(localText)
+    val latestSectionText by rememberUpdatedState(section.text)
+    val latestHasFocus by rememberUpdatedState(hasFocus)
+    val commitText = {
+        if (!latestHasFocus && latestText != latestSectionText) onTextChange(latestText)
     }
-    LaunchedEffect(localText) {
-        delay(350)
-        if (localText != section.text) {
-            onTextChange(localText)
-        }
+    DisposableEffect(Unit) {
+        onDispose { commitText() }
+    }
+    // Подтягиваем внешнее значение только когда поле не в фокусе:
+    // при активном вводе источник истины — локальный текст.
+    LaunchedEffect(section.text, hasFocus) {
+        if (!hasFocus && section.text != localText) localText = section.text
     }
 
     Surface(
@@ -460,7 +536,19 @@ private fun SectionCard(
             TextField(
                 value = localText,
                 onValueChange = { localText = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusChanged { focused ->
+                        if (focused) {
+                            hasFocus = true
+                        } else {
+                            val wasFocused = hasFocus
+                            hasFocus = false
+                            if (wasFocused && latestText != latestSectionText) {
+                                onTextChange(latestText)
+                            }
+                        }
+                    },
                 placeholder = {
                     Text(
                         text = "Введите текст…",
