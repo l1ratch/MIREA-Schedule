@@ -39,8 +39,11 @@ import androidx.compose.ui.unit.dp
 import com.jetbrains.kmpapp.data.appicon.AppIconManager
 import com.jetbrains.kmpapp.screens.components.PlatformBackHandler
 import com.jetbrains.kmpapp.screens.components.swipeToDismissBack
+import kmp_app_template.shared.generated.resources.Res
+import kmp_app_template.shared.generated.resources.app_icon
+import kmp_app_template.shared.generated.resources.appicon_new_dark
+import kmp_app_template.shared.generated.resources.appicon_new_light
 import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.Res
 import org.jetbrains.compose.resources.painterResource
 
 private data class IconOption(
@@ -65,19 +68,19 @@ fun IconPickerScreen(
             key = AppIconManager.ICON_DEFAULT,
             title = "Стандартная",
             subtitle = "Иконка, установленная по умолчанию",
-            preview = Res.drawable.app_icon
+            preview = app_icon
         ),
         IconOption(
             key = AppIconManager.ICON_NEW_LIGHT,
             title = "Новая · светлая",
             subtitle = "Светлая версия нового дизайна",
-            preview = Res.drawable.appicon_new_light
+            preview = appicon_new_light
         ),
         IconOption(
             key = AppIconManager.ICON_NEW_DARK,
             title = "Новая · тёмная",
             subtitle = "Тёмная версия нового дизайна",
-            preview = Res.drawable.appicon_new_dark
+            preview = appicon_new_dark
         )
     )
 
