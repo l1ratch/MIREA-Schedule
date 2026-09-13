@@ -1,5 +1,6 @@
 import UIKit
 import UserNotifications
+import CFNetwork
 import Shared
 
 // Оба платформенных движка живут в одном файле: один Swift-файл в фазе
