@@ -16,6 +16,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,6 +38,22 @@ def parse_changelog(app_version_file):
 
 def gh(*args):
     return subprocess.run(["gh", *args], capture_output=True, text=True)
+
+
+def gh_retry(cmd):
+    """Одна повторная попытка gh-команды. GitHub-блипы дают картину «команда
+    применилась на сервере, но ответ не дошёл» (кейс dev.12: edit применил
+    название, скрипт упал, upload не дошёл — релиз со старыми файлами под
+    новым названием). Повтор идемпотентен: edit/upload можно звать заново."""
+    for attempt in (1, 2):
+        try:
+            subprocess.run(cmd, check=True)
+            return
+        except subprocess.CalledProcessError:
+            if attempt == 2:
+                raise
+            print(f"==> gh {' '.join(cmd[:3])}... не удалась, повтор через 5с")
+            time.sleep(5)
 
 
 def collect_files(apk, ipa):
@@ -87,13 +104,13 @@ def publish_preview(args, files, date):
     print(f"==> Publishing rolling preview release '{tag}'...")
     existing = gh("release", "view", tag)
     if existing.returncode == 0:
-        subprocess.run([
+        gh_retry([
             "gh", "release", "edit", tag,
             "--title", title, "-F", "release_notes.md", "--prerelease"
-        ], check=True)
-        subprocess.run([
+        ])
+        gh_retry([
             "gh", "release", "upload", tag, *files, "--clobber"
-        ], check=True)
+        ])
     else:
         subprocess.run([
             "gh", "release", "create", tag, *files,
