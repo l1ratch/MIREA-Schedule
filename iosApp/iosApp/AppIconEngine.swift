@@ -45,3 +45,22 @@ final class NotificationsEngine: NotificationsManagerNotificationEngine {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
 }
+
+/// iOS-детектор VPN: публичного API «VPN включён» нет, используем
+/// канонический «AppsFlyer-style» разбор системных настроек прокси —
+/// ключ __SCOPED__ содержит интерфейсы активных туннелей
+/// (WireGuard, OpenVPN, корпоративные NEPacketTunnelProvider).
+final class VpnEngine: VpnStatusEngine {
+    func isVpnActive() -> Bool {
+        guard let settings = CFNetworkCopySystemProxySettings()?.takeRetainedValue() as? [String: Any],
+              let scoped = settings["__SCOPED__"] as? [String: Any] else { return false }
+        for key in scoped.keys {
+            let k = key.lowercased()
+            if k.contains("tap") || k.contains("tun") || k.contains("ppp")
+                || k.contains("ipsec") || k.contains("utun") {
+                return true
+            }
+        }
+        return false
+    }
+}

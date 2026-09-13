@@ -5,8 +5,24 @@ package com.jetbrains.kmpapp.data.network
  * (включая API расписания) доступны только с IP России — при включённом
  * VPN обновление/добавление расписания ломается, UI показывает плашку.
  *
- * iOS — эвристика (публичного API «включён ли VPN» Apple не даёт):
- * ищем туннельный интерфейс с IPv4-адресом; системные utun без адреса
- * не считаем.
+ * Android — TRANSPORT_VPN у активной сети (actual в androidMain).
+ * iOS — публичного API нет, поэтому actual в iosMain делегирует
+ * Swift-движку (канонический «AppsFlyer-style» разбор
+ * CFNetworkCopySystemProxySettings -> __SCOPED__).
  */
 expect fun detectVpnActive(): Boolean
+
+/** Мост к Swift-движку (регистрируется в iOSApp). */
+object VpnStatus {
+    interface Engine {
+        fun isVpnActive(): Boolean
+    }
+
+    private var engine: Engine? = null
+
+    fun setEngine(newEngine: Engine) {
+        engine = newEngine
+    }
+
+    fun isActive(): Boolean = engine?.isVpnActive() ?: false
+}
