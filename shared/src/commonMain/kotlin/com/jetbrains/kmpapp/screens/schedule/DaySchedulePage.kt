@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +38,7 @@ internal fun DaySchedulePage(
     slots: List<ScheduleSlot>,
     listState: LazyListState,
     errorMessage: String?,
-    currentMinutes: Int,
+    currentMinutesState: State<Int>?,
     showLessonProgress: Boolean,
     showAbbreviatedNames: Boolean,
     scheduleTargetType: ScheduleTargetType,
@@ -168,7 +169,7 @@ internal fun DaySchedulePage(
                     slot = slot,
                     onLessonClick = onLessonClick,
                     isToday = date == com.jetbrains.kmpapp.data.model.DateUtils.today(),
-                    currentMinutes = currentMinutes,
+                    currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
                     scheduleTargetType = scheduleTargetType

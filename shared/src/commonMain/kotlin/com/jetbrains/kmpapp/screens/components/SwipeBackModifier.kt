@@ -17,9 +17,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Свайп «назад» от левого края: экран едет за пальцем (как перелистывание
- * дней в расписании), после отпускания либо улетает вправо и вызывает
- * onBack, либо плавно возвращается на место. Один модификатор — все
- * подстраницы приложения.
+ * дней в расписании), а при пересечении порога назад срабатывает сразу,
+ * в моменте — страница-родитель въезжает под пальцем, а не «в конце».
+ * До отпускания пальца текущий экран продолжает ехать за ним и улетает.
+ * Один модификатор — все подстраницы приложения.
  */
 fun Modifier.swipeToDismissBack(
     enabled: Boolean = true,
@@ -32,6 +33,7 @@ fun Modifier.swipeToDismissBack(
 
     var dragPx by remember { mutableFloatStateOf(0f) }
     var startedAtEdge by remember { mutableStateOf(false) }
+    var committed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     pointerInput(enabled) {
@@ -39,21 +41,21 @@ fun Modifier.swipeToDismissBack(
             onDragStart = { offset ->
                 startedAtEdge = !requireEdge || (offset.x <= edgeWidthPx)
                 dragPx = 0f
+                committed = false
             },
             onHorizontalDrag = { _, dragAmount ->
-                if (startedAtEdge) {
+                if (startedAtEdge && !committed) {
                     dragPx = (dragPx + dragAmount).coerceAtLeast(0f)
+                    // Коммит в моменте: AnimatedContent-переход стартует, пока
+                    // палец ещё на экране, — родитель виден сразу, «мёртвой зоны» нет.
+                    if (dragPx >= thresholdPx) {
+                        committed = true
+                        onBack()
+                    }
                 }
             },
             onDragEnd = {
-                if (startedAtEdge && dragPx >= thresholdPx) {
-                    // Улетает за экран, и только потом переключаем состояние:
-                    // уходящий экран остаётся за краем, AnimatedContent-выход не виден.
-                    scope.launch {
-                        animate(dragPx, size.width.toFloat(), animationSpec = tween(160)) { v, _ -> dragPx = v }
-                        onBack()
-                    }
-                } else {
+                if (!committed) {
                     scope.launch {
                         animate(dragPx, 0f, animationSpec = tween(200)) { v, _ -> dragPx = v }
                     }
@@ -61,8 +63,10 @@ fun Modifier.swipeToDismissBack(
                 startedAtEdge = false
             },
             onDragCancel = {
-                scope.launch {
-                    animate(dragPx, 0f, animationSpec = tween(200)) { v, _ -> dragPx = v }
+                if (!committed) {
+                    scope.launch {
+                        animate(dragPx, 0f, animationSpec = tween(200)) { v, _ -> dragPx = v }
+                    }
                 }
                 startedAtEdge = false
             }

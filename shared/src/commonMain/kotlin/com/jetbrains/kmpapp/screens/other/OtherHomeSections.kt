@@ -83,9 +83,9 @@ internal fun HiddenTabsCard(
             ) {
                 for (tab in hiddenTabs) {
                     Surface(
+                        onClick = { onNavigateToTab(tab) },
                         shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.clickable { onNavigateToTab(tab) }
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

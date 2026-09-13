@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +50,7 @@ fun ScheduleSlotCard(
     slot: ScheduleSlot,
     onLessonClick: (Lesson) -> Unit,
     isToday: Boolean = false,
-    currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
+    currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
     scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
@@ -62,7 +63,7 @@ fun ScheduleSlotCard(
                     lesson = slot.lessons.first(),
                     onClick = { onLessonClick(slot.lessons.first()) },
                     isToday = isToday,
-                    currentMinutes = currentMinutes,
+                    currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
                     scheduleTargetType = scheduleTargetType,
@@ -76,7 +77,7 @@ fun ScheduleSlotCard(
                     lessons = slot.lessons,
                     onLessonClick = onLessonClick,
                     isToday = isToday,
-                    currentMinutes = currentMinutes,
+                    currentMinutesState = currentMinutesState,
                     showLessonProgress = showLessonProgress,
                     showAbbreviatedNames = showAbbreviatedNames,
                     scheduleTargetType = scheduleTargetType,
@@ -100,7 +101,7 @@ fun LessonCard(
     lesson: Lesson,
     onClick: () -> Unit,
     isToday: Boolean = false,
-    currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
+    currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
     scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
@@ -110,7 +111,12 @@ fun LessonCard(
 ) {
     val (typeBg, typeTextColor) = getTypeBadgeColors(lesson.lessonType)
 
+    // ponytail: State протягивается вниз и читается ТОЛЬКО на сегодняшних
+    // карточках: тик раз в 30 секунд пересобирает одну активную карточку,
+    // а не всё дерево расписания посреди скролла.
     val progress = if (isToday && showLessonProgress) {
+        val currentMinutes = currentMinutesState?.value
+            ?: com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes()
         com.jetbrains.kmpapp.data.model.DateUtils.getLessonProgress(lesson.startTime, lesson.endTime, currentMinutes)
     } else null
 
@@ -364,7 +370,7 @@ fun MultiLessonCard(
     lessons: List<Lesson>,
     onLessonClick: (Lesson) -> Unit,
     isToday: Boolean = false,
-    currentMinutes: Int = com.jetbrains.kmpapp.data.model.DateUtils.currentTimeMinutes(),
+    currentMinutesState: State<Int>? = null,
     showLessonProgress: Boolean = true,
     showAbbreviatedNames: Boolean = false,
     scheduleTargetType: ScheduleTargetType = ScheduleTargetType.GROUP,
@@ -384,7 +390,7 @@ fun MultiLessonCard(
             lesson = lessons[page],
             onClick = { onLessonClick(lessons[page]) },
             isToday = isToday,
-            currentMinutes = currentMinutes,
+            currentMinutesState = currentMinutesState,
             showLessonProgress = showLessonProgress,
             showAbbreviatedNames = showAbbreviatedNames,
             scheduleTargetType = scheduleTargetType,

@@ -127,7 +127,10 @@ private fun ScheduleMainContent(
     val showLessonProgress by viewModel.showLessonProgress.collectAsState()
     val autoScrollToCurrentLesson by viewModel.autoScrollToCurrentLesson.collectAsState()
     val showAbbreviatedNames by viewModel.showAbbreviatedNames.collectAsState()
-    val currentMinutes by viewModel.currentMinutes.collectAsState()
+    // Значение НЕ читаем здесь: тик раз в 30 секунд не должен пересобирать
+    // всё дерево расписания. State уходит вниз и читается только в карточках
+    // «сегодня» (см. LessonCard).
+    val currentMinutesState = viewModel.currentMinutes.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -256,7 +259,7 @@ private fun ScheduleMainContent(
                                 slots = pageSlots,
                                 listState = rememberLazyListState(),
                                 errorMessage = errorMessage,
-                                currentMinutes = currentMinutes,
+                                currentMinutesState = currentMinutesState,
                                 showLessonProgress = showLessonProgress,
                                 showAbbreviatedNames = showAbbreviatedNames,
                                 scheduleTargetType = selectedTarget?.type ?: com.jetbrains.kmpapp.data.model.ScheduleTargetType.GROUP,
