@@ -1,5 +1,7 @@
 package com.jetbrains.kmpapp.screens.schedule
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -71,7 +73,10 @@ fun WeekCalendarStrip(
     LaunchedEffect(selectedMonday) {
         val currentMonday = baseMonday.plus(DatePeriod(days = (pagerState.currentPage - BASE_PAGE) * 7))
         if (currentMonday != selectedMonday && !pagerState.isScrollInProgress) {
-            pagerState.animateScrollToPage(targetPage)
+            pagerState.animateScrollToPage(
+                targetPage,
+                animationSpec = tween(250, easing = FastOutSlowInEasing)
+            )
         }
     }
 

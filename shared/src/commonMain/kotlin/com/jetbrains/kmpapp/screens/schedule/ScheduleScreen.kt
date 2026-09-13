@@ -1,6 +1,8 @@
 package com.jetbrains.kmpapp.screens.schedule
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -56,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.ScheduleSlot
@@ -67,6 +70,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,13 +83,15 @@ fun ScheduleScreen(
     AnimatedContent(
         targetState = selectedLessonForDetail,
         transitionSpec = {
+            val slide = tween<IntOffset>(280, easing = FastOutSlowInEasing)
+            val fade = tween<Float>(280, easing = FastOutSlowInEasing)
             if (targetState != null) {
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width } + fadeOut()
+                (slideInHorizontally(slide) { width -> width } + fadeIn(fade)).togetherWith(
+                    slideOutHorizontally(slide) { width -> -width } + fadeOut(fade)
                 )
             } else {
-                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
+                (slideInHorizontally(slide) { width -> -width } + fadeIn(fade)).togetherWith(
+                    slideOutHorizontally(slide) { width -> width } + fadeOut(fade)
                 )
             }
         },
@@ -139,12 +145,20 @@ private fun ScheduleMainContent(
     LaunchedEffect(selectedDate) {
         val targetPage = basePage + today.daysUntil(selectedDate)
         if (pagerState.currentPage != targetPage && !pagerState.isScrollInProgress) {
-            pagerState.animateScrollToPage(targetPage)
+            // Дальние дни — мгновенно (иначе долгий «полёт» через страницы),
+            // соседний день — обычная анимация.
+            if (abs(targetPage - pagerState.currentPage) > 1) {
+                pagerState.scrollToPage(targetPage)
+            } else {
+                pagerState.animateScrollToPage(targetPage)
+            }
         }
     }
 
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { page ->
+        // currentPage, а не settledPage: дата обновляется в момент переворота
+        // страницы (пока палец ещё на экране), лента календаря реагирует сразу.
+        snapshotFlow { pagerState.currentPage }.collect { page ->
             val date = today.plus(DatePeriod(days = page - basePage))
             if (date != selectedDate) viewModel.selectDate(date)
         }

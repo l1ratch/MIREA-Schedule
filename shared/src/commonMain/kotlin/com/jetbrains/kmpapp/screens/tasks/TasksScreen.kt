@@ -3,6 +3,8 @@ package com.jetbrains.kmpapp.screens.tasks
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -95,6 +97,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jetbrains.kmpapp.data.model.AssessmentType
@@ -149,13 +152,15 @@ fun TasksScreen(
     AnimatedContent(
         targetState = selectedSubjectId,
         transitionSpec = {
+            val slide = tween<IntOffset>(280, easing = FastOutSlowInEasing)
+            val fade = tween<Float>(280, easing = FastOutSlowInEasing)
             if (targetState != null) {
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width } + fadeOut()
+                (slideInHorizontally(slide) { width -> width } + fadeIn(fade)).togetherWith(
+                    slideOutHorizontally(slide) { width -> -width } + fadeOut(fade)
                 )
             } else {
-                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
+                (slideInHorizontally(slide) { width -> -width } + fadeIn(fade)).togetherWith(
+                    slideOutHorizontally(slide) { width -> width } + fadeOut(fade)
                 )
             }
         },

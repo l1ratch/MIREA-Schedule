@@ -1,6 +1,8 @@
 package com.jetbrains.kmpapp.screens.other
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -53,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -73,15 +76,17 @@ fun OtherScreen(
     AnimatedContent(
         targetState = activeSubScreen,
         transitionSpec = {
+            val slide = tween<IntOffset>(280, easing = FastOutSlowInEasing)
+            val fade = tween<Float>(280, easing = FastOutSlowInEasing)
             if (targetState.depth >= initialState.depth) {
                 // Moving forward: new screen enters from right
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width } + fadeOut()
+                (slideInHorizontally(slide) { width -> width } + fadeIn(fade)).togetherWith(
+                    slideOutHorizontally(slide) { width -> -width } + fadeOut(fade)
                 )
             } else {
                 // Moving back: previous screen enters from left
-                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
+                (slideInHorizontally(slide) { width -> -width } + fadeIn(fade)).togetherWith(
+                    slideOutHorizontally(slide) { width -> width } + fadeOut(fade)
                 )
             }
         },
