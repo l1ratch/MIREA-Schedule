@@ -5,10 +5,10 @@ import kotlinx.cinterop.allocPointerTo
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
+import platform.Darwin.freeifaddrs
+import platform.Darwin.getifaddrs
+import platform.Darwin.ifaddrs
 import platform.posix.AF_INET
-import platform.posix.freeifaddrs
-import platform.posix.getifaddrs
-import platform.posix.ifaddrs
 
 // ponytail: эвристика — публичного API «VPN включён» на iOS нет. Считаем
 // VPN-интерфейсом туннельный интерфейс С IPv4-адресом (системные utun
