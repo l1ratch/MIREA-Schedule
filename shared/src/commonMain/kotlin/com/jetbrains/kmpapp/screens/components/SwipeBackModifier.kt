@@ -14,6 +14,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 /**
  * Свайп «назад» от левого края: экран едет за пальцем (как перелистывание
@@ -48,7 +49,10 @@ fun Modifier.swipeToDismissBack(
                     dragPx = (dragPx + dragAmount).coerceAtLeast(0f)
                     // Коммит в моменте: AnimatedContent-переход стартует, пока
                     // палец ещё на экране, — родитель виден сразу, «мёртвой зоны» нет.
-                    if (dragPx >= thresholdPx) {
+                    // Порог — минимум 40% ширины экрана: мелкий сдвиг не должен
+                    // дёргать переход, он просто отскакивает на место.
+                    val commitThreshold = max(thresholdPx, size.width * 0.4f)
+                    if (dragPx >= commitThreshold) {
                         committed = true
                         onBack()
                     }
