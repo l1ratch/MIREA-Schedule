@@ -37,6 +37,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Surface
 import com.jetbrains.kmpapp.data.model.RefreshStatus
@@ -131,6 +132,7 @@ private fun ScheduleMainContent(
     // всё дерево расписания. State уходит вниз и читается только в карточках
     // «сегодня» (см. LessonCard).
     val currentMinutesState = viewModel.currentMinutes.collectAsState()
+    val isVpnActive by viewModel.isVpnActive.collectAsState()
 
     var showAddSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -241,6 +243,36 @@ private fun ScheduleMainContent(
                     lessonSummaries = dayLessonSummaries,
                     modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                 )
+
+                // Серверы МИРЭА доступны только с IP России: при включённом
+                // VPN расписание не обновится — предупреждаем заранее.
+                if (isVpnActive) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VpnKey,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Включён VPN — серверы МИРЭА доступны только из РФ, расписание может не обновляться",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
 
                 PullToRefreshBox(
                     isRefreshing = isLoading,

@@ -55,6 +55,11 @@ class ScheduleViewModel(
     private val _currentMinutes = MutableStateFlow(DateUtils.currentTimeMinutes())
     val currentMinutes: StateFlow<Int> = _currentMinutes.asStateFlow()
 
+    // VPN ломает доступ к серверам МИРЭА (только с IP России) —
+    // обновляется существующим 30-секундным тиком, UI показывает плашку.
+    private val _isVpnActive = MutableStateFlow(com.jetbrains.kmpapp.data.network.detectVpnActive())
+    val isVpnActive: StateFlow<Boolean> = _isVpnActive.asStateFlow()
+
     init {
         viewModelScope.launch {
             repository.refreshStatus.collect { status ->
@@ -72,6 +77,7 @@ class ScheduleViewModel(
                 val isForeground = repository.isLowPowerMode.value.let { lowPower ->
                     // Update current minute
                     _currentMinutes.value = DateUtils.currentTimeMinutes()
+                    _isVpnActive.value = com.jetbrains.kmpapp.data.network.detectVpnActive()
                     val sleepTime = if (lowPower) 60_000L else 30_000L
                     kotlinx.coroutines.delay(sleepTime)
                 }
