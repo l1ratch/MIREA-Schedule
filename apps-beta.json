@@ -1,17 +1,29 @@
 {
-  "name": "MIREA Schedule (Beta)",
-  "identifier": "mirea-schedule-beta",
-  "sourceURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps-beta.json",
+  "name": "MIREA Schedule",
+  "identifier": "mirea-schedule-unified",
+  "sourceURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps.json",
   "apps": [
+    {
+      "name": "Расписание МИРЭА (Dev)",
+      "bundleIdentifier": "ru.l1ratch.mireaschedule",
+      "developerName": "l1ratch",
+      "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nКанал: preview\nСборка: 26.2.1-dev.23\nОбновлено: 2026-09-19 17:16 UTC",
+      "iconURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
+      "version": "26.2.1-dev.23",
+      "versionDate": "2026-09-19T17:16:32.626060+00:00",
+      "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/download/preview/MIREA-Schedule-preview.ipa",
+      "tintColor": "4F46E5",
+      "channel": "preview"
+    },
     {
       "name": "Расписание МИРЭА",
       "bundleIdentifier": "ru.l1ratch.mireaschedule",
       "developerName": "l1ratch",
-      "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nСборка: 26.2.1-dev.22\nОбновлено: 2026-09-19 16:17 UTC",
+      "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nСборка: 26.2.0\nОбновлено: 2026-09-16 17:21 UTC",
       "iconURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
-      "version": "26.2.1-dev.22",
-      "versionDate": "2026-09-19T16:17:33.886071+00:00",
-      "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/download/preview/MIREA-Schedule-preview.ipa",
+      "version": "26.2.0",
+      "versionDate": "2026-09-16T17:21:48.178044+00:00",
+      "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa",
       "tintColor": "4F46E5"
     }
   ]
