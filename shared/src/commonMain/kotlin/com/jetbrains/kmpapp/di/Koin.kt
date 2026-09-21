@@ -2,6 +2,7 @@ package com.jetbrains.kmpapp.di
 
 import com.jetbrains.kmpapp.data.ScheduleRepository
 import com.jetbrains.kmpapp.data.api.MireaScheduleApi
+import com.jetbrains.kmpapp.data.api.VkAvatarResolver
 import com.jetbrains.kmpapp.data.storage.PlatformStorage
 import com.jetbrains.kmpapp.data.storage.ScheduleStorage
 import com.jetbrains.kmpapp.data.update.AppUpdateChecker
@@ -51,6 +52,7 @@ val dataModule = module {
     singleOf(::PlatformStorage)
     singleOf(::UnifiedSyncManager)
     singleOf(::MireaScheduleApi)
+    singleOf(::VkAvatarResolver)
     singleOf(::ScheduleStorage)
     singleOf(::ScheduleRepository)
     singleOf(::AppUpdateChecker)
