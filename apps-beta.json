@@ -1,30 +1,31 @@
 {
-  "name": "MIREA Schedule",
+  "name": "MIREA Schedule → Красава!",
   "identifier": "mirea-schedule-unified",
   "sourceURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/gh-pages/apps.json",
   "apps": [
     {
-      "name": "Расписание МИРЭА (Dev)",
-      "bundleIdentifier": "ru.l1ratch.mireaschedule",
-      "developerName": "l1ratch",
-      "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nКанал: preview\nСборка: 26.2.1-dev.25\nОбновлено: 2026-09-19 19:08 UTC",
-      "iconURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
-      "version": "26.2.1-dev.25",
-      "versionDate": "2026-09-19T19:08:09.888049+00:00",
-      "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/download/preview/MIREA-Schedule-preview.ipa",
+      "name": "Красава!",
+      "bundleIdentifier": "ru.vibemoments.krasava",
+      "developerName": "Vibe Moments Technologies",
+      "localizedDescription": "Проект переехал: «MIREA Schedule» теперь «Красава!». Приложение установится как отдельное новое приложение — старое можно удалить; расписание, заметки и задачи добавьте заново (это займёт минуту).\n\nРасписание пар РТУ МИРЭА: свободные аудитории, карты корпусов, задачи, офлайн-кеш.\n\nКанал: stable\nСборка: 26.3.0",
+      "iconURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/krasava-app/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
+      "version": "26.3.0",
+      "versionDate": "2026-09-24T09:35:56.741954+00:00",
+      "downloadURL": "https://github.com/Vibe-Moments-Technologies/krasava-app/releases/latest/download/Krasava.ipa",
       "tintColor": "4F46E5",
-      "channel": "preview"
+      "channel": "stable"
     },
     {
-      "name": "Расписание МИРЭА",
-      "bundleIdentifier": "ru.l1ratch.mireaschedule",
-      "developerName": "l1ratch",
-      "localizedDescription": "Расписание пар РТУ МИРЭА: поиск свободных аудиторий, интерактивные карты корпусов, задачи и офлайн-кеш.\n\nСборка: 26.2.0\nОбновлено: 2026-09-16 17:21 UTC",
-      "iconURL": "https://raw.githubusercontent.com/l1ratch/MIREA-Schedule/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
-      "version": "26.2.0",
-      "versionDate": "2026-09-16T17:21:48.178044+00:00",
-      "downloadURL": "https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa",
-      "tintColor": "4F46E5"
+      "name": "Красава! (Dev)",
+      "bundleIdentifier": "ru.vibemoments.krasava",
+      "developerName": "Vibe Moments Technologies",
+      "localizedDescription": "Тестовые сборки нового приложения «Красава!» (преемник «MIREA Schedule»). Установится как отдельное приложение.\n\nКанал: preview\nОбновляется при каждом пуше в main.",
+      "iconURL": "https://raw.githubusercontent.com/Vibe-Moments-Technologies/krasava-app/main/shared/src/commonMain/composeResources/drawable/appicon_new_light.png",
+      "version": "26.4.0-dev",
+      "versionDate": "2026-09-26T19:07:26.070643+00:00",
+      "downloadURL": "https://github.com/Vibe-Moments-Technologies/krasava-app/releases/download/preview/Krasava-preview.ipa",
+      "tintColor": "4F46E5",
+      "channel": "preview"
     }
   ]
 }

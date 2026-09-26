@@ -1,14 +1,14 @@
 {
-  "version": "26.2.1-beta.1",
-  "build": 1789820154,
+  "version": "26.3.0",
+  "build": 1790241232,
   "critical": false,
   "min_supported_build": 1,
-  "changelog": "Полностью переработан раздел «О программе»: команда проекта с карточками и социальными сетями, лицензии и юридические документы на отдельных экранах. Календарь над расписанием: тап на «Месяц • неделя» открывает полный месячный календарь с точками пар и легендой, свайп вверх по разделителю сворачивает ленту (включается в настройках), а в свёрнутом виде вверху появляется кружок с числом дня — тап возвращает календарь, долгое нажатие открывает месяц. Прогресс в расписании: полоска оставшегося времени в карточке «Нет пары» и подсветка пройденной части надписи «перемена» (оба с тумблерами в настройках). Карты корпусов: подписи аудиторий крупнее, цвета карты следуют теме приложения. Исправлен вылет месячного календаря на iOS.",
-  "download_url": "https://github.com/l1ratch/MIREA-Schedule/releases/tag/v26.2.1-beta.1",
-  "apk_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.2.1-beta.1/Schedule-MIREA-v26.2.1-beta.1.apk",
-  "ipa_url": "https://github.com/l1ratch/MIREA-Schedule/releases/download/v26.2.1-beta.1/Schedule-MIREA-v26.2.1-beta.1.ipa",
+  "changelog": "Проект переехал! «MIREA Schedule» теперь называется «Красава!» — то самое расписание, новое имя и новый дом у команды Vibe Moments Technologies. ВАЖНО: новое приложение установится как отдельное, совсем новое приложение (иконка «Красава!») — оно не заменяет старое. После установки старое «MIREA Schedule» можно удалить. Данные не перенесутся: добавьте своё расписание группы, заметки и задачи заново — это займёт минуту. Старая версия больше не обновляется и не поддерживается. Новое приложение: https://github.com/Vibe-Moments-Technologies/krasava-app",
+  "download_url": "https://github.com/Vibe-Moments-Technologies/krasava-app/releases/latest",
+  "apk_url": "https://github.com/Vibe-Moments-Technologies/krasava-app/releases/latest/download/Krasava.apk",
+  "ipa_url": "https://github.com/Vibe-Moments-Technologies/krasava-app/releases/latest/download/Krasava.ipa",
   "channel": "beta",
-  "prerelease": true,
-  "updated_at": "2026-09-19T12:28:14.409782+00:00",
-  "commit_sha": "485b393"
+  "prerelease": false,
+  "updated_at": "2026-09-26T20:30:00+00:00",
+  "commit_sha": "82fdea7"
 }
