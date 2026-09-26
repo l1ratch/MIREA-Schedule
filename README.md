@@ -1,5 +1,21 @@
 # MIREA Schedule
 
+> [!IMPORTANT]
+> ## 🚚 Проект переехал
+>
+> «MIREA Schedule» теперь называется **«Красава!»**, и разработка продолжается в
+> **[Vibe-Moments-Technologies/krasava-app](https://github.com/Vibe-Moments-Technologies/krasava-app)**.
+> Этот репозиторий больше **не обновляется и не поддерживается**.
+>
+> **Новое приложение установится как отдельное, совсем новое приложение**
+> (иконка «Красава!») — оно не заменяет старое. После установки старое
+> «MIREA Schedule» можно удалить. Данные не перенесутся: добавьте расписание
+> своей группы, заметки и задачи заново — это займёт минуту.
+>
+> **Скачать «Красава!»:** [RuStore](https://www.rustore.ru/catalog/app/ru.vibemoments.krasava) ·
+> [APK](https://github.com/Vibe-Moments-Technologies/krasava-app/releases/latest/download/Krasava.apk) ·
+> [Все релизы](https://github.com/Vibe-Moments-Technologies/krasava-app/releases)
+
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-3DDC84.svg?logo=android&logoColor=white)](https://github.com/l1ratch/MIREA-Schedule/releases)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.12.0-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
@@ -9,12 +25,8 @@
 
 > [!NOTE]
 > Приложение неофициальное: сделано студентами для студентов РТУ МИРЭА и не является продуктом университета. Расписание и схемы корпусов загружаются из открытых источников.
->
-> Приложение отправляет анонимную статистику использования и отчёты о падениях (Яндекс AppMetrica) — без личных данных и аккаунтов. При первом запуске приложение спрашивает разрешение, позже его можно включить или отключить в настройках («Отправлять анонимную статистику»).
 
-**Скачать:** [APK (Android, стабильная версия)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.apk) · [IPA (iOS, без подписи)](https://github.com/l1ratch/MIREA-Schedule/releases/latest/download/Schedule-MIREA.ipa) · [Все релизы](https://github.com/l1ratch/MIREA-Schedule/releases)
-
-**Сообщество:** [Telegram](https://t.me/MIREA_Schedule) · [GitHub](https://github.com/l1ratch/MIREA-Schedule)
+**Сообщество:** [Telegram](https://t.me/MIREA_Schedule) · [Новый репозиторий](https://github.com/Vibe-Moments-Technologies/krasava-app)
 
 ---
 
